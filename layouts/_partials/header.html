@@ -1,0 +1,22 @@
+<header class="header blogco-header">
+  <nav class="header-nav" aria-label="Điều hướng chính">
+    <a class="logo blogco-brand" href="{{ site.Home.RelPermalink }}" aria-label="BlogCo — trang chủ">BlogCo</a>
+    <ul id="menu" class="menu">
+      <li><a href="{{ site.Home.RelPermalink }}">Trang chủ</a></li>
+      <li><a href="{{ "posts/" | relURL }}">Bài viết</a></li>
+      <li class="health-menu"><details>
+        <summary>Sức khoẻ <span aria-hidden="true">▾</span></summary>
+        <ul class="health-submenu">
+          <li><a href="{{ site.Home.RelPermalink }}#/water">💧 Theo dõi đồ uống</a></li>
+          <li><a href="{{ site.Home.RelPermalink }}#/water/insights">📊 Insights</a></li>
+          <li><a href="{{ site.Home.RelPermalink }}#/water/search">⌕ Tra cứu</a></li>
+        </ul>
+      </details></li>
+      <li><a href="{{ site.Home.RelPermalink }}#/water/add">＋ Ghi đồ uống</a></li>
+    </ul>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện">
+      <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+    </button>
+  </nav>
+</header>
