@@ -1,7 +1,7 @@
 {{- define "main" -}}
 {{- $page := . -}}
-{{- $heroImage := .Params.cover.image -}}
-{{- $related := where site.RegularPages "Section" "posts" -}}
+{{- $heroImage := .Params.cover.image | default .Params.image -}}
+{{- $related := where site.RegularPages "Type" "posts" -}}
 {{- $related = where $related "Permalink" "ne" .Permalink -}}
 
 <article class="blogco-article" aria-labelledby="article-title">
@@ -59,7 +59,8 @@
         {{- range first 3 (sort $related "Date" "desc") }}
         <article class="related-card">
           <a class="related-card-link" href="{{ .RelPermalink }}" aria-label="Read: {{ .Title }}">
-            {{- with .Params.cover.image }}
+            {{- $relatedImage := .Params.cover.image | default .Params.image -}}
+            {{- with $relatedImage }}
             {{- $relatedSrc := . -}}
             {{- if not (hasPrefix $relatedSrc "http") }}{{ $relatedSrc = $relatedSrc | relURL }}{{ end -}}
             <img class="related-thumb" src="{{ $relatedSrc }}" alt="" loading="lazy" decoding="async">

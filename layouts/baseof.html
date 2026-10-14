@@ -14,7 +14,7 @@
 <head>
   {{- partial "head.html" . }}
 </head>
-{{- if and (eq .Kind "page") (eq .Section "posts") }}
+{{- if and (eq .Kind "page") (eq .Type "posts") }}
 <body class="article-body" id="top">
 {{- else if or (ne .Kind "page") (eq .Layout "archives") (eq .Layout "search") }}
 <body class="list" id="top">
