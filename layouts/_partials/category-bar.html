@@ -1,0 +1,26 @@
+{{- $categories := site.Taxonomies.categories.ByCount }}
+{{- if gt (len $categories) 0 }}
+<nav class="category-bar" aria-label="Chuyên mục bài viết" data-category-bar>
+  <ul class="category-bar__list">
+    {{- range $categories }}
+      {{- if gt .Count 0 }}
+        {{- $termPage := .Page }}
+        {{- $isActive := eq $.RelPermalink $termPage.RelPermalink }}
+        {{- with $.GetTerms "categories" }}
+          {{- range . }}
+            {{- if eq .RelPermalink $termPage.RelPermalink }}{{- $isActive = true }}{{- end }}
+          {{- end }}
+        {{- end }}
+    <li class="category-bar__entry">
+      <a class="category-bar__item{{ if $isActive }} is-active{{ end }}"
+         href="{{ $termPage.RelPermalink }}"
+         {{- if eq $.RelPermalink $termPage.RelPermalink }} aria-current="page"{{ else if $isActive }} aria-current="true"{{ end }}>
+        <span class="category-bar__name">{{ $termPage.LinkTitle | upper }}</span>
+        <span class="category-bar__count" aria-label="{{ .Count }} bài viết">({{ .Count }})</span>
+      </a>
+    </li>
+      {{- end }}
+    {{- end }}
+  </ul>
+</nav>
+{{- end }}

@@ -4,6 +4,8 @@ const featureLoaders = {
   transformers: () => import('./features/transformers.js'),
 };
 
+import './category-bar.js';
+
 let waterAppPromise;
 
 function syncWaterRoute() {

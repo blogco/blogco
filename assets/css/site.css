@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./article.css";
+@import "./category-bar.css";
 @import "./water/water.css";
 
 @theme {
