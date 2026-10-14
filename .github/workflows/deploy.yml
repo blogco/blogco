@@ -1,0 +1,76 @@
+name: Build Hugo and deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'archetypes/**'
+      - 'assets/**'
+      - 'config/**'
+      - 'content/**'
+      - 'layouts/**'
+      - 'static/**'
+      - 'themes/**'
+      - '.gitmodules'
+      - 'hugo.toml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source and PaperMod theme
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Set up Hugo Extended
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: '0.163.1'
+          extended: true
+
+      - name: Cache Hugo resources and modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            resources/_gen
+            /home/runner/.cache/hugo_cache
+          key: hugo-${{ runner.os }}-${{ hashFiles('hugo.toml', '.gitmodules') }}
+          restore-keys: hugo-${{ runner.os }}-
+
+      - name: Install site dependencies
+        run: npm ci
+
+      - name: Build minified JavaScript and CSS
+        run: npm run build:assets
+
+      - name: Build Hugo site
+        run: hugo --gc --minify --baseURL https://blogco.github.io/blogco/
+        env:
+          HUGO_ENVIRONMENT: production
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./public
