@@ -1,0 +1,22 @@
+{
+  "name": "blogco-ai-toolkit",
+  "private": true,
+  "type": "module",
+  "description": "Optional Node-side AI and NLP integrations; never expose its API keys in the static site.",
+  "dependencies": {
+    "@google/genai": "2.29.1",
+    "@google/generative-ai": "0.24.1",
+    "@huggingface/transformers": "4.3.1",
+    "@langchain/core": "1.2.17",
+    "@langchain/google-genai": "2.3.2",
+    "@langchain/openai": "1.6.2",
+    "fuse.js": "7.5.0",
+    "highlight.js": "11.12.0",
+    "langchain": "1.5.16",
+    "marked": "18.1.1",
+    "natural": "8.1.1",
+    "openai": "7.33.0",
+    "retext": "9.0.0",
+    "vectra": "0.15.0"
+  }
+}
