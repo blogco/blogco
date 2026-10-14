@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/hugo.yml'
       - 'archetypes/**'
       - 'assets/**'
       - 'config/**'
@@ -20,20 +20,25 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: pages-${{ github.ref }}
+  group: pages
   cancel-in-progress: true
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
+    env:
+      HUGO_CACHEDIR: /tmp/hugo_cache
     steps:
-      - name: Checkout source and PaperMod theme
+      - name: Check out source and theme
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - name: Set up Node.js and npm cache
         uses: actions/setup-node@v4
@@ -48,12 +53,15 @@ jobs:
           hugo-version: '0.163.1'
           extended: true
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Cache Hugo resources and modules
         uses: actions/cache@v4
         with:
           path: |
             resources/_gen
-            /home/runner/.cache/hugo_cache
+            /tmp/hugo_cache
           key: hugo-${{ runner.os }}-${{ hashFiles('hugo.toml', '.gitmodules') }}
           restore-keys: hugo-${{ runner.os }}-
 
@@ -64,13 +72,22 @@ jobs:
         run: npm run build:assets
 
       - name: Build Hugo site
-        run: hugo --gc --minify --baseURL https://blogco.github.io/blogco/
+        run: hugo --gc --minify --baseURL "https://blogco.github.io/blogco/"
         env:
           HUGO_ENVIRONMENT: production
 
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./public
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
