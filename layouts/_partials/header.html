@@ -5,8 +5,10 @@
     {{- $postsURL := "posts/" | relURL -}}
     {{- $knowledgeURL := "kien-thuc/" | relURL -}}
     {{- $waterURL := "water/" | relURL -}}
+    {{- $storesURL := "cua-hang/" | relURL -}}
     {{- $isPosts := hasPrefix $page.RelPermalink $postsURL -}}
     {{- $isKnowledge := hasPrefix $page.RelPermalink $knowledgeURL -}}
+    {{- $isStores := hasPrefix $page.RelPermalink $storesURL -}}
     <a class="logo blogco-brand navbar__logo" href="{{ $homeURL }}" aria-label="BlogCo — trang chủ">BlogCo</a>
     <button class="navbar__toggle" type="button" aria-label="Mở menu điều hướng" aria-controls="blogco-primary-menu" aria-expanded="false">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -17,6 +19,13 @@
       <li><a class="navbar__link{{ if $isKnowledge }} is-active{{ end }}" href="{{ $knowledgeURL }}" data-nav-key="knowledge" data-nav-path="{{ $knowledgeURL }}"{{ if $isKnowledge }} aria-current="page"{{ end }}>Kiến thức</a></li>
       <li><a class="navbar__link" href="{{ $homeURL }}#/water/insights" data-nav-key="insights" data-nav-path="{{ $waterURL }}">Insights</a></li>
       <li><a class="navbar__link" href="{{ $homeURL }}#/health/history" data-nav-key="health" data-nav-path="{{ $homeURL }}">Lịch sử khám bệnh</a></li>
+      <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>
+        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-stores-menu" data-nav-key="stores" data-nav-path="{{ $storesURL }}">🏪 Cửa hàng <span aria-hidden="true">▾</span></button>
+        <ul class="navbar__submenu" id="navbar-stores-menu" role="menu">
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/stores/search">🔍 Tra cứu cửa hàng</a></li>
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/stores/add">＋ Nhập dữ liệu cửa hàng</a></li>
+        </ul>
+      </li>
       <li class="navbar__cta-item"><a class="navbar__link navbar__link--cta" href="{{ $homeURL }}#/water/add" data-nav-key="water" data-nav-path="{{ $waterURL }}">＋ Ghi đồ uống</a></li>
     </ul>
     <button id="theme-toggle" class="theme-toggle navbar__theme-toggle" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện">
