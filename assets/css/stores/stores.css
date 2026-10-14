@@ -226,6 +226,13 @@ body.stores-route .main {
   line-height: 1.5;
 }
 
+.store-mark {
+  background: #fde68a;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 .1em;
+}
+
 .store-card__meta {
   display: flex;
   flex-wrap: wrap;

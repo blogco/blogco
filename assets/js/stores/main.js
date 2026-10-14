@@ -24,6 +24,65 @@ function escapeHtml(value = '') {
   })[char]);
 }
 
+// Accent-insensitive index map: for each character of the normalized string,
+// remember where it came from in the original so highlights can wrap the real
+// (accented) text even when the user typed without diacritics.
+function normalizeWithMap(value) {
+  const lower = String(value ?? '').toLowerCase();
+  const chars = [];
+  const map = [];
+  for (let i = 0; i < lower.length; i += 1) {
+    const clean = lower[i].normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+    for (const char of clean) {
+      chars.push(char);
+      map.push(i);
+    }
+  }
+  return { text: chars.join(''), map };
+}
+
+// Character ranges [start, end) in the original string that match the query,
+// tried as the whole phrase first and then word by word. Overlaps are merged.
+function matchRanges(value, query) {
+  const needle = normalizeText(query);
+  if (!needle) return [];
+  const { text, map } = normalizeWithMap(value);
+  const terms = [...new Set([needle, ...needle.split(/[^a-z0-9]+/).filter(Boolean)])]
+    .sort((a, b) => b.length - a.length);
+  const ranges = [];
+  for (const term of terms) {
+    let from = 0;
+    while (from <= text.length - term.length) {
+      const at = text.indexOf(term, from);
+      if (at === -1) break;
+      ranges.push([map[at], map[at + term.length - 1] + 1]);
+      from = at + term.length;
+    }
+  }
+  ranges.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const merged = [];
+  for (const [start, end] of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+    else merged.push([start, end]);
+  }
+  return merged;
+}
+
+function highlight(value, query) {
+  const original = String(value ?? '');
+  const ranges = matchRanges(original, query);
+  if (!ranges.length) return escapeHtml(original);
+  let html = '';
+  let cursor = 0;
+  for (const [start, end] of ranges) {
+    html += escapeHtml(original.slice(cursor, start));
+    html += `<mark class="store-mark">${escapeHtml(original.slice(start, end))}</mark>`;
+    cursor = end;
+  }
+  return html + escapeHtml(original.slice(cursor));
+}
+
 function showToast(root, text, isError = false) {
   const toast = root.querySelector('[data-stores-toast]');
   if (!toast) return;
@@ -50,11 +109,11 @@ function brandBadge(store) {
   return `<span class="store-badge" style="--store-brand:${escapeHtml(store.brandColor)}">${escapeHtml(store.brandEmoji)} ${escapeHtml(store.brandName)}</span>`;
 }
 
-function storeCard(store) {
+function storeCard(store, query = '') {
   const custom = store.custom ? '<span class="store-tag">Tự thêm</span>' : '';
   return `<li class="store-card" style="--store-brand:${escapeHtml(store.brandColor)}">
     <div class="store-card__head">${brandBadge(store)}${custom}</div>
-    <p class="store-card__address">📍 ${escapeHtml(store.address)}, ${escapeHtml(store.district)}, ${escapeHtml(store.city)}</p>
+    <p class="store-card__address">📍 ${highlight(store.address, query)}, ${highlight(store.district, query)}, ${highlight(store.city, query)}</p>
     <p class="store-card__meta"><span>📞 ${escapeHtml(store.phone || '—')}</span><span>🕐 ${escapeHtml(store.hours || '—')}</span><span class="store-card__id">${escapeHtml(store.id)}</span></p>
   </li>`;
 }
@@ -113,7 +172,7 @@ function renderSearchPage(root) {
   <section class="store-results" aria-live="polite">
     <p class="store-results__count">Kết quả: <strong>${result.length}</strong> cửa hàng</p>
     ${result.length
-      ? `<ul class="store-grid">${result.map(storeCard).join('')}</ul>`
+      ? `<ul class="store-grid">${result.map((store) => storeCard(store, searchState.query)).join('')}</ul>`
       : '<p class="store-empty">Không tìm thấy cửa hàng phù hợp. Thử từ khoá khác hoặc thêm cửa hàng ở mục “Nhập dữ liệu”.</p>'}
   </section>
   <p class="store-note">Dữ liệu mang tính tham khảo, tổng hợp từ trang công khai của thương hiệu. Bạn có thể bổ sung cửa hàng còn thiếu ở mục <a href="#/stores/add">Nhập dữ liệu</a>.</p>
@@ -367,4 +426,4 @@ export function mountStoresApp(root) {
   showRoute(root);
 }
 
-export { normalizeText };
+export { normalizeText, highlight, matchRanges };
