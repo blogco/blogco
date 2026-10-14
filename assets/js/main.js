@@ -10,6 +10,7 @@ import './navigation.js';
 let waterAppPromise;
 let healthAppPromise;
 let storesAppPromise;
+let lessonsAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -50,13 +51,27 @@ function syncStoresRoute() {
   void storesAppPromise.then(({ mountStoresApp }) => mountStoresApp(root));
 }
 
+function syncLessonsRoute() {
+  const root = document.querySelector('[data-lessons-app]');
+  if (!root) return;
+  const hashRoute = location.hash.startsWith('#/lessons');
+  const directRoute = Boolean(root.dataset.initialRoute);
+  const active = hashRoute || directRoute;
+  root.hidden = !active;
+  document.body.classList.toggle('lessons-route', active);
+  if (!active) return;
+  lessonsAppPromise ??= import('./lessons/main.js');
+  void lessonsAppPromise.then(({ mountLessonsApp }) => mountLessonsApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncStoresRoute);
+window.addEventListener('hashchange', syncLessonsRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncStoresRoute();
-
+syncLessonsRoute();
 document.querySelectorAll('[data-blog-feature]').forEach((element) => {
   const feature = element.dataset.blogFeature;
   if (!(feature in featureLoaders)) return;

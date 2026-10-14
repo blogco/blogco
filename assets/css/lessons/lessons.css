@@ -1,0 +1,378 @@
+/* Giáo án — form soạn giáo án + xem trước slide. */
+
+body.lessons-route .main {
+  width: min(100%, 1200px);
+}
+
+.lessons-app {
+  width: 100%;
+  color: #111;
+  font-family: "Inter", "Be Vietnam Pro", "Noto Sans KR", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.lessons-app[hidden] { display: none; }
+
+/* ---- Headings (override global type scale inside the app) ---- */
+.lessons-app h1,
+.lessons-page-heading h1 {
+  margin: 0 0 10px;
+  color: #111 !important;
+  font-size: clamp(32px, 5vw, 52px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  line-height: 1.1 !important;
+}
+
+.lessons-app h2 {
+  margin: 0 0 12px;
+  color: #111 !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
+.lessons-app h3 {
+  margin: 0 0 8px;
+  color: #111 !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.lessons-app p:not(.pdf-slide *),
+.lessons-app li:not(.pdf-slide *),
+.lessons-app label {
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+.lessons-app small {
+  color: #4b5563 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.lessons-page-heading {
+  box-sizing: border-box;
+  margin: 0 0 1.5rem;
+  padding: 32px 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.lessons-eyebrow {
+  margin: 0 0 12px;
+  color: #006cc5;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.lessons-page-heading p:last-child {
+  max-width: 760px;
+  margin: 0;
+  color: #4b5563 !important;
+  font-size: 17px !important;
+}
+
+/* ---- Cards & panels ---- */
+.lessons-card {
+  margin-bottom: 1.5rem;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.lessons-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.lessons-card__head h2 { margin: 0; }
+
+/* ---- Form ---- */
+.lessons-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.lessons-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lessons-field--full { grid-column: 1 / -1; }
+
+.lessons-field > span:first-child,
+.lessons-label {
+  color: #334155;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.lessons-field input[type="text"],
+.lessons-field input[type="number"],
+.lessons-field select,
+.lessons-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  font-size: 16px;
+}
+
+.lessons-field textarea { min-height: 88px; resize: vertical; }
+
+.lessons-field input:focus-visible,
+.lessons-field select:focus-visible,
+.lessons-field textarea:focus-visible {
+  border-color: #006cc5;
+  outline: 3px solid rgb(0 95 184 / 18%);
+  outline-offset: 1px;
+}
+
+.lessons-fieldset {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lessons-fieldset legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.lessons-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.lessons-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.lessons-choice:hover { border-color: #94a3b8; }
+.lessons-choice:has(input:checked) {
+  border-color: #006cc5;
+  background: #eff6ff;
+}
+.lessons-choice input { accent-color: #006cc5; }
+.lessons-choice span { font-size: 15px !important; font-weight: 600 !important; }
+
+/* ---- AI options ---- */
+.lessons-ai {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.lessons-ai summary {
+  cursor: pointer;
+  color: #0b3b6f;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.lessons-ai .lessons-form-grid { margin-top: 14px; }
+
+/* ---- Actions / buttons ---- */
+.lessons-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.lessons-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 20px;
+  border: 1px solid #006cc5;
+  border-radius: 6px;
+  background: #006cc5;
+  color: #fff !important;
+  font: inherit;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.lessons-button:hover { background: #005fb8; border-color: #005fb8; }
+.lessons-button:disabled { opacity: .55; cursor: progress; }
+
+.lessons-button--ghost {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #111 !important;
+}
+
+.lessons-button--ghost:hover { border-color: #006cc5; color: #006cc5 !important; background: #eff6ff; }
+
+.lessons-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Status ---- */
+.lessons-status {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #0b3b6f !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.lessons-status.is-visible { display: flex; }
+.lessons-status.is-error { border-color: #fecaca; background: #fef2f2; color: #b91c1c !important; }
+
+.lessons-spinner {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 3px solid rgb(0 108 197 / 25%);
+  border-top-color: #006cc5;
+  border-radius: 50%;
+  animation: lessons-spin .8s linear infinite;
+}
+
+@keyframes lessons-spin { to { transform: rotate(360deg); } }
+
+/* ---- Results ---- */
+.lessons-results__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+  color: #4b5563 !important;
+  font-size: 14px !important;
+}
+
+.lessons-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #0b3b6f;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.lessons-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+/* ---- Slide preview (scaled) ---- */
+.lessons-slides-viewport {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.lessons-slides-scale {
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.lessons-slides-scale .pdf-slide {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+}
+
+.lessons-empty {
+  margin: 0;
+  padding: 28px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #4b5563 !important;
+  text-align: center;
+}
+
+/* ---- Toast ---- */
+.lessons-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1200;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #0b3b6f;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity .2s, transform .2s;
+  box-shadow: 0 10px 28px rgb(15 23 42 / 22%);
+}
+
+.lessons-toast.is-visible { opacity: 1; transform: translateY(0); }
+.lessons-toast.is-error { background: #b91c1c; }
+
+@media (max-width: 767px) {
+  .lessons-page-heading,
+  .lessons-card { padding: 22px 18px; }
+  .lessons-form-grid { grid-template-columns: 1fr; }
+}

@@ -43,8 +43,9 @@ body {
   line-height: var(--lh-body);
 }
 
-/* Keep every text weight at or above 500 while leaving the category bar intact. */
-body *:not(svg):not(svg *):not(:where(.category-bar, .category-bar *)) {
+/* Keep every text weight at or above 500 while leaving the category bar and
+   the lesson/slide app intact (they define their own weight scale). */
+body *:not(svg):not(svg *):not(:where(.category-bar, .category-bar *, .lessons-app, .lessons-app *, .pdf-export-root, .pdf-export-root *)) {
   font-weight: 500 !important;
 }
 
@@ -81,8 +82,8 @@ body .article-content h3 {
 body strong,
 body b { font-weight: 700 !important; }
 
-body p,
-body li,
+body p:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *)),
+body li:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *)),
 body .main,
 body .article-content,
 body .posts-index__summary {

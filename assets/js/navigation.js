@@ -29,6 +29,7 @@ function syncActiveNavigation() {
     if (key === 'insights') isActive = hashRoute === '/water/insights';
     if (key === 'health') isActive = hashRoute.startsWith('/health');
     if (key === 'stores') isActive = hashRoute.startsWith('/stores') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
+    if (key === 'lessons') isActive = hashRoute.startsWith('/lessons') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
     if (key === 'water') isActive = hashRoute === '/water/add' || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
 
     link.classList.toggle('is-active', isActive);
