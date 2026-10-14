@@ -1,0 +1,79 @@
+{{- define "main" -}}
+{{- $page := . -}}
+{{- $heroImage := .Params.cover.image -}}
+{{- $related := where site.RegularPages "Section" "posts" -}}
+{{- $related = where $related "Permalink" "ne" .Permalink -}}
+
+<article class="blogco-article" aria-labelledby="article-title">
+  <div class="article-shell">
+    <nav class="article-breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ site.Home.RelPermalink }}">Home</a>
+      <span aria-hidden="true">/</span>
+      <a href="{{ "posts/" | relURL }}">News</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{{ .Date.Format "2006" }}</span>
+    </nav>
+
+    {{- if $heroImage }}
+    <figure class="article-hero">
+      {{- with $page.Resources.GetMatch $heroImage }}
+      <img src="{{ .RelPermalink }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
+      {{- else }}
+      {{- $heroSrc := $heroImage -}}
+      {{- if not (hasPrefix $heroSrc "http") }}{{ $heroSrc = $heroSrc | relURL }}{{ end -}}
+      <img src="{{ $heroSrc }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" fetchpriority="high" decoding="async">
+      {{- end }}
+      {{- with .Params.cover.caption }}<figcaption>{{ . | markdownify }}</figcaption>{{ end }}
+    </figure>
+    {{- end }}
+
+    <header class="article-heading">
+      <div class="article-meta">
+        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
+        <span aria-hidden="true">·</span>
+        <span>{{ .ReadingTime }} min read</span>
+        <span aria-hidden="true">·</span>
+        <span>By {{ .Params.author | default "BlogCo Editorial" }}</span>
+      </div>
+      <h1 id="article-title">{{ .Title }}</h1>
+      {{- $lead := .Description | default (.Summary | plainify) }}
+      {{- with $lead }}<p class="article-lead">{{ . | plainify }}</p>{{ end }}
+    </header>
+
+    {{- if .Content }}
+    <div class="article-content md-content">
+      {{- if not (.Param "disableAnchoredHeadings") }}
+      {{- partial "anchored_headings.html" .Content -}}
+      {{- else }}{{ .Content }}{{ end }}
+    </div>
+    {{- end }}
+
+    {{- partial "extend_post_content.html" . }}
+  </div>
+
+  {{- if gt (len $related) 0 }}
+  <section class="article-related" aria-labelledby="related-title">
+    <div class="article-shell">
+      <h2 id="related-title">Related articles</h2>
+      <div class="related-grid">
+        {{- range first 3 (sort $related "Date" "desc") }}
+        <article class="related-card">
+          <a class="related-card-link" href="{{ .RelPermalink }}" aria-label="Read: {{ .Title }}">
+            {{- with .Params.cover.image }}
+            {{- $relatedSrc := . -}}
+            {{- if not (hasPrefix $relatedSrc "http") }}{{ $relatedSrc = $relatedSrc | relURL }}{{ end -}}
+            <img class="related-thumb" src="{{ $relatedSrc }}" alt="" loading="lazy" decoding="async">
+            {{- else }}
+            <span class="related-thumb related-thumb-placeholder" aria-hidden="true"></span>
+            {{- end }}
+            <span class="related-title">{{ .Title }}</span>
+            <span class="related-reading-time">{{ .ReadingTime }} min read</span>
+          </a>
+        </article>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+  {{- end }}
+</article>
+{{- end -}}

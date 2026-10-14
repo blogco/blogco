@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./article.css";
 @import "./water/water.css";
 
 @theme {
