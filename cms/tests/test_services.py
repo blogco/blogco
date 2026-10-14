@@ -49,6 +49,17 @@ class FileServiceTests(unittest.TestCase):
             self.assertTrue(post.metadata["draft"])
             self.assertEqual(post.metadata["categories"], ["Kiến thức"])
             self.assertIn("Test content", post.content)
+            # Dates must carry the +07:00 offset and never be future-dated.
+            self.assertRegex(str(post.metadata["date"]), r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+07:00$")
+
+    def test_today_publish_uses_real_time_and_never_the_future(self):
+        from datetime import datetime
+        from cms.services.file_service import SITE_TIMEZONE, publish_timestamp
+
+        today = datetime.now(SITE_TIMEZONE).date()
+        stamp = datetime.fromisoformat(publish_timestamp(today))
+        self.assertEqual(stamp.tzinfo, SITE_TIMEZONE)
+        self.assertLessEqual(stamp, datetime.now(SITE_TIMEZONE))
 
 
 class GitServiceTests(unittest.TestCase):

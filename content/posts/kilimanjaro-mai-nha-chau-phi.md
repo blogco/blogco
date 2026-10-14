@@ -1,6 +1,6 @@
 +++
 title = "Kilimanjaro – 'Mái nhà châu Phi' và những bí ẩn chưa kể"
-date = 2026-10-15T00:00:00+07:00
+date = 2026-10-15T04:08:48+07:00
 categories = ["Du lịch"]
 tags = ["địa lý", "châu Phi", "núi lửa", "du lịch", "khám phá"]
 description = "Khám phá Kilimanjaro — ngọn núi cao nhất châu Phi: địa chất, lịch sử, huyền thoại, băng tan và những kỷ lục chinh phục."

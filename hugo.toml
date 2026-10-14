@@ -1,4 +1,5 @@
 baseURL = 'https://blogco.github.io/blogco/'
+timeZone = 'Asia/Ho_Chi_Minh'
 locale = 'vi-VN'
 defaultContentLanguage = 'vi'
 title = 'BlogCo'

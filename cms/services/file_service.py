@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import secrets
 import tempfile
-from datetime import date
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 import frontmatter
@@ -12,6 +12,18 @@ from cms.config import ROOT
 
 ALLOWED_SECTIONS = ("posts", "kien-thuc", "suc-khoe")
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+# Hugo hides content dated in the future. A bare `YYYY-MM-DD` is interpreted as
+# midnight UTC, which can be ahead of the Vietnam clock and silently hide a post
+# published "today". Always emit an explicit local timestamp with offset instead.
+SITE_TIMEZONE = timezone(timedelta(hours=7))  # Asia/Ho_Chi_Minh (UTC+7)
+
+
+def publish_timestamp(day: date) -> str:
+    now = datetime.now(SITE_TIMEZONE)
+    if day != now.date():
+        now = datetime.combine(day, time.min, tzinfo=SITE_TIMEZONE)
+    return now.isoformat(timespec="seconds")
 
 
 def validate_location(section: str, slug: str) -> Path:
@@ -28,14 +40,14 @@ def validate_location(section: str, slug: str) -> Path:
 def load_article(section: str, slug: str) -> dict:
     path = validate_location(section, slug)
     if not path.is_file():
-        return {"section": section, "slug": slug, "title": "", "date": date.today().isoformat(),
+        return {"section": section, "slug": slug, "title": "", "date": datetime.now(SITE_TIMEZONE).date().isoformat(),
                 "category": "", "tags": "", "description": "", "image": "", "summary": "",
                 "content": "", "draft": True}
     post = frontmatter.load(path)
     metadata = post.metadata
     return {
         "section": section, "slug": slug, "title": metadata.get("title", ""),
-        "date": str(metadata.get("date", date.today().isoformat()))[:10],
+        "date": str(metadata.get("date", datetime.now(SITE_TIMEZONE).date().isoformat()))[:10],
         "category": ", ".join(metadata.get("categories", [])),
         "tags": ", ".join(metadata.get("tags", [])),
         "description": metadata.get("description", ""), "image": metadata.get("image", ""),
@@ -60,7 +72,7 @@ def save_article(data: dict, *, draft: bool) -> Path:
     categories = [item.strip() for item in data.get("category", "").split(",") if item.strip()]
     tags = [item.strip() for item in data.get("tags", "").split(",") if item.strip()]
     metadata = {
-        "title": title, "date": parsed_date.isoformat(), "categories": categories, "tags": tags,
+        "title": title, "date": publish_timestamp(parsed_date), "categories": categories, "tags": tags,
         "description": data.get("description", "").strip(), "image": data.get("image", "").strip(),
         "author": "BlogCo Editorial", "draft": draft,
     }
