@@ -35,18 +35,14 @@ Với người trưởng thành khỏe mạnh, mức tham khảo là khoảng **
 
 Hãy xem các con số dưới đây như hướng dẫn để điều chỉnh, không phải “định mức” cứng:
 
-~~~text
-+----------------------+-----------------------------------------------+
-| Tình huống           | Cách điều chỉnh                               |
-+----------------------+-----------------------------------------------+
-| Ngày thường          | Uống rải đều; dùng mức tham khảo làm điểm bắt đầu |
-| Vận động, ra mồ hôi  | Bù thêm trước, trong và sau khi tập            |
-| Trời nóng, ẩm        | Uống thường xuyên hơn để bù lượng mồ hôi mất   |
-| Sốt, nôn, tiêu chảy  | Bù dịch; hỏi nhân viên y tế nếu kéo dài/nặng   |
-| Mang thai, cho con bú| Nhu cầu có thể tăng; hỏi bác sĩ về mức phù hợp |
-| Bệnh tim, gan, thận  | Tuân thủ giới hạn dịch do bác sĩ chỉ định       |
-+----------------------+-----------------------------------------------+
-~~~
+| Tình huống | Cách điều chỉnh |
+|---|---|
+| Ngày thường | Uống rải đều; dùng mức tham khảo làm điểm bắt đầu |
+| Vận động, ra mồ hôi | Bù thêm trước, trong và sau khi tập |
+| Trời nóng, ẩm | Uống thường xuyên hơn để bù lượng mồ hôi mất |
+| Sốt, nôn, tiêu chảy | Bù dịch; hỏi nhân viên y tế nếu kéo dài/nặng |
+| Mang thai, cho con bú | Nhu cầu có thể tăng; hỏi bác sĩ về mức phù hợp |
+| Bệnh tim, gan, thận | Tuân thủ giới hạn dịch do bác sĩ chỉ định |
 
 Khi tập, trời nóng ẩm hoặc ở độ cao lớn, hãy bù lượng dịch mất qua mồ hôi; uống trước, trong và sau vận động thay vì dồn nhiều nước một lúc. Sốt, nôn hoặc tiêu chảy làm mất dịch; triệu chứng nặng hay kéo dài cần nhân viên y tế hướng dẫn cách bù.
 

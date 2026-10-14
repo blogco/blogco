@@ -1,0 +1,113 @@
+:root {
+  --table-border: #D1D5DB;
+  --table-border-strong: #9CA3AF;
+  --table-bg: #FFFFFF;
+  --table-bg-alt: #F3F4F6;
+  --table-bg-hover: #EFF6FF;
+  --table-header-bg: #FFFFFF;
+  --table-header-text: #111111;
+  --table-text: #1F2937;
+  --table-total-bg: #E5E7EB;
+  --table-total-text: #111111;
+  --table-font-size: 16px;
+  --table-header-fw: 700;
+  --table-cell-fw: 500;
+  --table-padding: 16px 20px;
+  --table-radius: 4px;
+}
+
+.table-wrap {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 32px 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid var(--table-border-strong);
+  border-radius: var(--table-radius);
+  background: var(--table-bg);
+}
+
+.table-wrap:focus-visible {
+  outline: 3px solid #0082F0;
+  outline-offset: 3px;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--table-text);
+  font-size: var(--table-font-size);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.table-wrap thead th {
+  padding: var(--table-padding);
+  border-right: 1px solid var(--table-border);
+  border-bottom: 1px solid var(--table-border-strong);
+  background: var(--table-header-bg);
+  color: var(--table-header-text);
+  font-size: 16px;
+  font-weight: var(--table-header-fw) !important;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table-wrap thead th:last-child,
+.table-wrap tbody td:last-child {
+  border-right: 0;
+}
+
+.table-wrap tbody td {
+  padding: var(--table-padding);
+  border-right: 1px solid var(--table-border);
+  border-bottom: 1px solid var(--table-border);
+  background: var(--table-bg);
+  color: var(--table-text);
+  font-size: 16px;
+  font-weight: var(--table-cell-fw) !important;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table-wrap tbody tr:nth-child(even) td {
+  background: var(--table-bg-alt);
+}
+
+.table-wrap tbody tr:hover td {
+  background: var(--table-bg-hover);
+  transition: background .15s ease;
+}
+
+.table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-wrap td[style*="text-align: right"],
+.table-wrap th[style*="text-align: right"],
+.table-wrap td.num,
+.table-wrap th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-wrap tr.row-total td {
+  border-top: 1px solid var(--table-border-strong);
+  background: var(--table-total-bg);
+  color: var(--table-total-text);
+  font-weight: 700 !important;
+}
+
+@media (max-width: 767px) {
+  .table-wrap table {
+    min-width: 640px;
+    font-size: 14px;
+  }
+
+  .table-wrap thead th,
+  .table-wrap tbody td {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+}

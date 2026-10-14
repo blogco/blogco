@@ -1,0 +1,29 @@
+{{- $attributes := .Attributes -}}
+<div class="table-wrap" role="region" aria-label="Bảng dữ liệu có thể cuộn ngang" tabindex="0">
+  <table{{ range $key, $value := $attributes }}{{ if and $value (ne $key "caption") }}{{ printf " %s=%q" $key $value | safeHTMLAttr }}{{ end }}{{ end }}>
+    {{- with .Attributes.caption }}
+      <caption>{{ . | $.Page.RenderString }}</caption>
+    {{- end }}
+    <thead>
+      {{- range .THead }}
+        <tr>
+          {{- range . }}
+            <th scope="col"{{ with .Alignment }}{{ printf " style=%q" (printf "text-align: %s" .) | safeHTMLAttr }}{{ end }}>{{ .Text }}</th>
+          {{- end }}
+        </tr>
+      {{- end }}
+    </thead>
+    <tbody>
+      {{- range .TBody }}
+        {{- $firstCell := index . 0 -}}
+        {{- $firstCellLabel := lower (strings.TrimSpace ($firstCell.Text | plainify)) -}}
+        {{- $isTotal := in (slice "total" "tổng" "tổng cộng") $firstCellLabel -}}
+        <tr{{ if $isTotal }} class="row-total"{{ end }}>
+          {{- range . }}
+            <td{{ with .Alignment }}{{ printf " style=%q" (printf "text-align: %s" .) | safeHTMLAttr }}{{ end }}>{{ .Text }}</td>
+          {{- end }}
+        </tr>
+      {{- end }}
+    </tbody>
+  </table>
+</div>

@@ -3,6 +3,7 @@
 @import "./category-bar.css";
 @import "./water/water.css";
 @import "./brand.css";
+@import "./table.css";
 
 @theme {
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
