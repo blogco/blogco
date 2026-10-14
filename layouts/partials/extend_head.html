@@ -1,9 +1,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
-{{- if os.FileExists "static/assets/build/site.css" }}
-<link rel="stylesheet" href="{{ "assets/build/site.css" | relURL }}">
-{{- end }}
-{{- if os.FileExists "static/assets/build/app.js" }}
-<script type="module" src="{{ "assets/build/app.js" | relURL }}"></script>
-{{- end }}
+{{- /* Resolve Vite's content-hashed bundle names from the build manifest so a
+       deploy can never be served from a stale cache (fixed names could linger
+       for up to 10 minutes). Falls back to nothing when assets aren't built. */ -}}
+{{- $manifestPath := "static/assets/build/manifest.json" -}}
+{{- $build := dict -}}
+{{- if os.FileExists $manifestPath -}}
+  {{- $build = os.ReadFile $manifestPath | transform.Unmarshal -}}
+{{- end -}}
+{{- with index $build "assets/css/site.css" -}}
+{{- with .file }}
+<link rel="stylesheet" href="{{ printf "assets/build/%s" . | relURL }}">
+{{- end -}}
+{{- end -}}
+{{- with index $build "assets/js/main.js" -}}
+{{- with .file }}
+<script type="module" src="{{ printf "assets/build/%s" . | relURL }}"></script>
+{{- end -}}
+{{- end -}}

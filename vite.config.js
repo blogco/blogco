@@ -13,15 +13,19 @@ export default defineConfig({
     sourcemap: false,
     minify: true,
     assetsInlineLimit: 4096,
+    // Emit a manifest so Hugo can resolve the content-hashed filenames below.
+    // Fixed names (app.js / site.css) let browsers serve a stale bundle for up
+    // to 10 minutes after a deploy; hashing busts that cache automatically.
+    manifest: 'manifest.json',
     rollupOptions: {
       input: {
         app: 'assets/js/main.js',
         site: 'assets/css/site.css',
       },
       output: {
-        entryFileNames: '[name].js',
+        entryFileNames: '[name].[hash].js',
         chunkFileNames: 'chunks/[name]-[hash].js',
-        assetFileNames: '[name][extname]',
+        assetFileNames: '[name].[hash][extname]',
       },
     },
   },
