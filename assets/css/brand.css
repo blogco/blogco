@@ -312,6 +312,52 @@ body.water-route {
 .water-toast { border-radius: var(--radius); box-shadow: none; }
 .water-screen a { color: var(--accent-dark); }
 
+body.health-route {
+  color: var(--text);
+  background: var(--bg);
+}
+
+.health-screen {
+  width: min(100%, var(--max-wide));
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.health-card,
+.health-page-heading,
+.health-summary-card,
+.health-visit-card,
+.health-fieldset,
+.health-medicine,
+.health-invoice,
+.health-invoice-view {
+  border-color: var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  box-shadow: none;
+}
+
+.health-primary-button,
+.health-secondary-button,
+.health-ghost-button,
+.health-icon-button { border-radius: var(--radius); }
+.health-primary-button,
+.health-secondary-button { box-shadow: none !important; }
+.health-primary-button { background: var(--accent-dark); border-color: var(--accent-dark); }
+.health-stat-bar > span { background: var(--accent); }
+.health-toast { border-radius: var(--radius); box-shadow: none; }
+.health-screen a { color: var(--accent-dark); }
+
+body.health-route .main .health-page-heading h1 {
+  color: #111 !important;
+  font-size: clamp(36px, 5vw, 56px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  line-height: 1.1 !important;
+}
+
 body :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;

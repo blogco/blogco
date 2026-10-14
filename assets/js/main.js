@@ -8,6 +8,7 @@ import './category-bar.js';
 import './navigation.js';
 
 let waterAppPromise;
+let healthAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -22,8 +23,23 @@ function syncWaterRoute() {
   void waterAppPromise.then(({ mountWaterApp }) => mountWaterApp(root));
 }
 
+function syncHealthRoute() {
+  const root = document.querySelector('[data-health-app]');
+  if (!root) return;
+  const hashRoute = location.hash.startsWith('#/health');
+  const directRoute = Boolean(root.dataset.initialRoute);
+  const active = hashRoute || directRoute;
+  root.hidden = !active;
+  document.body.classList.toggle('health-route', active);
+  if (!active) return;
+  healthAppPromise ??= import('./health/main.js');
+  void healthAppPromise.then(({ mountHealthApp }) => mountHealthApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
+window.addEventListener('hashchange', syncHealthRoute);
 syncWaterRoute();
+syncHealthRoute();
 
 document.querySelectorAll('[data-blog-feature]').forEach((element) => {
   const feature = element.dataset.blogFeature;

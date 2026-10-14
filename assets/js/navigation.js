@@ -27,6 +27,7 @@ function syncActiveNavigation() {
     if (key === 'home') isActive = currentPath === targetPath && !hashRoute;
     if (key === 'posts' || key === 'knowledge') isActive = currentPath === targetPath || currentPath.startsWith(targetPath);
     if (key === 'insights') isActive = hashRoute === '/water/insights';
+    if (key === 'health') isActive = hashRoute.startsWith('/health');
     if (key === 'water') isActive = hashRoute === '/water/add' || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
 
     link.classList.toggle('is-active', isActive);
