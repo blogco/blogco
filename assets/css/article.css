@@ -85,6 +85,18 @@ body.article-body .main {
   object-fit: cover;
 }
 
+.post-cover {
+  max-width: 100%;
+  margin: 0 0 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.post-cover img {
+  height: auto;
+  border-radius: 8px;
+}
+
 .article-hero figcaption {
   margin-top: .5rem;
   color: #64748b;

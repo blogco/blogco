@@ -5,17 +5,19 @@ type = "posts"
 categories = ["Kiến thức"]
 tags = ["sức khỏe", "nước", "hydration", "dinh dưỡng"]
 description = "Bạn cần bao nhiêu nước mỗi ngày? Vai trò của nước, cách tính nhu cầu theo cân nặng và dấu hiệu cơ thể thiếu nước."
-image = "/images/water-intake-cover.svg"
+image = "/blogco/water-intake-cover.svg"
 author = "BlogCo Editorial"
 
 [cover]
-image = "/images/water-intake-cover.svg"
+image = "/blogco/water-intake-cover.svg"
 alt = "Minh họa nước và cân bằng dịch trong cơ thể"
 +++
 
 Nước không chỉ làm dịu cơn khát: nó giúp các cơ quan duy trì hoạt động, điều hòa thân nhiệt và đưa chất dinh dưỡng đến nơi cần thiết. Nhưng “uống đủ” không có nghĩa là ai cũng phải uống cùng một số lít. Vậy cơ thể bạn cần bao nhiêu nước mỗi ngày, và bạn đã uống đủ chưa?
 
 <!--more-->
+
+![Lượng nước cần cho cơ thể trong 1 ngày](/blogco/water-intake-cover.svg)
 
 ## Nước làm gì cho cơ thể?
 

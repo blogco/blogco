@@ -15,7 +15,7 @@
     </nav>
 
     {{- if $heroImage }}
-    <figure class="article-hero">
+    <figure class="article-hero post-cover">
       {{- with $page.Resources.GetMatch $heroImage }}
       <img src="{{ .RelPermalink }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
       {{- else }}
