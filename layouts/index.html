@@ -1,7 +1,6 @@
 {{- define "main" -}}
 {{- partial "home_info.html" . -}}
-{{- $posts := where site.RegularPages "Section" "posts" -}}
-{{- $posts = sort $posts "Date" "desc" -}}
+{{- $posts := site.RegularPages.ByDate.Reverse -}}
 
 <section class="home-posts" aria-labelledby="home-posts-title">
   <header class="home-posts__header">
@@ -19,7 +18,7 @@
       {{- partial "pagination.html" (dict "pager" $paginator "class" "home-posts__pagination" "label" "Phân trang bài viết mới nhất") }}
     {{- end }}
   {{- else }}
-    <p class="home-posts__empty">Chưa có bài viết nào trong chuyên mục Bài viết.</p>
+    <p class="home-posts__empty">Chưa có bài viết nào.</p>
   {{- end }}
 </section>
 {{- end -}}
