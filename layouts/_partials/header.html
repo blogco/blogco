@@ -5,8 +5,8 @@
     {{- $postsURL := "posts/" | relURL -}}
     {{- $knowledgeURL := "kien-thuc/" | relURL -}}
     {{- $waterURL := "water/" | relURL -}}
-    {{- $isPosts := or (eq $page.RelPermalink $postsURL) (eq $page.Section "posts") (eq $page.Type "posts") -}}
-    {{- $isKnowledge := or (eq $page.RelPermalink $knowledgeURL) (eq $page.Section "kien-thuc") -}}
+    {{- $isPosts := hasPrefix $page.RelPermalink $postsURL -}}
+    {{- $isKnowledge := hasPrefix $page.RelPermalink $knowledgeURL -}}
     <a class="logo blogco-brand navbar__logo" href="{{ $homeURL }}" aria-label="BlogCo — trang chủ">BlogCo</a>
     <button class="navbar__toggle" type="button" aria-label="Mở menu điều hướng" aria-controls="blogco-primary-menu" aria-expanded="false">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>

@@ -17,8 +17,6 @@ Nước không chỉ làm dịu cơn khát: nó giúp các cơ quan duy trì ho�
 
 <!--more-->
 
-![Lượng nước cần cho cơ thể trong 1 ngày](/blogco/water-intake-cover.svg)
-
 ## Nước làm gì cho cơ thể?
 
 Nước có trong máu, tế bào và nhiều dịch thể. Cơ thể mất nước qua hơi thở, mồ hôi, nước tiểu và tiêu hóa, nên cần bù từ đồ uống lẫn thực phẩm. Nước giúp:

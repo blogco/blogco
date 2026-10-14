@@ -16,18 +16,18 @@
 }
 
 body .blogco-header {
-  position: sticky;
-  z-index: 41;
+  position: fixed;
+  z-index: 9999;
   top: 0;
   min-height: 72px;
   background: var(--theme, #fff);
 }
 
-body:not(.water-route) .blogco-header .header-nav { min-height: 72px; }
+body:not(.water-route) .blogco-header .header-nav { min-height: var(--nav-height); }
 
 .category-bar {
   position: sticky;
-  z-index: 40;
+  z-index: 9998;
   top: 64px;
   display: flex;
   width: 100%;

@@ -14,19 +14,6 @@
       <span aria-current="page">{{ .Date.Format "2006" }}</span>
     </nav>
 
-    {{- if $heroImage }}
-    <figure class="article-hero post-cover">
-      {{- with $page.Resources.GetMatch $heroImage }}
-      <img src="{{ .RelPermalink }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
-      {{- else }}
-      {{- $heroSrc := $heroImage -}}
-      {{- if not (hasPrefix $heroSrc "http") }}{{ $heroSrc = $heroSrc | relURL }}{{ end -}}
-      <img src="{{ $heroSrc }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" fetchpriority="high" decoding="async">
-      {{- end }}
-      {{- with .Params.cover.caption }}<figcaption>{{ . | markdownify }}</figcaption>{{ end }}
-    </figure>
-    {{- end }}
-
     <header class="article-heading">
       <div class="article-meta">
         <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
@@ -39,6 +26,19 @@
       {{- $lead := .Description | default (.Summary | plainify) }}
       {{- with $lead }}<p class="article-lead">{{ . | plainify }}</p>{{ end }}
     </header>
+
+    {{- if $heroImage }}
+    <figure class="article-hero post-cover">
+      {{- with $page.Resources.GetMatch $heroImage }}
+      <img src="{{ .RelPermalink }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
+      {{- else }}
+      {{- $heroSrc := $heroImage -}}
+      {{- if not (hasPrefix $heroSrc "http") }}{{ $heroSrc = $heroSrc | relURL }}{{ end -}}
+      <img src="{{ $heroSrc }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" fetchpriority="high" decoding="async">
+      {{- end }}
+      {{- with .Params.cover.caption }}<figcaption>{{ . | markdownify }}</figcaption>{{ end }}
+    </figure>
+    {{- end }}
 
     {{- if .Content }}
     <div class="article-content md-content">
