@@ -1,0 +1,18 @@
+{
+  "name": "blogco-site-assets",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:assets": "vite build"
+  },
+  "dependencies": {
+    "fuse.js": "7.5.0",
+    "highlight.js": "11.12.0",
+    "marked": "15.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "tailwindcss": "4.3.3",
+    "vite": "7.3.7"
+  }
+}

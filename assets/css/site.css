@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+html { scroll-behavior: smooth; }
