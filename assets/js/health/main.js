@@ -419,6 +419,72 @@ function fillFieldIfEmpty(form, name, value) {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// ICD-10 lookup — autocomplete + fuzzy search in the visit form
+// ---------------------------------------------------------------------------
+
+function icdMenu(form) {
+  return form?.querySelector('[data-icd-menu]') || null;
+}
+
+function icdOptionHtml(entry) {
+  const english = entry.en ? `<small>${escapeHtml(entry.en)}</small>` : '';
+  const group = entry.group ? `<small class="health-icd-option__group">${escapeHtml(entry.group)}</small>` : '';
+  return `<button type="button" class="health-icd-option" role="option" aria-selected="false" data-icd-option data-code="${escapeHtml(entry.code)}" data-name="${escapeHtml(entry.name)}">
+    <span class="health-icd-option__code">${escapeHtml(entry.code)}</span>
+    <span class="health-icd-option__text">
+      <strong>${escapeHtml(entry.name)}</strong>
+      ${english}
+      ${group}
+    </span>
+  </button>`;
+}
+
+function highlightIcdOption(menu) {
+  const options = [...menu.querySelectorAll('[data-icd-option]')];
+  const active = Number(menu.dataset.active ?? '0');
+  options.forEach((option, index) => {
+    const on = index === active;
+    option.classList.toggle('is-active', on);
+    option.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  options[active]?.scrollIntoView?.({ block: 'nearest' });
+}
+
+function showIcdMenu(form, query) {
+  const menu = icdMenu(form);
+  if (!menu) return;
+  const results = searchICD(query, 8);
+  menu.innerHTML = results.length
+    ? results.map(icdOptionHtml).join('')
+    : '<p class="health-icd-empty">Không tìm thấy mã phù hợp. Thử tên bệnh (Việt/Anh) hoặc mã khác.</p>';
+  menu.dataset.active = results.length ? '0' : '-1';
+  menu.hidden = false;
+  form.querySelector('[name="icd"]')?.setAttribute('aria-expanded', 'true');
+  highlightIcdOption(menu);
+}
+
+function hideIcdMenu(form) {
+  const menu = icdMenu(form);
+  if (!menu || menu.hidden) return;
+  menu.hidden = true;
+  menu.innerHTML = '';
+  form.querySelector('[name="icd"]')?.setAttribute('aria-expanded', 'false');
+}
+
+function chooseIcd(form, option) {
+  if (!form || !option) return;
+  const code = option.dataset.code || '';
+  const name = option.dataset.name || '';
+  const input = form.querySelector('[name="icd"]');
+  if (input) input.value = code;
+  const disease = form.querySelector('[name="disease"]');
+  if (disease && name && !disease.value.trim()) disease.value = name;
+  const result = form.querySelector('[data-icd-result]');
+  if (result) result.innerHTML = `✅ <strong>${escapeHtml(code)}</strong> — ${escapeHtml(name)}`;
+  hideIcdMenu(form);
+}
+
 function appendMedicine(form, medicine = {}) {
   const list = form.querySelector('[data-medicine-list]');
   if (!list) return;
@@ -597,11 +663,64 @@ export function mountHealthApp(root) {
     const form = event.target.closest('#health-visit-form');
     if (form && ['examFee', 'medicineFee', 'insurance'].includes(event.target.name)) updateCostDisplays(form);
     if (form && event.target.name === 'medName') updateInteractions(form);
+    if (form && event.target.name === 'icd') showIcdMenu(form, event.target.value);
     if (event.target.matches('[data-search-input]')) {
       searchState.query = event.target.value;
       searchState.page = 1;
       refreshHistoryResults(root);
     }
+  });
+
+  root.addEventListener('focusin', (event) => {
+    const input = event.target.closest?.('[name="icd"]');
+    const form = input?.closest('#health-visit-form');
+    if (form) showIcdMenu(form, input.value);
+  });
+
+  root.addEventListener('mousedown', (event) => {
+    // Keep focus in the ICD input so the suggestion menu stays open on click.
+    if (event.target.closest?.('[data-icd-option]')) event.preventDefault();
+  });
+
+  root.addEventListener('keydown', (event) => {
+    const input = event.target.closest?.('[name="icd"]');
+    const form = input?.closest('#health-visit-form');
+    const menu = form && icdMenu(form);
+    if (!form || !menu) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (menu.hidden) {
+        showIcdMenu(form, input.value);
+        return;
+      }
+      const options = [...menu.querySelectorAll('[data-icd-option]')];
+      if (!options.length) return;
+      const active = Number(menu.dataset.active ?? '0');
+      menu.dataset.active = String(event.key === 'ArrowDown'
+        ? Math.min(active + 1, options.length - 1)
+        : Math.max(active - 1, 0));
+      highlightIcdOption(menu);
+      return;
+    }
+    if (event.key === 'Enter' && !menu.hidden) {
+      const options = [...menu.querySelectorAll('[data-icd-option]')];
+      const active = Number(menu.dataset.active ?? '0');
+      if (options[active]) {
+        event.preventDefault();
+        chooseIcd(form, options[active]);
+      }
+      return;
+    }
+    if (event.key === 'Escape' && !menu.hidden) {
+      event.preventDefault();
+      hideIcdMenu(form);
+    }
+  });
+
+  // Close any open ICD menu when clicking outside the combobox.
+  root.addEventListener('click', (event) => {
+    if (event.target.closest?.('[data-icd-combo]')) return;
+    root.querySelectorAll('#health-visit-form').forEach((form) => hideIcdMenu(form));
   });
 
   root.addEventListener('change', async (event) => {
@@ -662,6 +781,11 @@ export function mountHealthApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    const icdOption = target.closest('[data-icd-option]');
+    if (icdOption) {
+      chooseIcd(icdOption.closest('#health-visit-form'), icdOption);
+      return;
+    }
     if (target.closest('[data-add-medicine]')) {
       const form = target.closest('#health-visit-form');
       if (form) {
@@ -684,7 +808,8 @@ export function mountHealthApp(root) {
     if (target.closest('[data-icd-lookup]')) {
       const form = target.closest('#health-visit-form');
       const result = form?.querySelector('[data-icd-result]');
-      const code = form?.querySelector('[name="icd"]')?.value || '';
+      const input = form?.querySelector('[name="icd"]');
+      const code = input?.value || '';
       const entry = getICD(code);
       if (result) {
         if (entry) {
@@ -696,6 +821,8 @@ export function mountHealthApp(root) {
           result.innerHTML = code.trim() ? `Không khớp chính xác.${suggestions.length ? ` Gợi ý: ${suggestions.map(escapeHtml).join(' · ')}` : ' Hãy kiểm tra lại mã.'}` : 'Nhập mã ICD để tra cứu.';
         }
       }
+      input?.focus();
+      showIcdMenu(form, code);
       return;
     }
 

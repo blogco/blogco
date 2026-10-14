@@ -2,7 +2,6 @@
 // router so the markup can be reused for the add and edit routes.
 
 import { escapeHtml, renderMedicineRow, readMedicines, emptyMedicineHtml } from './medicine.js';
-import { allICD } from './icd.js';
 
 function value(field, fallback = '') {
   return field === null || field === undefined ? fallback : escapeHtml(field);
@@ -10,10 +9,6 @@ function value(field, fallback = '') {
 
 function selected(current, option) {
   return current === option ? ' selected' : '';
-}
-
-function icdDatalist() {
-  return `<datalist id="health-icd-suggest">${allICD().map((entry) => `<option value="${escapeHtml(entry.code)}">${escapeHtml(entry.name)}</option>`).join('')}</datalist>`;
 }
 
 function medicineDatalist() {
@@ -60,7 +55,6 @@ export function renderVisitForm(visit = {}, { mode = 'add', nextId = '' } = {}) 
 
   return `<form id="health-visit-form" class="health-card health-form" novalidate data-mode="${mode}">
     <input type="hidden" name="id" value="${value(visit.id)}">
-    ${icdDatalist()}
     ${medicineDatalist()}
 
     <fieldset class="health-fieldset">
@@ -111,10 +105,13 @@ export function renderVisitForm(visit = {}, { mode = 'add', nextId = '' } = {}) 
         <label class="health-field">Bệnh gì (chẩn đoán) <span aria-hidden="true">*</span>
           <input name="disease" type="text" maxlength="240" required value="${value(diagnosis.disease)}" placeholder="Viêm đường hô hấp trên">
         </label>
-        <label class="health-field">Mã ICD-10 <span aria-hidden="true">*</span>
+        <label class="health-field health-field--full">Mã ICD-10 <span aria-hidden="true">*</span>
           <span class="health-icd-field">
-            <input name="icd" type="text" maxlength="20" required value="${value(diagnosis.icd)}" placeholder="J06.9" list="health-icd-suggest" autocomplete="off">
-            <button type="button" class="health-ghost-button" data-icd-lookup aria-label="Tra cứu mã ICD đã nhập">Tra cứu</button>
+            <span class="health-icd-combo" data-icd-combo>
+              <input name="icd" type="text" maxlength="20" required value="${value(diagnosis.icd)}" placeholder="J06.9 hoặc tên bệnh, ví dụ: viêm da tiết bã" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="health-icd-menu">
+              <div class="health-icd-menu" id="health-icd-menu" data-icd-menu role="listbox" aria-label="Kết quả tra cứu mã ICD-10" hidden></div>
+            </span>
+            <button type="button" class="health-ghost-button" data-icd-lookup aria-label="Tra cứu mã ICD-10">🔍 Tra cứu</button>
           </span>
         </label>
         <label class="health-field health-field--full">Triệu chứng
