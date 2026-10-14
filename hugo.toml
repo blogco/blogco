@@ -21,6 +21,7 @@ enableGitInfo = false
 
 [params]
   description = 'BlogCo — chia sẻ kiến thức và góc nhìn.'
+  mainSections = ['posts']
   defaultTheme = 'auto'
   ShowReadingTime = true
   ShowShareButtons = false

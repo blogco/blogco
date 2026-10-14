@@ -1,0 +1,65 @@
+{{- define "main" -}}
+{{- $pages := where site.RegularPages "Type" "posts" -}}
+{{- $pages = sort $pages "Date" "desc" -}}
+{{- $paginator := .Paginate $pages 12 -}}
+
+<section class="posts-index" aria-labelledby="posts-index-title">
+  <div class="posts-index__inner">
+    <nav class="posts-index__breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ site.Home.RelPermalink }}">Trang chủ</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">Bài viết</span>
+    </nav>
+
+    <header class="posts-index__header">
+      <p class="posts-index__eyebrow">BLOGCO / KIẾN THỨC & GÓC NHÌN</p>
+      <h1 id="posts-index-title">{{ .Title | default "Bài viết" }}</h1>
+      <p class="posts-index__description">{{ .Description | default "Các bài viết mới nhất từ BlogCo." }}</p>
+      <p class="posts-index__count">{{ $paginator.TotalNumberOfElements }} bài viết</p>
+    </header>
+
+    {{- if gt $paginator.TotalNumberOfElements 0 }}
+    <div class="posts-index__grid">
+      {{- range $page := $paginator.Pages }}
+        {{- $cover := $page.Params.cover.image | default $page.Params.image }}
+      <article class="posts-index__card">
+        <a class="posts-index__image-link" href="{{ $page.RelPermalink }}" aria-label="Đọc bài: {{ $page.Title }}">
+          {{- with $cover }}
+            {{- $imageURL := . }}
+            {{- if not (hasPrefix $imageURL "http") }}{{ $imageURL = $imageURL | relURL }}{{ end }}
+          <img class="posts-index__image" src="{{ $imageURL }}" alt="{{ $page.Params.cover.alt | default $page.Title }}" loading="lazy" decoding="async">
+          {{- else }}
+          <span class="posts-index__image posts-index__image--empty" aria-hidden="true"></span>
+          {{- end }}
+        </a>
+        <div class="posts-index__card-body">
+          <div class="posts-index__meta">
+            <time datetime="{{ $page.Date.Format "2006-01-02" }}">{{ $page.Date | time.Format ":date_long" }}</time>
+            {{- with $page.GetTerms "categories" }}
+              {{- range . }}<a class="posts-index__category" href="{{ .RelPermalink }}">{{ .LinkTitle | upper }}</a>{{ end }}
+            {{- end }}
+          </div>
+          <h2><a href="{{ $page.RelPermalink }}">{{ $page.LinkTitle }}</a></h2>
+          <p class="posts-index__summary">{{ $page.Summary | plainify | htmlUnescape }}</p>
+          <a class="posts-index__read-more" href="{{ $page.RelPermalink }}">Đọc bài viết<span aria-hidden="true"> →</span></a>
+        </div>
+      </article>
+      {{- end }}
+    </div>
+
+    {{- if gt $paginator.TotalPages 1 }}
+    <nav class="posts-index__pagination" aria-label="Phân trang bài viết">
+      {{- with $paginator.Prev }}<a href="{{ .URL }}" rel="prev">← Bài trước</a>{{ end }}
+      <span>Trang {{ $paginator.PageNumber }} / {{ $paginator.TotalPages }}</span>
+      {{- with $paginator.Next }}<a href="{{ .URL }}" rel="next">Bài tiếp theo →</a>{{ end }}
+    </nav>
+    {{- end }}
+    {{- else }}
+    <div class="posts-index__empty">
+      <h2>Chưa có bài viết</h2>
+      <p>Các bài viết mới sẽ xuất hiện tại đây.</p>
+    </div>
+    {{- end }}
+  </div>
+</section>
+{{- end -}}
