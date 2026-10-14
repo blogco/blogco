@@ -1,0 +1,12 @@
+{{- $pager := .pager -}}
+{{- $class := .class | default "pagination" -}}
+{{- $label := .label | default "Phân trang" -}}
+<nav class="pagination {{ $class }}" aria-label="{{ $label }}">
+  {{- with $pager.Prev }}<a class="pagination__link pagination__link--prev" href="{{ .URL }}" rel="prev">← Trước</a>{{ end }}
+  <div class="pagination__pages" aria-label="Số trang">
+    {{- range $pager.Pagers }}
+    <a class="pagination__link{{ if eq . $pager }} is-active{{ end }}" href="{{ .URL }}"{{ if eq . $pager }} aria-current="page"{{ end }}>{{ .PageNumber }}</a>
+    {{- end }}
+  </div>
+  {{- with $pager.Next }}<a class="pagination__link pagination__link--next" href="{{ .URL }}" rel="next">Sau →</a>{{ end }}
+</nav>
