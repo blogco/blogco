@@ -1,0 +1,9 @@
+/public/
+/resources/_gen/
+/resources/_cache/
+/node_modules/
+/static/assets/build/
+/ai/node_modules/
+/ai/.env
+/.hugo_build.lock
+.DS_Store

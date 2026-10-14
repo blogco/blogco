@@ -1,0 +1,47 @@
+baseURL = 'https://blogco.github.io/blogco/'
+locale = 'vi-VN'
+defaultContentLanguage = 'vi'
+title = 'BlogCo'
+theme = 'PaperMod'
+enableRobotsTXT = true
+enableGitInfo = false
+
+[pagination]
+  pagerSize = 10
+
+[languages.vi]
+  label = 'Tiếng Việt'
+  locale = 'vi-VN'
+  weight = 1
+
+[module]
+  [module.hugoVersion]
+    extended = true
+    min = '0.146.0'
+
+[params]
+  description = 'BlogCo — chia sẻ kiến thức và góc nhìn.'
+  defaultTheme = 'auto'
+  ShowReadingTime = true
+  ShowShareButtons = false
+  ShowPostNavLinks = true
+  ShowCodeCopyButtons = true
+  ShowSearchButton = true
+
+  [params.homeInfoParams]
+    Title = 'BlogCo'
+    Content = 'Góc chia sẻ kiến thức, công nghệ và những ý tưởng đáng khám phá.'
+
+[outputs]
+  home = ['HTML', 'RSS', 'JSON']
+
+[outputFormats.JSON]
+  mediaType = 'application/json'
+  baseName = 'index'
+  isPlainText = true
+
+[markup.highlight]
+  noClasses = false
+
+[markup.goldmark.renderer]
+  unsafe = false
