@@ -1,0 +1,1 @@
+async function n(t){const{pipeline:s}=await import(t.dataset.transformersUrl||"https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1"),e=await s("summarization"),a=t.querySelector("[data-summary-source]"),r=t.querySelector("[data-summary-output]");a&&r&&(r.textContent=(await e(a.textContent))[0].summary_text)}export{n as mount};

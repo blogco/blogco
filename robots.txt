@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://blogco.github.io/blogco/sitemap.xml
