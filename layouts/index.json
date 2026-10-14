@@ -1,5 +1,5 @@
 {{- $results := slice -}}
-{{- range site.RegularPages -}}
+{{- range where site.RegularPages "Type" "in" site.Params.mainSections -}}
   {{- $results = $results | append (dict "title" .Title "permalink" .Permalink "summary" (.Summary | plainify) "content" (.Plain | truncate 1200)) -}}
 {{- end -}}
 {{- $results | jsonify -}}

@@ -1,6 +1,7 @@
 {{- define "main" -}}
 {{- partial "home_info.html" . -}}
-{{- $posts := site.RegularPages.ByDate.Reverse -}}
+{{- $posts := where site.RegularPages "Type" "in" site.Params.mainSections -}}
+{{- $posts = $posts.ByDate.Reverse -}}
 
 <section class="home-posts" aria-labelledby="home-posts-title">
   <header class="home-posts__header">

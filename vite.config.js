@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   base: '/blogco/',
   plugins: [tailwindcss()],
+  // `public/` is Hugo's build output, not Vite's. Copying it here causes the
+  // whole site (and stale pages) to be re-published under /assets/build/.
+  publicDir: false,
   build: {
     outDir: 'static/assets/build',
     emptyOutDir: true,
