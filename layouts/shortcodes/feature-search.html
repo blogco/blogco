@@ -1,5 +1,10 @@
-<section class="blogco-search" data-blog-feature="search" data-index="{{ "index.json" | relURL }}">
-  <label for="blogco-search-input">Tìm kiếm bài viết</label>
-  <input id="blogco-search-input" type="search" autocomplete="off" placeholder="Nhập từ khóa…">
-  <div data-search-results aria-live="polite"></div>
+<section class="blogco-search search-area" aria-label="Tìm kiếm bài viết" data-blog-feature="search" data-index="{{ "index.json" | relURL }}">
+  <div class="search-area__inner">
+    <label class="search-area__label" for="blogco-search-input">TÌM KIẾM BÀI VIẾT</label>
+    <div class="search-area__field">
+      <span class="search-area__icon" aria-hidden="true">🔍</span>
+      <input id="blogco-search-input" class="search-area__input" type="search" autocomplete="off" placeholder="Nhập từ khóa...">
+    </div>
+    <div class="search-area__results" data-search-results aria-live="polite"></div>
+  </div>
 </section>

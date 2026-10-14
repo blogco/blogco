@@ -228,6 +228,27 @@ body.article-body .main {
 .posts-index__empty p { margin: 0; color: var(--muted) !important; }
 .posts-index__pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
 
+.search-area {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 auto 48px;
+  padding: 28px 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.search-area__inner { width: 100%; max-width: 880px; margin-inline: auto; }
+.search-area__label { display: block; margin: 0 0 12px; color: #334155; font-size: 14px; font-weight: 700 !important; letter-spacing: .06em; line-height: 1.3; }
+.search-area__field { display: flex; min-height: 56px; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
+.search-area__field:focus-within { border-color: var(--accent-dark); box-shadow: 0 0 0 3px rgb(0 95 184 / 18%); }
+.search-area__icon { flex: 0 0 auto; font-size: 18px; line-height: 1; }
+.search-area__input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 54px; padding: 12px 0; border: 0 !important; outline: 0; background: transparent !important; color: #111827; font: inherit; }
+.search-area__input::placeholder { color: #64748b; opacity: 1; }
+.search-area__results { display: grid; gap: 8px; margin-top: 12px; }
+.search-area__results:empty { display: none; }
+.search-area__results a { display: block; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
+
 body.water-route {
   color: var(--text);
   background: var(--bg);
@@ -674,6 +695,9 @@ body .main .post-header .post-description {
 }
 
 @media (max-width: 768px) {
+  .search-area { margin-bottom: 36px; padding: 22px 20px; }
+  .search-area__field { min-height: 52px; padding-inline: 12px; }
+  .search-area__input { min-height: 50px; }
   .water-page-heading,
   .post-header { padding: 24px 20px; }
 
