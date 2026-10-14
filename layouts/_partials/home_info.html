@@ -1,14 +1,35 @@
 {{- with site.Params.homeInfoParams }}
-<article class="first-entry home-info">
-  <header class="entry-header"><h1>{{ .Title | markdownify }}</h1></header>
-  <div class="entry-content md-content">
+<section class="hero first-entry home-info" aria-labelledby="blogco-home-title">
+  <div class="hero__bubbles" aria-hidden="true">
+    <span></span><span></span><span></span>
+    <span></span><span></span><span></span>
+  </div>
+
+  <div class="hero__sea-life" aria-hidden="true">
+    <span class="fish fish--1">🐠</span>
+    <span class="fish fish--2">🐟</span>
+    <span class="fish fish--3">🐡</span>
+    <span class="starfish">⭐</span>
+    <span class="seaweed">🌿</span>
+    <span class="seaweed seaweed--2">🌿</span>
+  </div>
+
+  <div class="hero__content">
+    <header class="hero__header"><h1 class="hero__title" id="blogco-home-title">{{ .Title | markdownify }}</h1></header>
+    <div class="hero__tagline md-content">
     {{ $opts := dict "display" "block" }}
     {{ .Content | $.Page.RenderString $opts }}
+    </div>
+    <footer class="hero__footer">
+      {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
+    </footer>
   </div>
-  <footer class="entry-footer">
-    {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
-  </footer>
-</article>
+
+  <svg class="hero__waves" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path fill="rgba(255,255,255,0.10)" d="M0,64 C240,96 480,32 720,48 C960,64 1200,96 1440,64 L1440,120 L0,120 Z"/>
+    <path fill="rgba(255,255,255,0.06)" d="M0,80 C240,112 480,64 720,80 C960,96 1200,112 1440,80 L1440,120 L0,120 Z"/>
+  </svg>
+</section>
 <section class="blogco-search" data-blog-feature="search" data-index="{{ "index.json" | relURL }}">
   <label for="blogco-search-input">Tìm kiếm bài viết</label>
   <input id="blogco-search-input" type="search" autocomplete="off" placeholder="Nhập từ khóa…">
