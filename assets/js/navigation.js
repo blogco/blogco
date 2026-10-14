@@ -28,6 +28,7 @@ function syncActiveNavigation() {
     if (key === 'posts' || key === 'knowledge') isActive = currentPath === targetPath || currentPath.startsWith(targetPath);
     if (key === 'insights') isActive = hashRoute === '/water/insights';
     if (key === 'health') isActive = hashRoute.startsWith('/health');
+    if (key === 'wellness') isActive = hashRoute === '/water/add' || hashRoute === '/water/insights' || hashRoute.startsWith('/health');
     if (key === 'stores') isActive = hashRoute.startsWith('/stores') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
     if (key === 'lessons') isActive = hashRoute.startsWith('/lessons') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
     if (key === 'water') isActive = hashRoute === '/water/add' || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
@@ -71,7 +72,7 @@ if (header && menu && toggle) {
     if (event.key === 'Escape') closeDropdowns();
   });
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) {
+    if (window.innerWidth > 1024) {
       setMenuOpen(false);
       closeDropdowns();
     }

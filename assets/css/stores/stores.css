@@ -403,7 +403,7 @@ body.stores-route .main {
   background: #ffffff1f;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .navbar__dropdown {
     width: 100%;
   }

@@ -4,7 +4,6 @@
     {{- $homeURL := site.Home.RelPermalink -}}
     {{- $postsURL := "posts/" | relURL -}}
     {{- $knowledgeURL := "kien-thuc/" | relURL -}}
-    {{- $waterURL := "water/" | relURL -}}
     {{- $storesURL := "cua-hang/" | relURL -}}
     {{- $lessonsURL := "giao-an/" | relURL -}}
     {{- $isPosts := hasPrefix $page.RelPermalink $postsURL -}}
@@ -19,8 +18,14 @@
       <li><a class="navbar__link{{ if $page.IsHome }} is-active{{ end }}" href="{{ $homeURL }}" data-nav-key="home" data-nav-path="{{ $homeURL }}"{{ if $page.IsHome }} aria-current="page"{{ end }}>Trang chủ</a></li>
       <li><a class="navbar__link{{ if $isPosts }} is-active{{ end }}" href="{{ $postsURL }}" data-nav-key="posts" data-nav-path="{{ $postsURL }}"{{ if $isPosts }} aria-current="page"{{ end }}>Bài viết</a></li>
       <li><a class="navbar__link{{ if $isKnowledge }} is-active{{ end }}" href="{{ $knowledgeURL }}" data-nav-key="knowledge" data-nav-path="{{ $knowledgeURL }}"{{ if $isKnowledge }} aria-current="page"{{ end }}>Kiến thức</a></li>
-      <li><a class="navbar__link" href="{{ $homeURL }}#/water/insights" data-nav-key="insights" data-nav-path="{{ $waterURL }}">Insights</a></li>
-      <li><a class="navbar__link" href="{{ $homeURL }}#/health/history" data-nav-key="health" data-nav-path="{{ $homeURL }}">Lịch sử khám bệnh</a></li>
+      <li class="navbar__dropdown" data-nav-dropdown>
+        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-wellness-menu" data-nav-key="wellness" data-nav-path="{{ $homeURL }}">❤️ Sức khoẻ <span aria-hidden="true">▾</span></button>
+        <ul class="navbar__submenu" id="navbar-wellness-menu" role="menu">
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/water/add">🥤 Ghi đồ uống</a></li>
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/water/insights">📈 Insights nước</a></li>
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/health/history">🩺 Lịch sử khám bệnh</a></li>
+        </ul>
+      </li>
       <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>
         <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-stores-menu" data-nav-key="stores" data-nav-path="{{ $storesURL }}">🏪 Cửa hàng <span aria-hidden="true">▾</span></button>
         <ul class="navbar__submenu" id="navbar-stores-menu" role="menu">
@@ -35,7 +40,6 @@
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/lessons/typing">⌨️ Tin học tiếng Hàn</a></li>
         </ul>
       </li>
-      <li class="navbar__cta-item"><a class="navbar__link navbar__link--cta" href="{{ $homeURL }}#/water/add" data-nav-key="water" data-nav-path="{{ $waterURL }}">＋ Ghi đồ uống</a></li>
     </ul>
     <button id="theme-toggle" class="theme-toggle navbar__theme-toggle" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện">
       <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
