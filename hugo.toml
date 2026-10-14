@@ -7,7 +7,7 @@ enableRobotsTXT = true
 enableGitInfo = false
 
 [pagination]
-  pagerSize = 10
+  pagerSize = 3
 
 [languages.vi]
   label = 'Tiếng Việt'

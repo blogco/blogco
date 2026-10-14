@@ -1,7 +1,7 @@
 {{- define "main" -}}
 {{- $pages := where site.RegularPages "Type" "posts" -}}
 {{- $pages = sort $pages "Date" "desc" -}}
-{{- $paginator := .Paginate $pages 12 -}}
+{{- $paginator := .Paginate $pages -}}
 
 <section class="posts-index" aria-labelledby="posts-index-title">
   <div class="posts-index__inner">
@@ -48,10 +48,14 @@
     </div>
 
     {{- if gt $paginator.TotalPages 1 }}
-    <nav class="posts-index__pagination" aria-label="Phân trang bài viết">
-      {{- with $paginator.Prev }}<a href="{{ .URL }}" rel="prev">← Bài trước</a>{{ end }}
-      <span>Trang {{ $paginator.PageNumber }} / {{ $paginator.TotalPages }}</span>
-      {{- with $paginator.Next }}<a href="{{ .URL }}" rel="next">Bài tiếp theo →</a>{{ end }}
+    <nav class="posts-index__pagination pagination" aria-label="Phân trang bài viết">
+      {{- with $paginator.Prev }}<a class="pagination__link pagination__link--prev" href="{{ .URL }}" rel="prev">← Trước</a>{{ end }}
+      <div class="pagination__pages" aria-label="Số trang">
+        {{- range $paginator.Pagers }}
+        <a class="pagination__link{{ if eq . $paginator }} is-active{{ end }}" href="{{ .URL }}"{{ if eq . $paginator }} aria-current="page"{{ end }}>{{ .PageNumber }}</a>
+        {{- end }}
+      </div>
+      {{- with $paginator.Next }}<a class="pagination__link pagination__link--next" href="{{ .URL }}" rel="next">Sau →</a>{{ end }}
     </nav>
     {{- end }}
     {{- else }}
