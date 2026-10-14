@@ -1,8 +1,14 @@
-// Minimal offline ICD-10 lookup (Vietnamese labels).
+// Offline ICD-10 lookup (Vietnamese + English labels).
 //
-// This is a curated subset of common codes for quick reference — it is NOT a
-// complete ICD-10 catalogue and must not be used as a billing/clinical source.
-// Codes follow the WHO ICD-10 structure (letter + 2 digits + optional .x).
+// The catalogue is a curated subset of common codes for quick reference — it is
+// NOT a complete ICD-10 catalogue and must not be used as a billing/clinical
+// source. Codes follow the WHO ICD-10 structure (letter + 2 digits + optional
+// .x). The full Chapter XII (diseases of the skin and subcutaneous tissue,
+// L00–L99) is loaded from `assets/data/icd10-dermatology.json` and merged with
+// the general-practice subset below.
+
+import Fuse from 'fuse.js';
+import dermatology from '../../data/icd10-dermatology.json' with { type: 'json' };
 
 const ICD_ENTRIES = [
   ['A09', 'Tiêu chảy và viêm dạ dày - ruột do nhiễm trùng', 'Bệnh nhiễm trùng đường tiêu hoá'],
@@ -95,7 +101,17 @@ const ICD_ENTRIES = [
   ['Z76.0', 'Cấp lại đơn thuốc', 'Hành chính y tế'],
 ];
 
-const INDEX = ICD_ENTRIES.map(([code, name, group]) => ({ code, name, group }));
+// Merge the general subset with Chapter XII (dermatology). A Map keeps the
+// general-practice codes first while letting the richer dermatology records
+// (English label + specific group) override any duplicate code.
+const BY_CODE = new Map();
+for (const [code, name, group] of ICD_ENTRIES) {
+  BY_CODE.set(code, { code, name, en: '', group });
+}
+for (const { code, vi, en, group } of dermatology.codes) {
+  BY_CODE.set(code, { code, name: vi, en: en || '', group: group || dermatology.title });
+}
+const INDEX = [...BY_CODE.values()];
 
 export function normalizeText(value = '') {
   return String(value)
@@ -106,6 +122,25 @@ export function normalizeText(value = '') {
     .trim();
 }
 
+// Fuzzy index over accent-stripped Vietnamese/English labels, so typing either
+// language (with or without diacritics) or the code itself all works.
+const FUSE = new Fuse(
+  INDEX.map((entry) => ({
+    entry,
+    code: entry.code.toUpperCase(),
+    name: normalizeText(entry.name),
+    en: normalizeText(entry.en),
+    group: normalizeText(entry.group),
+  })),
+  {
+    keys: ['code', 'name', 'en', 'group'],
+    threshold: 0.34,
+    ignoreLocation: true,
+    minMatchCharLength: 1,
+    includeScore: true,
+  },
+);
+
 export function getICD(code = '') {
   const needle = String(code).trim().toUpperCase();
   if (!needle) return null;
@@ -115,12 +150,41 @@ export function getICD(code = '') {
 }
 
 export function searchICD(query = '', limit = 8) {
-  const needle = normalizeText(query);
-  if (!needle) return INDEX.slice(0, limit);
-  const codeNeedle = needle.replace(/\s/g, '');
-  return INDEX
-    .filter((entry) => normalizeText(entry.code).includes(codeNeedle) || normalizeText(entry.name).includes(needle))
-    .slice(0, limit);
+  const raw = String(query).trim();
+  if (!raw) return INDEX.slice(0, limit);
+
+  const needle = normalizeText(raw);
+  const codeNeedle = raw.toUpperCase().replace(/\s/g, '');
+  const seen = new Set();
+  const results = [];
+  const push = (entry) => {
+    if (!entry || seen.has(entry.code) || results.length >= limit) return;
+    seen.add(entry.code);
+    results.push(entry);
+  };
+
+  // 1. Exact/partial code, then substring matches on code, Vietnamese and
+  //    English labels — deterministic and highest-confidence.
+  push(getICD(codeNeedle));
+  for (const entry of INDEX) {
+    if (results.length >= limit) break;
+    if (entry.code.toUpperCase().startsWith(codeNeedle)
+      || normalizeText(entry.name).includes(needle)
+      || normalizeText(entry.group).includes(needle)
+      || (entry.en && normalizeText(entry.en).includes(needle))) {
+      push(entry);
+    }
+  }
+
+  // 2. Fuzzy fallback for typos and odd word order.
+  if (results.length < limit && needle.length >= 2) {
+    for (const { item } of FUSE.search(needle)) {
+      if (results.length >= limit) break;
+      push(item.entry);
+    }
+  }
+
+  return results;
 }
 
 export function allICD() {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getICD, searchICD, normalizeText } from './icd.js';
+import { getICD, searchICD, allICD, normalizeText } from './icd.js';
 import { computeStats } from './stats.js';
 import { checkInteractions } from './medicine.js';
 import { parseInvoiceText, parseMoney, parseDate } from './ocr.js';
@@ -36,6 +36,22 @@ test('ICD lookup resolves exact and partial codes with accent-insensitive search
   assert.equal(normalizeText('Viêm dạ dày'), 'viem da day');
   assert.ok(searchICD('dạ dày').some((entry) => entry.code === 'K29.7'));
   assert.equal(getICD('ZZ99'), null);
+});
+
+test('ICD Chapter XII (dermatology) exposes L21 seborrhoeic codes with fuzzy VI/EN search', () => {
+  assert.equal(getICD('L21.9').name, 'Viêm da tiết bã, không xác định');
+  assert.equal(getICD('L21.0').en, 'Seborrhoea capitis');
+  assert.equal(getICD('l21.1').code, 'L21.1');
+
+  const vi = searchICD('viêm da tiết bã', 8).map((entry) => entry.code);
+  assert.ok(['L21.0', 'L21.1', 'L21.8', 'L21.9'].every((code) => vi.includes(code)));
+
+  // Accent-insensitive (typed without diacritics) still finds the fuzzy match.
+  assert.ok(searchICD('viem da tiet ba', 8).some((entry) => entry.code === 'L21.9'));
+  // English label search works too.
+  assert.ok(searchICD('seborrhoeic', 8).some((entry) => entry.code === 'L21.9'));
+  // Whole-chapter coverage is present.
+  assert.ok(allICD().filter((entry) => entry.code.startsWith('L')).length >= 90);
 });
 
 test('interaction check flags NSAID + anticoagulant and nitrate + PDE5', () => {
