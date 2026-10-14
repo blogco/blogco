@@ -5,5 +5,10 @@
 /static/assets/build/
 /ai/node_modules/
 /ai/.env
+/.env
+/.venv-cms/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 /.hugo_build.lock
 .DS_Store

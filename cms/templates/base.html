@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}BlogCo CMS{% endblock %}</title>
+  <link rel="stylesheet" href="/cms-static/cms.css">
+  <script src="/cms-static/cms.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/dashboard">BlogCo <span>CMS</span></a>
+    {% if csrf %}<form action="/logout" method="post"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="button button--quiet" type="submit">Đăng xuất</button></form>{% endif %}
+  </header>
+  <main class="shell">{% block body %}{% endblock %}</main>
+</body>
+</html>

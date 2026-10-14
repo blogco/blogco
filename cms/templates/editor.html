@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Viết bài' if not article.slug else 'Sửa bài' }} · BlogCo CMS{% endblock %}
+{% block body %}
+<div class="page-heading"><div><a href="/dashboard" class="back-link">← Danh sách bài</a><p class="eyebrow">BLOGCO · EDITORIAL</p><h1>{{ 'Viết bài mới' if not article.slug else 'Chỉnh sửa bài' }}</h1></div></div>
+{% if error %}<p class="notice notice--error" role="alert">{{ error }}</p>{% endif %}
+{% if success %}<p class="notice notice--success" role="status">{{ success }}</p>{% endif %}
+{% if preview_url %}<p class="notice">Preview local (cần Hugo server đang chạy): <a href="{{ preview_url }}" target="_blank" rel="noopener">Mở bài preview →</a></p>{% endif %}
+<form action="/save" method="post" class="panel editor-form" data-editor-form>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="form-grid">
+    <label>Chuyên mục<select name="section" required>{% for item in sections %}<option value="{{ item }}" {{ 'selected' if article.section == item else '' }}>{{ item }}</option>{% endfor %}</select></label>
+    <label>Slug<input name="slug" value="{{ article.slug }}" pattern="[a-z0-9]+(-[a-z0-9]+)*" required placeholder="tieu-de-bai-viet"><small>Chữ thường không dấu, số và dấu gạch nối.</small></label>
+    <label class="wide">Tiêu đề<input name="title" value="{{ article.title }}" maxlength="180" required></label>
+    <label>Ngày đăng<input name="date" type="date" value="{{ article.date }}" required></label>
+    <label>Chuyên mục hiển thị<input name="category" value="{{ article.category }}" placeholder="Kiến thức"></label>
+    <label class="wide">Tags<input name="tags" value="{{ article.tags }}" placeholder="sức khỏe, công nghệ"></label>
+    <label class="wide">Mô tả SEO<textarea name="description" rows="2" maxlength="300">{{ article.description }}</textarea></label>
+    <label class="wide">Summary cho danh sách<textarea name="summary" rows="2" maxlength="500">{{ article.summary }}</textarea></label>
+    <label class="wide">Ảnh cover URL<input name="image" value="{{ article.image }}" placeholder="/images/cover.jpg" data-image-url></label>
+    <div class="wide upload-row"><label for="cover-file">Tải ảnh cover (JPEG, PNG, WebP, GIF; tối đa 8 MB)</label><input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-upload-file><button class="button button--secondary" type="button" data-upload-button>Tải ảnh lên</button><span data-upload-status role="status"></span></div>
+    <label class="wide">Nội dung Markdown<textarea name="content" rows="22" required placeholder="## Tiêu đề phụ&#10;&#10;Viết nội dung bài tại đây…">{{ article.content }}</textarea></label>
+  </div>
+  <div class="form-footer"><label class="check"><input type="checkbox" name="draft" value="true" {{ 'checked' if article.draft else '' }}> Lưu như bản nháp local</label>
+    <label class="commit-field">Commit message (tuỳ chọn)<input name="commit_message" value="" placeholder="feat(content): xuất bản bài ..."></label>
+    <div class="actions"><button class="button button--secondary" name="action" value="save">Lưu</button><button class="button button--secondary" name="action" value="preview">Lưu &amp; chuẩn bị preview</button><button class="button" name="action" value="publish" data-publish>Publish lên GitHub</button></div>
+  </div>
+</form>
+<p class="footnote">Publish tạo commit chỉ gồm file Markdown đang sửa và ảnh cover của bài (nếu có), sau đó push <code>main</code> lên <code>origin</code>. Mã truy cập và session secret không được stage.</p>
+{% endblock %}
