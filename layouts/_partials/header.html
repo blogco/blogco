@@ -1,21 +1,23 @@
 <header class="header blogco-header">
   <nav class="header-nav" aria-label="Điều hướng chính">
-    <a class="logo blogco-brand" href="{{ site.Home.RelPermalink }}" aria-label="BlogCo — trang chủ">BlogCo</a>
-    <ul id="menu" class="menu">
-      <li><a href="{{ site.Home.RelPermalink }}">Trang chủ</a></li>
-      <li><a href="{{ "posts/" | relURL }}">Bài viết</a></li>
-      <li><a href="{{ "kien-thuc/" | relURL }}">Kiến thức</a></li>
-      <li class="health-menu"><details>
-        <summary>Sức khoẻ <span aria-hidden="true">▾</span></summary>
-        <ul class="health-submenu">
-          <li><a href="{{ site.Home.RelPermalink }}#/water">💧 Theo dõi đồ uống</a></li>
-          <li><a href="{{ site.Home.RelPermalink }}#/water/insights">📊 Insights</a></li>
-          <li><a href="{{ site.Home.RelPermalink }}#/water/search">⌕ Tra cứu</a></li>
-        </ul>
-      </details></li>
-      <li><a href="{{ site.Home.RelPermalink }}#/water/add">＋ Ghi đồ uống</a></li>
+    {{- $page := . -}}
+    {{- $homeURL := site.Home.RelPermalink -}}
+    {{- $postsURL := "posts/" | relURL -}}
+    {{- $knowledgeURL := "kien-thuc/" | relURL -}}
+    {{- $waterURL := "water/" | relURL -}}
+    {{- $isPosts := or (eq $page.RelPermalink $postsURL) (eq $page.Section "posts") (eq $page.Type "posts") -}}
+    {{- $isKnowledge := or (eq $page.RelPermalink $knowledgeURL) (eq $page.Section "kien-thuc") -}}
+    <a class="logo blogco-brand navbar__logo" href="{{ $homeURL }}" aria-label="BlogCo — trang chủ">BlogCo</a>
+    <button class="navbar__toggle" type="button" aria-label="Mở menu điều hướng" aria-controls="blogco-primary-menu" aria-expanded="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <ul id="blogco-primary-menu" class="menu navbar__menu" data-primary-nav>
+      <li><a class="navbar__link{{ if $page.IsHome }} is-active{{ end }}" href="{{ $homeURL }}" data-nav-key="home" data-nav-path="{{ $homeURL }}"{{ if $page.IsHome }} aria-current="page"{{ end }}>Trang chủ</a></li>
+      <li><a class="navbar__link{{ if $isPosts }} is-active{{ end }}" href="{{ $postsURL }}" data-nav-key="posts" data-nav-path="{{ $postsURL }}"{{ if $isPosts }} aria-current="page"{{ end }}>Bài viết</a></li>
+      <li><a class="navbar__link{{ if $isKnowledge }} is-active{{ end }}" href="{{ $knowledgeURL }}" data-nav-key="knowledge" data-nav-path="{{ $knowledgeURL }}"{{ if $isKnowledge }} aria-current="page"{{ end }}>Kiến thức</a></li>
+      <li class="navbar__cta-item"><a class="navbar__link navbar__link--cta{{ if eq $page.Section "water" }} is-active{{ end }}" href="{{ $homeURL }}#/water/add" data-nav-key="water" data-nav-path="{{ $waterURL }}"{{ if eq $page.Section "water" }} aria-current="page"{{ end }}>＋ Ghi đồ uống</a></li>
     </ul>
-    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện">
+    <button id="theme-toggle" class="theme-toggle navbar__theme-toggle" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện">
       <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
       <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
     </button>

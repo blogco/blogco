@@ -5,6 +5,7 @@ const featureLoaders = {
 };
 
 import './category-bar.js';
+import './navigation.js';
 
 let waterAppPromise;
 

@@ -13,19 +13,7 @@
 
 .blogco-header .header-nav { align-items: center; gap: 1rem; }
 .blogco-brand { font-weight: 800; letter-spacing: -.04em; }
-.blogco-header .menu { align-items: center; }
-.health-menu { position: relative; }
-.health-menu details { position: relative; }
-.health-menu summary { cursor: pointer; list-style: none; }
-.health-menu summary::-webkit-details-marker { display: none; }
-.health-submenu {
-  position: absolute; z-index: 20; top: calc(100% + .5rem); right: 0;
-  display: grid; min-width: 13rem; gap: .25rem; padding: .5rem;
-  border: 1px solid var(--border); border-radius: 12px; background: var(--entry);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, .16); list-style: none;
-}
-.health-submenu a { display: block; padding: .55rem .7rem; border-radius: 8px; }
-.health-submenu a:hover, .health-submenu a:focus-visible { background: rgba(14, 165, 233, .12); }
+.blogco-header .menu { align-items: center; gap: 32px; }
 
 body.water-route {
   color: var(--water-ink);
@@ -107,9 +95,7 @@ body.water-route #water-app { display: block; }
 .water-icon-button { padding: .35rem .55rem; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; background: #fff; cursor: pointer; }
 .water-empty { padding: 1rem; border: 1px dashed #94a3b8; border-radius: 12px; color: var(--water-muted) !important; }
 .water-disclaimer { color: #334155 !important; font-size: .88rem; }
-.water-page-heading { margin-bottom: 1rem; }
 .water-back { display: inline-block; margin-bottom: 1rem; }
-.water-page-heading > p:last-child { margin-top: .25rem; }
 .water-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .water-form label, .water-search-form > label, .water-date-range label, .water-profile-form > label { display: grid; gap: .4rem; color: #1e293b; font-weight: 700; }
 .water-screen input:not([type=radio]):not([type=checkbox]), .water-screen textarea, .water-screen select {
@@ -162,8 +148,7 @@ mark { border-radius: 3px; background: #fef08a; }
 
 @media (max-width: 767px) {
   .blogco-header .header-nav { flex-wrap: wrap; }
-  .blogco-header .menu { order: 3; width: 100%; overflow: visible; flex-wrap: wrap; gap: .5rem 1rem; }
-  .health-submenu { right: auto; left: 0; }
+  .blogco-header .menu { order: 3; width: 100%; overflow: visible; flex-wrap: wrap; gap: 20px; }
   .water-screen { padding-top: 1rem; }
   .water-dashboard-top { flex-direction: column; }
   .water-progress-layout { align-items: flex-start; }
