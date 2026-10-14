@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:assets": "vite build"
+    "build:assets": "vite build",
+    "test": "node --test assets/js/water/*.test.js"
   },
   "dependencies": {
     "fuse.js": "7.5.0",

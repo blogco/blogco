@@ -66,17 +66,21 @@ Các số liệu trong khung là ví dụ minh hoạ giao diện, không phải 
 +----------------------------------------------------------------+
 | <- Quay lại                 INSIGHTS UỐNG NƯỚC                   |
 +----------------------------------------------------------------+
-| HOÀN THÀNH MỤC TIÊU ĐÃ CHỌN: 0 / 100                            |
+| HYDRATION SCORE · tỷ lệ mục tiêu nhắc nhở: 0 / 100              |
 | Đã ghi 0 ml / mục tiêu tuỳ chọn · không phải đánh giá y tế      |
 +----------------------------------------------------------------+
-| Điểm tích cực                 | Có thể lưu ý                     |
+| Điểm tốt                      | Cần lưu ý / Gợi ý theo nhật ký   |
 | Gợi ý rule-based, không gọi API AI                               |
 +----------------------------------------------------------------+
-| Gợi ý nhẹ nhàng · [Bật nhắc mỗi 90 phút]                         |
-| 7 ngày gần nhất: biểu đồ lượng ghi nhận                          |
+| Nhóm đồ uống hôm nay: trung tính/tích cực · cần xem thành phần  |
+| Thành phần đã nhập: đường · caffeine · cồn · năng lượng         |
+| Cảnh báo tham khảo dựa trên số bạn tự nhập, không tự đoán       |
 +----------------------------------------------------------------+
-| Mục tiêu tuỳ chỉnh [____] ml · hồ sơ tuỳ chọn                    |
-| Nguồn tham khảo: National Academies · CDC · Mayo Clinic · Vinmec |
+| Gợi ý nhẹ nhàng · [Bật nhắc mỗi 90 phút]                         |
+| 7 ngày gần nhất: biểu đồ + thanh tiến độ từng ngày              |
++----------------------------------------------------------------+
+| Mục tiêu tuỳ chỉnh [____] ml · hồ sơ tuỳ chọn (thai kỳ/cho bú)  |
+| Nguồn: National Academies · CDC · Mayo · WHO · FDA · ACOG · Vinmec |
 +----------------------------------------------------------------+
 ```
 
@@ -84,10 +88,7 @@ Các số liệu trong khung là ví dụ minh hoạ giao diện, không phải 
 
 ```text
 +----------------------------------------------------------------+
-| [BlogCo] [Trang chủ] [Bài viết] [Sức khoẻ v] [＋ Ghi đồ uống]   |
-|                                  ├─ 💧 Theo dõi đồ uống          |
-|                                  ├─ 📊 Insights                  |
-|                                  └─ ⌕ Tra cứu                    |
+| [BlogCo] [Trang chủ] [Bài viết] [Kiến thức] [Insights] [＋ Ghi đồ uống]|
 +----------------------------------------------------------------+
 | Hash routes: #/water · #/water/add · #/water/search              |
 |             #/water/insights                                     |

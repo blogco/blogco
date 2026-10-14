@@ -7,6 +7,8 @@ const DEFAULT_PROFILE = {
   weightKg: '',
   activityMinutes: 0,
   hotWeather: false,
+  pregnant: false,
+  breastfeeding: false,
   pregnancyOrBreastfeeding: false,
 };
 
@@ -58,6 +60,13 @@ export function addWaterEntry(input) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || !/^\d{2}:\d{2}$/.test(input.time)) {
     throw new Error('Vui lòng kiểm tra ngày và giờ.');
   }
+  const optionalAmount = (field, label, maximum) => {
+    const raw = input[field];
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < 0 || value > maximum) throw new Error(`${label} cần từ 0 đến ${maximum.toLocaleString('vi-VN')}.`);
+    return value;
+  };
   const id = `WTR-${String(state.nextId).padStart(3, '0')}`;
   state.entries.push({
     id,
@@ -67,6 +76,10 @@ export function addWaterEntry(input) {
     drinkType: String(input.drinkType || 'water').slice(0, 32),
     customDrink: String(input.customDrink || '').trim().slice(0, 60),
     note: String(input.note || '').trim().slice(0, 300),
+    sugarGrams: optionalAmount('sugarGrams', 'Đường', 1000),
+    caffeineMg: optionalAmount('caffeineMg', 'Caffeine', 10000),
+    caloriesKcal: optionalAmount('caloriesKcal', 'Năng lượng', 10000),
+    alcoholGrams: optionalAmount('alcoholGrams', 'Cồn', 1000),
     createdAt: new Date().toISOString(),
   });
   state.nextId += 1;
@@ -100,7 +113,9 @@ export function saveWaterProfile(input) {
     weightKg,
     activityMinutes: Math.max(0, Math.min(600, Number(input.activityMinutes) || 0)),
     hotWeather: Boolean(input.hotWeather),
-    pregnancyOrBreastfeeding: Boolean(input.pregnancyOrBreastfeeding),
+    pregnant: Boolean(input.pregnant),
+    breastfeeding: Boolean(input.breastfeeding),
+    pregnancyOrBreastfeeding: false,
   };
   writeState(state);
   return state.profile;
@@ -114,8 +129,9 @@ export function downloadJsonBackup() {
 export function downloadCsv(entries) {
   const escapeCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
   const rows = [
-    ['ID', 'Ngày', 'Giờ', 'Lượng (ml)', 'Loại đồ uống', 'Ghi chú'],
-    ...entries.map((item) => [item.id, item.date, item.time, item.amountMl, item.customDrink || item.drinkType, item.note]),
+    ['ID', 'Ngày', 'Giờ', 'Lượng (ml)', 'Loại đồ uống', 'Đường (g)', 'Caffeine (mg)', 'Năng lượng (kcal)', 'Cồn (g)', 'Ghi chú'],
+    ...entries.map((item) => [item.id, item.date, item.time, item.amountMl, item.customDrink || item.drinkType,
+      item.sugarGrams ?? '', item.caffeineMg ?? '', item.caloriesKcal ?? '', item.alcoholGrams ?? '', item.note]),
   ];
   const csv = `\uFEFF${rows.map((row) => row.map(escapeCell).join(',')).join('\r\n')}`;
   downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'blogco-water-logs.csv');
