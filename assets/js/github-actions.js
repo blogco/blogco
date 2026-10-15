@@ -74,6 +74,53 @@ export function runsApiUrl(repo = DEFAULT_REPO, perPage = MAX_ROWS) {
   return `https://api.github.com/repos/${repo}/actions/runs?per_page=${perPage}&exclude_pull_requests=true`;
 }
 
+// How long the most recent run took, in milliseconds. Prefers the actual job
+// start (`run_started_at`) over queue time (`created_at`), and the completion
+// stamp (`completed_at`) over `updated_at`. Returns null when unavailable.
+export function runDurationMs(run = {}) {
+  const start = Date.parse(run.run_started_at || run.created_at || '');
+  const end = Date.parse(run.completed_at || run.updated_at || '');
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  return end - start;
+}
+
+// Humanised Vietnamese duration: "45 giây", "1 phút 15 giây", "1 giờ 1 phút".
+export function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  if (ms < 1000) return 'dưới 1 giây';
+  const totalSeconds = Math.round(ms / 1000);
+  if (totalSeconds < 60) return `${totalSeconds} giây`;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (totalMinutes < 60) return seconds ? `${totalMinutes} phút ${seconds} giây` : `${totalMinutes} phút`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes ? `${hours} giờ ${minutes} phút` : `${hours} giờ`;
+}
+
+// Decimal-minutes form, e.g. 2.5 → "2.5 phút" (used as a compact hint).
+export function formatDurationMinutes(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  const minutes = ms / 60000;
+  const rounded = minutes >= 10 ? Math.round(minutes) : Math.round(minutes * 10) / 10;
+  return `${rounded} phút`;
+}
+
+// Deploy-completion sentence for the newest run, e.g.
+//   "Deploy thành công trong 1 phút 15 giây"  ·  "Đang deploy · 30 giây".
+export function deploySummary(run = {}) {
+  const meta = statusMeta(run);
+  const duration = runDurationMs(run);
+  if (isActiveRun(run)) {
+    return duration === null ? 'Đang deploy…' : `Đang deploy · ${formatDuration(duration)}`;
+  }
+  if (duration === null) return 'Thời gian deploy: —';
+  const human = formatDuration(duration);
+  if (meta.tone === 'success') return `Deploy thành công trong ${human}`;
+  if (meta.tone === 'failure') return `Deploy thất bại sau ${human}`;
+  return `Thời gian deploy: ${human}`;
+}
+
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -151,11 +198,41 @@ function rowHtml(repo, run) {
   </li>`;
 }
 
+function renderSummary(root, runs) {
+  const el = root.querySelector('[data-gh-summary]');
+  if (!el) return;
+  const latest = runs[0];
+  if (!latest) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  const tone = statusMeta(latest).tone;
+  const commitAgo = relativeTime(latest.updated_at || latest.run_started_at || latest.created_at);
+  const minutes = formatDurationMinutes(runDurationMs(latest));
+  el.hidden = false;
+  el.innerHTML = `
+    <span class="gh-actions__stat">
+      <span class="gh-actions__stat-label">Commit gần nhất</span>
+      <span class="gh-actions__stat-value">${escapeHtml(commitAgo || '—')}</span>
+    </span>
+    <span class="gh-actions__stat gh-actions__stat--${escapeHtml(tone)}">
+      <span class="gh-actions__stat-label">Deploy</span>
+      <span class="gh-actions__stat-value">${escapeHtml(deploySummary(latest))}</span>
+      <span class="gh-actions__stat-hint">${escapeHtml(minutes)}</span>
+    </span>`;
+}
+
 function renderState(root, html, kind) {
   const list = root.querySelector('[data-gh-list]');
   if (!list) return;
   list.setAttribute('aria-busy', 'false');
   list.innerHTML = `<li class="gh-actions__state gh-actions__state--${kind}">${html}</li>`;
+  const summary = root.querySelector('[data-gh-summary]');
+  if (summary) {
+    summary.hidden = true;
+    summary.innerHTML = '';
+  }
 }
 
 function renderRuns(root, repo, snapshot) {
@@ -168,6 +245,7 @@ function renderRuns(root, repo, snapshot) {
     return;
   }
   list.innerHTML = runs.slice(0, MAX_ROWS).map((run) => rowHtml(repo, run)).join('');
+  renderSummary(root, runs);
 }
 
 export function mountGithubActions(root = document.querySelector('[data-github-actions]')) {

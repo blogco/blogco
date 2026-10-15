@@ -46,6 +46,42 @@
 
 .gh-actions__link:hover { color: var(--accent-dark) !important; }
 
+.gh-actions__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gh-actions__summary[hidden] { display: none; }
+
+.gh-actions__stat {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--entry, transparent);
+}
+
+.gh-actions__stat-label {
+  color: var(--muted) !important;
+  font-size: 10px;
+  font-weight: 800 !important;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.gh-actions__stat-value { color: var(--text) !important; font-size: 12px; font-weight: 700 !important; }
+.gh-actions__stat-hint { color: var(--muted) !important; font-size: 10.5px; font-weight: 600 !important; }
+
+.gh-actions__stat--success .gh-actions__stat-value { color: #15803d !important; }
+.gh-actions__stat--failure .gh-actions__stat-value { color: #b91c1c !important; }
+.gh-actions__stat--pending .gh-actions__stat-value { color: #b45309 !important; }
+.gh-actions__stat--running .gh-actions__stat-value { color: #1d4ed8 !important; }
+
 .gh-actions__list {
   display: flex;
   min-height: 130px; /* room for 5 rows so the footer never jumps on load */

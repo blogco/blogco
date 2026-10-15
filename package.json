@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build:assets": "vite build",
-    "test": "node --test assets/js/**/*.test.js"
+    "test": "node --test assets/js/*.test.js assets/js/**/*.test.js"
   },
   "dependencies": {
     "fuse.js": "7.5.0",

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { statusMeta, isActiveRun, shortSha, relativeTime, runsApiUrl } from './github-actions.js';
+import { statusMeta, isActiveRun, shortSha, relativeTime, runsApiUrl, runDurationMs, formatDuration, formatDurationMinutes, deploySummary } from './github-actions.js';
 
 test('statusMeta maps a running job', () => {
   assert.deepEqual(statusMeta({ status: 'in_progress', conclusion: null }), { label: 'Đang chạy', tone: 'running' });
@@ -39,4 +39,56 @@ test('runsApiUrl targets the actions runs endpoint', () => {
     runsApiUrl('blogco/blogco', 5),
     'https://api.github.com/repos/blogco/blogco/actions/runs?per_page=5&exclude_pull_requests=true',
   );
+});
+
+test('runDurationMs prefers job start over created_at and completed_at over updated_at', () => {
+  assert.equal(
+    runDurationMs({
+      created_at: '2026-10-15T00:00:00Z',
+      run_started_at: '2026-10-15T00:00:30Z',
+      completed_at: '2026-10-15T00:01:45Z',
+      updated_at: '2026-10-15T00:02:00Z',
+    }),
+    75000,
+  );
+  assert.equal(
+    runDurationMs({ created_at: '2026-10-15T00:00:00Z', updated_at: '2026-10-15T00:00:40Z' }),
+    40000,
+  );
+  assert.equal(runDurationMs({ created_at: '2026-10-15T00:00:00Z' }), null);
+  assert.equal(runDurationMs({}), null);
+});
+
+test('formatDuration renders Vietnamese phút/giây labels', () => {
+  assert.equal(formatDuration(45000), '45 giây');
+  assert.equal(formatDuration(75000), '1 phút 15 giây');
+  assert.equal(formatDuration(120000), '2 phút');
+  assert.equal(formatDuration(150000), '2 phút 30 giây');
+  assert.equal(formatDuration(3660000), '1 giờ 1 phút');
+  assert.equal(formatDuration(0), 'dưới 1 giây');
+  assert.equal(formatDuration(null), '—');
+});
+
+test('formatDurationMinutes renders the compact decimal form', () => {
+  assert.equal(formatDurationMinutes(75000), '1.3 phút');
+  assert.equal(formatDurationMinutes(150000), '2.5 phút');
+  assert.equal(formatDurationMinutes(660000), '11 phút');
+});
+
+test('deploySummary composes status + duration for the newest run', () => {
+  const base = { created_at: '2026-10-15T00:00:00Z', updated_at: '2026-10-15T00:01:15Z' };
+  assert.equal(
+    deploySummary({ ...base, status: 'completed', conclusion: 'success' }),
+    'Deploy thành công trong 1 phút 15 giây',
+  );
+  assert.equal(
+    deploySummary({ ...base, status: 'completed', conclusion: 'failure' }),
+    'Deploy thất bại sau 1 phút 15 giây',
+  );
+  assert.equal(
+    deploySummary({ status: 'in_progress', run_started_at: '2026-10-15T00:00:00Z', updated_at: '2026-10-15T00:00:30Z' }),
+    'Đang deploy · 30 giây',
+  );
+  assert.equal(deploySummary({ status: 'in_progress' }), 'Đang deploy…');
+  assert.equal(deploySummary({ status: 'completed', conclusion: 'cancelled' }), 'Thời gian deploy: —');
 });
