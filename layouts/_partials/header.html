@@ -9,22 +9,27 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     <ul id="blogco-primary-menu" class="menu navbar__menu" data-primary-nav>
-      <li><a class="navbar__link{{ if $page.IsHome }} is-active{{ end }}" href="{{ $homeURL }}" data-nav-key="home" data-nav-path="{{ $homeURL }}"{{ if $page.IsHome }} aria-current="page"{{ end }}>Trang chủ</a></li>
-      <li class="navbar__dropdown" data-nav-dropdown>
-        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-wellness-menu" data-nav-key="wellness" data-nav-path="{{ $homeURL }}">❤️ Sức khoẻ <span aria-hidden="true">▾</span></button>
-        <ul class="navbar__submenu" id="navbar-wellness-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/water/add">🥤 Ghi đồ uống</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/water/insights">📈 Insights nước</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/health/history">🩺 Lịch sử khám bệnh</a></li>
-        </ul>
+      <li class="navbar__dropdown navbar__dropdown--mega" data-nav-dropdown>
+        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-health-menu" data-nav-key="wellness" data-nav-path="{{ $homeURL }}">🩺 Sức Khoẻ <span class="navbar__caret" aria-hidden="true">▾</span></button>
+        <div class="navbar__mega" id="navbar-health-menu" role="menu">
+          <p class="navbar__mega-eyebrow">HEALTH · Sức Khoẻ</p>
+          <ul class="navbar__mega-grid">
+            <li><a class="navbar__mega-item" role="menuitem" href="{{ $homeURL }}#/water/add"><span class="navbar__mega-icon" aria-hidden="true">🥤</span><span class="navbar__mega-text"><span class="navbar__mega-title">Ghi đồ uống</span><span class="navbar__mega-desc">Theo dõi lượng nước mỗi ngày</span></span></a></li>
+            <li><a class="navbar__mega-item" role="menuitem" href="{{ $homeURL }}#/water/insights"><span class="navbar__mega-icon" aria-hidden="true">📈</span><span class="navbar__mega-text"><span class="navbar__mega-title">Insights nước</span><span class="navbar__mega-desc">Biểu đồ &amp; xu hướng uống nước</span></span></a></li>
+            <li><a class="navbar__mega-item" role="menuitem" href="{{ $homeURL }}#/health/history"><span class="navbar__mega-icon" aria-hidden="true">🩺</span><span class="navbar__mega-text"><span class="navbar__mega-title">Lịch sử khám bệnh</span><span class="navbar__mega-desc">Sổ khám sức khoẻ cá nhân</span></span></a></li>
+          </ul>
+        </div>
       </li>
-      <li class="navbar__dropdown{{ if $isCoffee }} is-active{{ end }}" data-nav-dropdown>
-        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-coffee-menu" data-nav-key="coffee" data-nav-path="{{ $homeURL }}">☕ Cà phê <span aria-hidden="true">▾</span></button>
-        <ul class="navbar__submenu" id="navbar-coffee-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee">🧾 Danh sách chi phí</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/add">✍️ Nhập chi phí thủ công</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/stats">📊 Thống kê chi phí</a></li>
-        </ul>
+      <li class="navbar__dropdown navbar__dropdown--mega{{ if $isCoffee }} is-active{{ end }}" data-nav-dropdown>
+        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-expense-menu" data-nav-key="coffee" data-nav-path="{{ $homeURL }}">💳 Chi Phí <span class="navbar__caret" aria-hidden="true">▾</span></button>
+        <div class="navbar__mega" id="navbar-expense-menu" role="menu">
+          <p class="navbar__mega-eyebrow">EXPENSE · Chi Phí</p>
+          <ul class="navbar__mega-grid">
+            <li><a class="navbar__mega-item" role="menuitem" href="{{ $homeURL }}#/coffee"><span class="navbar__mega-icon" aria-hidden="true">🧾</span><span class="navbar__mega-text"><span class="navbar__mega-title">Danh sách chi phí</span><span class="navbar__mega-desc">Tất cả giao dịch đã ghi</span></span></a></li>
+            <li><a class="navbar__mega-item" role="menuitem" href="{{ $homeURL }}#/coffee/manual-add"><span class="navbar__mega-icon" aria-hidden="true">✍️</span><span class="navbar__mega-text"><span class="navbar__mega-title">Nhập chi phí thủ công</span><span class="navbar__mega-desc">Thêm nhanh nhiều giao dịch</span></span></a></li>
+            <li><a class="navbar__mega-item" role="menuitem" href="{{ $homeURL }}#/coffee/stats"><span class="navbar__mega-icon" aria-hidden="true">📊</span><span class="navbar__mega-text"><span class="navbar__mega-title">Thống kê chi phí</span><span class="navbar__mega-desc">Báo cáo &amp; AI insights</span></span></a></li>
+          </ul>
+        </div>
       </li>
       <li><a class="navbar__link" href="{{ $homeURL }}#/brand-guidelines" data-nav-key="brand" data-nav-path="{{ $homeURL }}">🎨 Brand</a></li>
     </ul>
