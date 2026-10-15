@@ -582,12 +582,21 @@ async function runOcr(root, form, block) {
       },
     });
     const textArea = block.querySelector('[name="ocrText"]');
-    if (textArea) textArea.value = text;
     if (!text.trim()) {
+      if (textArea) textArea.value = text;
       if (status) status.textContent = 'OCR không đọc được chữ nào. Hãy thử ảnh rõ hơn hoặc nhập tay.';
       return;
     }
-    const result = parseHighlandsInvoice(text);
+    // Áp bảng sửa lỗi tiếng Việt đã học (AI Training) trước khi parse.
+    let ocrText = text;
+    try {
+      const { data: patterns } = await loadPatterns('highlands');
+      ocrText = applyLearnedFixes(text, patterns?.vietnameseFixes || {});
+    } catch {
+      // best-effort: nếu không tải được patterns thì dùng text gốc.
+    }
+    if (textArea) textArea.value = ocrText;
+    const result = parseHighlandsInvoice(ocrText);
     const filled = applyOcrResult(form, result);
     if (status) {
       status.textContent = filled.length
