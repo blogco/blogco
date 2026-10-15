@@ -10,7 +10,10 @@ import { classifyExpense, normalizeExpenseCategory, EXPENSE_CATEGORY_LABELS } fr
 
 const STORAGE_KEY = 'blogco.coffee.receipts.v1';
 const BACKUP_KEY = 'blogco.coffee.receipts.backup.v1';
-const DEFAULT_PROFILE = { monthlyBudget: 500000 };
+const DEFAULT_PROFILE = { monthlyBudget: 500000, quarterlyBudget: 0, yearlyBudget: 0 };
+// Upper bound for a single budget period (1 billion VND) — generous but guards
+// against typos like an accidental extra digit.
+const MAX_BUDGET = 1000000000;
 
 export const PAYMENT_LABELS = {
   cash: 'Tiền mặt',
@@ -233,13 +236,24 @@ export function clearCoffeeData() {
 
 export function saveCoffeeProfile(input = {}) {
   const state = readState();
-  const monthlyBudget = Math.round(toNumber(input.monthlyBudget));
-  if (monthlyBudget < 0 || monthlyBudget > 100000000) {
-    throw new Error('Ngân sách tháng cần nằm trong khoảng 0 – 100.000.000 đ.');
-  }
-  state.profile = { monthlyBudget };
+  const current = { ...DEFAULT_PROFILE, ...state.profile };
+  const periods = [
+    ['monthlyBudget', 'Ngân sách tháng'],
+    ['quarterlyBudget', 'Ngân sách quý'],
+    ['yearlyBudget', 'Ngân sách năm'],
+  ];
+  const next = { ...current };
+  periods.forEach(([key, title]) => {
+    if (input[key] === undefined) return;
+    const value = Math.round(toNumber(input[key]));
+    if (value < 0 || value > MAX_BUDGET) {
+      throw new Error(`${title} cần nằm trong khoảng 0 – ${MAX_BUDGET.toLocaleString('vi-VN')} đ.`);
+    }
+    next[key] = value;
+  });
+  state.profile = next;
   writeState(state);
-  return state.profile;
+  return { ...state.profile };
 }
 
 export function exportReceipts(receipts = readState().receipts) {

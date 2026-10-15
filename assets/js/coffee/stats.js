@@ -123,3 +123,64 @@ export function computeCoffeeStats(receipts = [], { budget = 0 } = {}) {
 }
 
 export { monthLabel };
+
+// ---------------------------------------------------------------------------
+// Budget progress (month / quarter / year)
+// ---------------------------------------------------------------------------
+//
+// Pure helper so it can be unit-tested without a DOM: given the receipts and
+// the saved profile, return the amount spent and the % of each budget for the
+// reference date (defaults to "now"). Status colours mirror the UI:
+//   none (no budget) · success (<80%) · warning (80–99%) · danger (>=100%).
+
+function budgetStatus(spent, budget) {
+  if (!budget) return 'none';
+  const pct = (spent / budget) * 100;
+  if (pct >= 100) return 'danger';
+  if (pct >= 80) return 'warning';
+  return 'success';
+}
+
+export function computeBudgetProgress(receipts = [], profile = {}, now = new Date()) {
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const quarter = Math.floor((month - 1) / 3) + 1;
+  const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+  const quarterMonths = new Set(
+    [0, 1, 2].map((offset) => `${year}-${String((quarter - 1) * 3 + 1 + offset).padStart(2, '0')}`),
+  );
+
+  let monthSpent = 0;
+  let quarterSpent = 0;
+  let yearSpent = 0;
+  receipts.forEach((receipt) => {
+    const date = String(receipt?.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}/.test(date) || date.slice(0, 4) !== String(year)) return;
+    const total = Math.max(0, Math.round(toNumber(receipt.total)));
+    const receiptMonth = date.slice(0, 7);
+    yearSpent += total;
+    if (quarterMonths.has(receiptMonth)) quarterSpent += total;
+    if (receiptMonth === monthKey) monthSpent += total;
+  });
+
+  const makeEntry = (label, spent, budget) => {
+    const value = Math.max(0, Math.round(toNumber(budget)));
+    const pct = value ? Math.round((spent / value) * 100) : 0;
+    return {
+      label,
+      spent,
+      budget: value,
+      pct,
+      barWidth: Math.min(100, pct),
+      remaining: Math.max(0, value - spent),
+      over: Math.max(0, spent - value),
+      status: budgetStatus(spent, value),
+    };
+  };
+
+  return {
+    month: { key: monthKey, ...makeEntry(`Tháng ${month}/${year}`, monthSpent, profile.monthlyBudget) },
+    quarter: { key: `${year}-Q${quarter}`, ...makeEntry(`Quý ${quarter}/${year}`, quarterSpent, profile.quarterlyBudget) },
+    year: { key: `${year}`, ...makeEntry(`Năm ${year}`, yearSpent, profile.yearlyBudget) },
+  };
+}

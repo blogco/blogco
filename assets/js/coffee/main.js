@@ -19,7 +19,7 @@ import {
   expenseCategoryMeta, normalizeExpenseCategory, receiptExpenseCategory,
 } from './expense.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
-import { computeCoffeeStats } from './stats.js';
+import { computeCoffeeStats, computeBudgetProgress } from './stats.js';
 import {
   renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf, rowToItems,
 } from './manual.js';
@@ -237,6 +237,93 @@ function renderHistoryResults(state) {
   </div>`;
 }
 
+// ---------------------------------------------------------------------------
+// Budget overview (month / quarter / year) + settings modal
+// ---------------------------------------------------------------------------
+
+const BUDGET_STATUS_NOTE = {
+  none: 'Chưa đặt hạn mức cho kỳ này.',
+  success: 'Trong tầm kiểm soát',
+  warning: 'Sắp chạm hạn mức',
+  danger: 'Đã vượt hạn mức',
+};
+
+const BUDGET_STATUS_LABEL = {
+  none: 'Chưa đặt hạn mức',
+  success: 'Trong tầm kiểm soát',
+  warning: 'Sắp chạm hạn mức',
+  danger: 'Đã vượt hạn mức',
+};
+
+function budgetCardMarkup(entry) {
+  const hasBudget = entry.budget > 0;
+  const status = entry.status;
+  const note = !hasBudget
+    ? 'Chưa đặt hạn mức cho kỳ này.'
+    : entry.over > 0
+      ? `Vượt ${escapeHtml(formatVnd(entry.over))} · ${BUDGET_STATUS_LABEL[status] || ''}`
+      : `Còn lại ${escapeHtml(formatVnd(entry.remaining))} · ${BUDGET_STATUS_LABEL[status] || ''}`;
+  return `<article class="coffee-budget-tile is-${status}">
+    <div class="coffee-budget-tile__head">
+      <span class="coffee-eyebrow">${escapeHtml(entry.label)}</span>
+      ${hasBudget ? `<span class="coffee-chip is-${status}">${entry.pct}%</span>` : '<span class="coffee-chip">chưa đặt</span>'}
+    </div>
+    <h3 class="coffee-budget-tile__value">${escapeHtml(formatVnd(entry.spent))} <span class="coffee-muted">/ ${hasBudget ? escapeHtml(formatVnd(entry.budget)) : '—'}</span></h3>
+    <div class="coffee-budget-bar" role="progressbar" aria-label="${escapeHtml(entry.label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${entry.barWidth}"><span class="is-${status}" style="width:${entry.barWidth}%"></span></div>
+    <p class="coffee-budget-tile__note">${note}</p>
+  </article>`;
+}
+
+function budgetOverviewMarkup(progress) {
+  return `<section class="coffee-card coffee-budget-overview" aria-label="Tiến độ ngân sách">
+    <div class="coffee-card-heading">
+      <div><p class="coffee-eyebrow">NGÂN SÁCH &amp; HẠN MỨC</p><h2>Theo dõi chi tiêu so với hạn mức</h2></div>
+      <button type="button" class="coffee-secondary-button" data-budget-settings>⚙️ Thiết lập Ngân sách</button>
+    </div>
+    <div class="coffee-budget-grid">
+      ${budgetCardMarkup(progress.month)}
+      ${budgetCardMarkup(progress.quarter)}
+      ${budgetCardMarkup(progress.year)}
+    </div>
+  </section>`;
+}
+
+function budgetModalMarkup(profile = {}) {
+  const value = (key) => escapeHtml(profile[key] || 0);
+  return `<div class="coffee-review-overlay" data-budget-modal>
+    <div class="coffee-review-modal" role="dialog" aria-modal="true" aria-labelledby="coffee-budget-title">
+      <div class="coffee-review-modal__head">
+        <span id="coffee-budget-title">⚙️ Thiết lập ngân sách</span>
+        <button type="button" class="coffee-ghost-button" data-budget-modal-close>✖ Đóng</button>
+      </div>
+      <div class="coffee-review-modal__body">
+        <p class="coffee-muted">Nhập hạn mức chi tiêu cho tháng, quý và năm. Để trống hoặc 0 nghĩa là không đặt hạn mức. Dữ liệu chỉ lưu trên thiết bị này.</p>
+        <form id="coffee-budget-form" class="coffee-budget-form coffee-budget-form--modal">
+          <label class="coffee-field">Ngân sách Tháng (VNĐ)
+            <input name="monthlyBudget" type="number" min="0" step="10000" value="${value('monthlyBudget')}" inputmode="numeric">
+          </label>
+          <label class="coffee-field">Ngân sách Quý (VNĐ)
+            <input name="quarterlyBudget" type="number" min="0" step="10000" value="${value('quarterlyBudget')}" inputmode="numeric">
+          </label>
+          <label class="coffee-field">Ngân sách Năm (VNĐ)
+            <input name="yearlyBudget" type="number" min="0" step="10000" value="${value('yearlyBudget')}" inputmode="numeric">
+          </label>
+          <div class="coffee-budget-form__actions">
+            <button class="coffee-primary-button" type="submit">Lưu ngân sách</button>
+            <button type="button" class="coffee-secondary-button" data-budget-modal-close>Huỷ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openBudgetModal(root) {
+  root.querySelector('[data-budget-modal]')?.remove();
+  root.insertAdjacentHTML('beforeend', budgetModalMarkup(getCoffeeState().profile || {}));
+  root.querySelector('#coffee-budget-form input[name="monthlyBudget"]')?.focus();
+}
+
 function renderHistory(root) {
   // Entering the list always starts from the "Tất cả" filters and renders the
   // full saved list immediately, so users never land on an empty filtered view.
@@ -244,9 +331,7 @@ function renderHistory(root) {
   const state = getCoffeeState();
   const stats = computeCoffeeStats(state.receipts, { budget: state.profile.monthlyBudget });
   const { months, stores, categories } = filterOptions(state.receipts);
-  const budget = stats.budget;
-  const monthPct = budget ? Math.min(100, Math.round((stats.currentMonthTotal / budget) * 100)) : 0;
-  const budgetClass = !budget ? '' : monthPct >= 100 ? 'is-danger' : monthPct >= 80 ? 'is-warning' : 'is-success';
+  const budgetProgress = computeBudgetProgress(state.receipts, state.profile);
 
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
     <div class="coffee-page-heading coffee-page-heading--hero">
@@ -258,6 +343,7 @@ function renderHistory(root) {
     <div class="coffee-toolbar">
       <a class="coffee-primary-button" href="#/coffee/add">✍️ Nhập chi phí</a>
       <a class="coffee-secondary-button" href="#/coffee/stats">📊 Thống kê chi phí</a>
+      <button type="button" class="coffee-secondary-button" data-budget-settings>⚙️ Thiết lập Ngân sách</button>
       <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
       <button type="button" class="coffee-secondary-button" data-import-trigger>⬆ Import</button>
       <button type="button" class="coffee-secondary-button" data-export-csv>⬇ CSV</button>
@@ -267,17 +353,12 @@ function renderHistory(root) {
 
     <div class="coffee-summary-grid" aria-label="Chỉ số chi phí">
       <div class="coffee-summary-card"><span>Chi tháng này</span><strong>${escapeHtml(formatVnd(stats.currentMonthTotal))}</strong></div>
-      <div class="coffee-summary-card"><span>Ngân sách tháng</span><strong>${budget ? escapeHtml(formatVnd(budget)) : '—'}</strong></div>
+      <div class="coffee-summary-card"><span>Ngân sách tháng</span><strong>${budgetProgress.month.budget ? escapeHtml(formatVnd(budgetProgress.month.budget)) : '—'}</strong></div>
       <div class="coffee-summary-card"><span>Giao dịch</span><strong>${stats.count}</strong></div>
       <div class="coffee-summary-card"><span>Trung bình / lần</span><strong>${escapeHtml(formatVnd(stats.averageSpend))}</strong></div>
     </div>
 
-    ${budget ? `<section class="coffee-card coffee-budget-strip" aria-label="Mức sử dụng ngân sách tháng">
-      <div><p class="coffee-eyebrow">MỨC SỬ DỤNG NGÂN SÁCH THÁNG</p>
-        <strong class="coffee-budget-value">${monthPct}%</strong>
-        <span class="coffee-muted">của ${escapeHtml(formatVnd(budget))} · còn lại ${escapeHtml(formatVnd(Math.max(0, budget - stats.currentMonthTotal)))}</span></div>
-      <div class="coffee-budget-bar" role="progressbar" aria-label="Chi tiêu tháng này so với ngân sách" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${monthPct}"><span class="${budgetClass}" style="width:${monthPct}%"></span></div>
-    </section>` : `<section class="coffee-card coffee-budget-strip" aria-label="Ngân sách tháng"><div><p class="coffee-eyebrow">NGÂN SÁCH THÁNG</p><span class="coffee-muted">Chưa đặt ngân sách. Vào <a href="#/coffee/stats">Thống kê</a> để thiết lập hạn mức chi tiêu.</span></div></section>`}
+    ${budgetOverviewMarkup(budgetProgress)}
 
     <div class="coffee-card coffee-search">
       <label class="coffee-field coffee-field--full">
@@ -386,9 +467,7 @@ function renderDetail(root, id) {
 function renderStats(root) {
   const state = getCoffeeState();
   const stats = computeCoffeeStats(state.receipts, { budget: state.profile.monthlyBudget });
-  const budget = stats.budget || 0;
-  const monthPct = budget ? Math.min(100, Math.round((stats.currentMonthTotal / budget) * 100)) : 0;
-  const budgetClass = !budget ? '' : monthPct >= 100 ? 'is-danger' : monthPct >= 80 ? 'is-warning' : 'is-success';
+  const budgetProgress = computeBudgetProgress(state.receipts, state.profile);
 
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
     ${pageHeader('Thống kê & phân tích chi phí', 'Báo cáo tổng hợp theo mùa, thương hiệu và nhóm đồ uống, kèm phân tích thói quen tiêu dùng bằng AI.', '/coffee', true)}
@@ -402,16 +481,7 @@ function renderStats(root) {
       <div class="coffee-summary-card"><span>Lần tốn nhất</span><strong>${escapeHtml(formatVnd(stats.maxSpend))}</strong></div>
     </div>
 
-    <section class="coffee-card coffee-budget-card">
-      <div class="coffee-card-heading"><div><p class="coffee-eyebrow">NGÂN SÁCH THÁNG</p><h2>${escapeHtml(formatVnd(stats.currentMonthTotal))} <span class="coffee-muted">/ ${budget ? escapeHtml(formatVnd(budget)) : 'chưa đặt'}</span></h2></div>${budget ? `<span class="coffee-chip ${budgetClass}">${monthPct}%</span>` : ''}</div>
-      ${budget ? `<div class="coffee-budget-bar" role="progressbar" aria-label="Chi tiêu tháng này so với ngân sách" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${monthPct}"><span class="${budgetClass}" style="width:${monthPct}%"></span></div>` : ''}
-      <form id="coffee-budget-form" class="coffee-budget-form">
-        <label class="coffee-field">Ngân sách mỗi tháng (đ)
-          <input name="monthlyBudget" type="number" min="0" max="100000000" step="10000" value="${escapeHtml(budget)}" inputmode="numeric">
-        </label>
-        <button class="coffee-primary-button" type="submit">Lưu ngân sách</button>
-      </form>
-    </section>
+    ${budgetOverviewMarkup(budgetProgress)}
 
     ${renderDashboard(state.receipts)}
     ${renderAiInsights(state.receipts)}`}
@@ -748,6 +818,10 @@ export function mountCoffeeApp(root) {
       return;
     }
 
+    if (target.closest('[data-budget-settings]')) { openBudgetModal(root); return; }
+    if (target.closest('[data-budget-modal-close]')) { root.querySelector('[data-budget-modal]')?.remove(); return; }
+    if (target.matches('[data-budget-modal]')) { target.remove(); return; }
+
     if (target.closest('[data-manual-add]')) {
       const form = target.closest('#coffee-manual-form');
       if (form) appendManualRow(root, form);
@@ -894,9 +968,14 @@ export function mountCoffeeApp(root) {
     if (form.id === 'coffee-budget-form') {
       try {
         const data = new FormData(form);
-        saveCoffeeProfile({ monthlyBudget: data.get('monthlyBudget') });
+        saveCoffeeProfile({
+          monthlyBudget: data.get('monthlyBudget'),
+          quarterlyBudget: data.get('quarterlyBudget'),
+          yearlyBudget: data.get('yearlyBudget'),
+        });
+        root.querySelector('[data-budget-modal]')?.remove();
         showRoute(root);
-        showToast(root, 'Đã lưu ngân sách tháng trên thiết bị này.');
+        showToast(root, 'Đã lưu ngân sách tháng / quý / năm trên thiết bị này.');
       } catch (error) {
         showToast(root, error.message || 'Không lưu được ngân sách.', true);
       }

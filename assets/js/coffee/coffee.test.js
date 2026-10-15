@@ -4,8 +4,9 @@ import { classifyItem, normalizeName } from './menu.js';
 import {
   computeReceiptTotals, toNumber, formatVnd,
   saveReceipt, getReceipts, getReceiptById, removeReceipt, importReceipts, validateReceipt, clearCoffeeData,
+  saveCoffeeProfile, getCoffeeState,
 } from './store.js';
-import { computeCoffeeStats } from './stats.js';
+import { computeCoffeeStats, computeBudgetProgress } from './stats.js';
 import { filterReceipts } from './main.js';
 
 // Minimal localStorage stub so the store CRUD layer can be exercised in Node.
@@ -114,4 +115,49 @@ test('filterReceipts searches by store, order code and item name', () => {
   // Default "Tất cả" filters (all empty) must never hide the saved list.
   assert.equal(filterReceipts(receipts).length, 2);
   assert.equal(filterReceipts(receipts, { query: '', month: '', store: '', category: '' }).length, 2);
+});
+
+test('computeBudgetProgress splits spend by month/quarter/year with status colours', () => {
+  const receipts = [
+    { date: '2026-10-05', total: 100000 },
+    { date: '2026-10-20', total: 100000 },
+    { date: '2026-11-01', total: 50000 },
+    { date: '2026-07-01', total: 300000 },
+    { date: '2025-10-01', total: 999999 },
+  ];
+  const progress = computeBudgetProgress(receipts, {
+    monthlyBudget: 200000, quarterlyBudget: 1000000, yearlyBudget: 0,
+  }, new Date(2026, 9, 15));
+
+  assert.equal(progress.month.spent, 200000);
+  assert.equal(progress.month.pct, 100);
+  assert.equal(progress.month.status, 'danger');
+  assert.equal(progress.month.barWidth, 100);
+
+  assert.equal(progress.quarter.label, 'Quý 4/2026');
+  assert.equal(progress.quarter.spent, 250000);
+  assert.equal(progress.quarter.status, 'success');
+
+  assert.equal(progress.year.spent, 550000);
+  assert.equal(progress.year.status, 'none');
+  assert.equal(progress.year.barWidth, 0);
+});
+
+test('saveCoffeeProfile merges periods and validates the range', () => {
+  clearCoffeeData();
+  saveCoffeeProfile({ monthlyBudget: 300000, quarterlyBudget: 900000, yearlyBudget: 3000000 });
+  let profile = getCoffeeState().profile;
+  assert.equal(profile.monthlyBudget, 300000);
+  assert.equal(profile.quarterlyBudget, 900000);
+  assert.equal(profile.yearlyBudget, 3000000);
+
+  // A partial update keeps the other periods untouched.
+  saveCoffeeProfile({ monthlyBudget: 400000 });
+  profile = getCoffeeState().profile;
+  assert.equal(profile.monthlyBudget, 400000);
+  assert.equal(profile.quarterlyBudget, 900000);
+  assert.equal(profile.yearlyBudget, 3000000);
+
+  assert.throws(() => saveCoffeeProfile({ yearlyBudget: -5 }), /Ngân sách năm/);
+  clearCoffeeData();
 });
