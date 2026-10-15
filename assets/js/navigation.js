@@ -55,11 +55,18 @@ if (header && menu && toggle) {
     if (dropdownToggle) {
       event.preventDefault();
       const item = dropdownToggle.closest('[data-nav-dropdown]');
-      const isOpen = item.classList.toggle('is-open');
-      dropdownToggle.setAttribute('aria-expanded', String(isOpen));
+      const willOpen = !item.classList.contains('is-open');
+      closeDropdowns();
+      if (willOpen) {
+        item.classList.add('is-open');
+        dropdownToggle.setAttribute('aria-expanded', 'true');
+      }
       return;
     }
-    if (event.target.closest('a')) setMenuOpen(false);
+    if (event.target.closest('a')) {
+      setMenuOpen(false);
+      closeDropdowns();
+    }
   });
   document.addEventListener('pointerdown', (event) => {
     if (!header.contains(event.target)) {

@@ -353,7 +353,7 @@ body.stores-route .main {
   background: #b91c1c;
 }
 
-/* Navbar dropdown: 🏪 Cửa hàng */
+/* Navbar dropdown: 🏪 Cửa hàng / 📚 Giáo án / ❤️ Sức khoẻ */
 .navbar__dropdown {
   position: relative;
 }
@@ -365,42 +365,51 @@ body.stores-route .main {
   font: inherit;
 }
 
+.blogco-header .navbar__link--dropdown[aria-expanded="true"] {
+  color: #fff !important;
+  background: var(--nav-active-bg);
+}
+
 .navbar__submenu {
   position: absolute;
-  top: calc(100% + 8px);
+  /* 100% is the centered <li>; add the centering gap ((nav − link)/2) + 8px
+     so the panel sits a true 8px below the navbar edge, never touching it. */
+  top: calc(100% + 8px + (var(--nav-height, 64px) - 40px) / 2);
   right: 0;
-  z-index: 120;
+  z-index: 10000;
   min-width: 240px;
   margin: 0;
-  padding: 6px;
+  padding: 8px;
   list-style: none;
-  background: #0b3b6f;
-  border: 1px solid #ffffff2e;
-  border-radius: 8px;
-  box-shadow: 0 12px 28px #0b3b6f40;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 18%), 0 2px 6px rgb(0 0 0 / 8%);
   display: none;
 }
 
-.navbar__dropdown.is-open .navbar__submenu,
-.navbar__dropdown:hover .navbar__submenu {
+/* Chỉ mở bằng click (JS thêm .is-open) — không dùng :hover để tránh mở nhiều cùng lúc. */
+.navbar__dropdown.is-open .navbar__submenu {
   display: block;
 }
 
 .navbar__submenu-link {
   display: block;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 6px;
-  color: #fff !important;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .02em;
+  color: #111827 !important;
+  font-size: 14px;
+  font-weight: 600 !important;
+  letter-spacing: 0;
   text-decoration: none;
   white-space: nowrap;
+  transition: background .12s ease, color .12s ease;
 }
 
 .navbar__submenu-link:hover,
 .navbar__submenu-link:focus-visible {
-  background: #ffffff1f;
+  background: #eff6ff;
+  color: #0082f0 !important;
 }
 
 @media (max-width: 1024px) {
@@ -415,19 +424,25 @@ body.stores-route .main {
 
   .navbar__dropdown .navbar__submenu {
     position: static;
+    right: auto;
+    width: 100%;
     min-width: 0;
-    margin-top: 4px;
+    margin: 4px 0 0;
+    padding: 4px 0 4px 8px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
     box-shadow: none;
-    background: #08305c;
   }
 
-  .navbar__dropdown.is-open .navbar__submenu,
-  .navbar__dropdown:hover .navbar__submenu {
-    display: none;
+  .navbar__dropdown .navbar__submenu-link {
+    color: #fff !important;
   }
 
-  .navbar__dropdown.is-open .navbar__submenu {
-    display: block;
+  .navbar__dropdown .navbar__submenu-link:hover,
+  .navbar__dropdown .navbar__submenu-link:focus-visible {
+    background: #ffffff1f;
+    color: #fff !important;
   }
 }
 
