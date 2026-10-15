@@ -165,10 +165,11 @@ function renderEditor(root, state) {
           <div class="blog-count" data-blog-count aria-live="polite" title="Số từ đã viết / giới hạn 50.000 từ">
             <span class="blog-count__main">
               <b class="blog-count__num" data-blog-count-words>0</b>
+              <span class="blog-count__unit">từ</span>
+              <span class="blog-count__detail" data-blog-count-detail>(0 ký tự)</span>
               <span class="blog-count__sep">/</span>
               <span class="blog-count__max">50.000 từ</span>
             </span>
-            <span class="blog-count__detail" data-blog-count-detail>0 ký tự</span>
           </div>
         </div>
         <p class="blog-status" data-blog-status></p>
@@ -293,25 +294,28 @@ function syncEmptyState(root) {
 const WORD_LIMIT = 50000;
 const WORD_WARN_AT = Math.floor(WORD_LIMIT * 0.9); // cảnh báo khi tới 90%
 
-function countWords(text = '') {
-  const trimmed = String(text).replace(/\s+/g, ' ').trim();
-  return trimmed ? trimmed.split(' ').length : 0;
+// Strip HTML tags so hidden markup / inserted tags never inflate the count.
+function plainTextFromHtml(html = '') {
+  return String(html)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function updateWordCount(root) {
   const widget = root.querySelector('[data-blog-count]');
   if (!widget) return;
-  const title = root.querySelector('[data-blog-title]')?.value || '';
-  const body = richEl(root)?.innerText || '';
-  const text = `${title} ${body}`.replace(/\s+/g, ' ').trim();
-  const words = countWords(text);
-  const chars = text.length;
+  // Body only (never the title field), HTML stripped, whitespace collapsed.
+  const plainText = (richEl(root)?.innerHTML || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
+  const chars = plainText.length;
   const fmt = (n) => n.toLocaleString('vi-VN');
 
   const numEl = widget.querySelector('[data-blog-count-words]');
   const detailEl = widget.querySelector('[data-blog-count-detail]');
   if (numEl) numEl.textContent = fmt(words);
-  if (detailEl) detailEl.textContent = `${fmt(chars)} ký tự`;
+  if (detailEl) detailEl.textContent = `(${fmt(chars)} ký tự)`;
 
   const over = words >= WORD_LIMIT;
   const warn = !over && words >= WORD_WARN_AT;

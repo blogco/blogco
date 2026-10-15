@@ -491,3 +491,5 @@ body.blog-drawer-open { overflow: hidden; }
 .blog-count.is-over .blog-count__main { animation: blog-count-pulse 1.2s ease-in-out infinite; }
 @keyframes blog-count-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .blog-count.is-over .blog-count__main { animation: none; } }
+.blog-count__unit { font-size: 1rem; font-weight: 800; color: var(--blog-primary); }
+.blog-count__detail { margin-left: .3rem; }
