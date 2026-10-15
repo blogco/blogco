@@ -72,6 +72,11 @@ export function renderOcrBlock(receipt = {}) {
     </div>
     <p class="coffee-invoice__status" data-invoice-status role="status" aria-live="polite"></p>
     <textarea class="coffee-invoice__text" name="ocrText" rows="3" placeholder="Nội dung OCR sẽ hiện ở đây (bạn có thể sửa hoặc dán tay)">${value(receipt.ocrText)}</textarea>
+    <details class="coffee-ocr-json" data-ocr-json hidden>
+      <summary>🧪 Kết quả trích xuất chuẩn (JSON)</summary>
+      <p class="coffee-ocr-json__note" data-ocr-json-note></p>
+      <pre class="coffee-ocr-json__pre" data-ocr-json-pre></pre>
+    </details>
     <input type="hidden" name="invoiceUrl" value="${hasImage ? escapeHtml(receipt.invoiceUrl) : ''}" data-invoice-value>
   </div>`;
 }

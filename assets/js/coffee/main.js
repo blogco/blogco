@@ -16,6 +16,7 @@ import { CATEGORY_LABELS, categoryLabel } from './menu.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats } from './stats.js';
 import { recognizeImage, parseHighlandsInvoice, isPdf, pdfToPreviewDataUrl } from './ocr.js';
+import { extractReceipt } from './extract.js';
 import { renderTrainingPage, mountTraining } from './training-view.js';
 import { loadPatterns, applyLearnedFixes } from './training.js';
 
@@ -598,14 +599,52 @@ async function runOcr(root, form, block) {
     if (textArea) textArea.value = ocrText;
     const result = parseHighlandsInvoice(ocrText);
     const filled = applyOcrResult(form, result);
+    renderExtractPanel(block, ocrText);
     if (status) {
-      status.textContent = filled.length
+      const extraction = safeExtract(ocrText);
+      const validation = extraction?.validation;
+      const suffix = validation?.arithmetic_check === 'failed'
+        ? ` ⚠️ Tổng lệch ${Math.abs(validation.discrepancy_amount).toLocaleString('vi-VN')} đ — xem JSON để kiểm tra.`
+        : (validation?.needs_manual_review ? ' Một số dòng cần bạn xác nhận (xem JSON).' : '');
+      status.textContent = (filled.length
         ? `Đã điền: ${filled.join(', ')}. Kiểm tra lại trước khi lưu.`
-        : 'OCR xong nhưng chưa tìm thấy trường mới để điền — bạn kiểm tra phần nội dung bên dưới.';
+        : 'OCR xong nhưng chưa tìm thấy trường mới để điền — bạn kiểm tra phần nội dung bên dưới.') + suffix;
     }
   } catch (error) {
     if (status) status.textContent = `${error.message} Bạn có thể nhập tay.`;
   }
+}
+
+// Trích xuất cấu trúc theo "system prompt AI trích xuất hoá đơn chính xác".
+function safeExtract(text) {
+  try {
+    return extractReceipt(text);
+  } catch {
+    return null;
+  }
+}
+
+function renderExtractPanel(block, text) {
+  const panel = block.querySelector('[data-ocr-json]');
+  const pre = block.querySelector('[data-ocr-json-pre]');
+  const note = block.querySelector('[data-ocr-json-note]');
+  if (!panel || !pre) return;
+  const extraction = safeExtract(text);
+  if (!extraction) {
+    panel.hidden = true;
+    return;
+  }
+  pre.textContent = JSON.stringify(extraction, null, 2);
+  if (note) {
+    const { validation } = extraction;
+    const label = { passed: '✅ Khớp tổng', failed: '⚠️ Lệch tổng', not_verified: '❔ Chưa xác minh' }[validation.arithmetic_check]
+      || validation.arithmetic_check;
+    const parts = [`${extraction.items.length} dòng hàng`, label];
+    if (validation.discrepancy_amount) parts.push(`lệch ${Number(validation.discrepancy_amount).toLocaleString('vi-VN')} đ`);
+    if (validation.warnings.length) parts.push(validation.warnings.length + ' cảnh báo');
+    note.textContent = parts.join(' · ');
+  }
+  panel.hidden = false;
 }
 
 // ---------------------------------------------------------------------------

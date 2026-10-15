@@ -5,6 +5,7 @@
 
 import { escapeHtml } from './store.js';
 import { recognizeImage, parseHighlandsReceipt } from './ocr.js';
+import { extractReceipt } from './extract.js';
 import {
   BRANDS, LABEL_FIELDS, brandLabel, brandSlug, learnFromSample, nextSampleId,
   loadPatterns, loadTrainingIndex, saveTrainingSample, getSaveMode, hasGitHubToken,
@@ -88,6 +89,11 @@ export function renderTrainingPage() {
       <div class="coffee-invoice__actions">
         <button type="button" class="coffee-secondary-button" data-training-suggest>✨ Gợi ý từ OCR</button>
       </div>
+      <details class="coffee-ocr-json" data-training-json hidden>
+        <summary>🧪 Trích xuất chuẩn (JSON) xem trước</summary>
+        <p class="coffee-ocr-json__note" data-training-json-note></p>
+        <pre class="coffee-ocr-json__pre" data-training-json-pre></pre>
+      </details>
     </section>
 
     <section class="coffee-card coffee-training-step">
@@ -200,6 +206,32 @@ function fillSuggestion(container, text) {
   return filled;
 }
 
+// Xem trước cấu trúc trích xuất chuẩn (system prompt hoá đơn chính xác) từ text OCR.
+function renderExtractPreview(container, text) {
+  const panel = container.querySelector('[data-training-json]');
+  const pre = container.querySelector('[data-training-json-pre]');
+  const note = container.querySelector('[data-training-json-note]');
+  if (!panel || !pre) return;
+  let extraction;
+  try {
+    extraction = extractReceipt(text);
+  } catch {
+    panel.hidden = true;
+    return;
+  }
+  pre.textContent = JSON.stringify(extraction, null, 2);
+  if (note) {
+    const { validation } = extraction;
+    const label = { passed: '✅ Khớp tổng', failed: '⚠️ Lệch tổng', not_verified: '❔ Chưa xác minh' }[validation.arithmetic_check]
+      || validation.arithmetic_check;
+    const parts = [`${extraction.items.length} dòng hàng`, label];
+    if (validation.discrepancy_amount) parts.push(`lệch ${Number(validation.discrepancy_amount).toLocaleString('vi-VN')} đ`);
+    if (validation.warnings.length) parts.push(`${validation.warnings.length} cảnh báo`);
+    note.textContent = parts.join(' · ');
+  }
+  panel.hidden = false;
+}
+
 // Gắn sự kiện cho trang training sau khi markup được render vào `root`.
 export async function mountTraining(root) {
   const container = root.querySelector('[data-training]');
@@ -305,6 +337,7 @@ export async function mountTraining(root) {
   container.querySelector('[data-training-suggest]')?.addEventListener('click', () => {
     const text = applyLearnedFixes(textArea.value, state.patterns?.vietnameseFixes || {});
     const filled = fillSuggestion(container, text);
+    renderExtractPreview(container, text);
     if (status) status.textContent = filled ? `Đã gợi ý ${filled} trường từ OCR.` : 'Không đọc thêm được trường nào — bạn gán nhãn thủ công.';
   });
 

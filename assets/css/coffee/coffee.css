@@ -214,6 +214,10 @@ body.coffee-route .category-bar { display: none; }
 .coffee-ocr-details { margin-top: 1rem; }
 .coffee-ocr-details summary { cursor: pointer; font-weight: 700; color: var(--coffee-amber); }
 .coffee-ocr-details pre { margin-top: .6rem; padding: .8rem; overflow-x: auto; border-radius: 10px; background: #f6efe6; font-size: .82rem; white-space: pre-wrap; }
+.coffee-ocr-json { margin-top: .75rem; }
+.coffee-ocr-json summary { cursor: pointer; font-weight: 700; color: var(--coffee-amber); }
+.coffee-ocr-json__note { margin: .4rem 0 0 !important; color: var(--coffee-muted) !important; font-size: .84rem; }
+.coffee-ocr-json__pre { margin-top: .5rem; padding: .8rem; max-height: 22rem; overflow: auto; border-radius: 10px; background: #f6efe6; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; line-height: 1.45; white-space: pre; }
 
 /* Detail -------------------------------------------------------------------- */
 .coffee-detail-list { display: grid; gap: .5rem; margin: 0; }
