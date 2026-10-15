@@ -10,6 +10,7 @@ import { requireAuth, hideAuthLock, isSensitiveRoute, mountAuthControl } from '.
 let waterAppPromise;
 let healthAppPromise;
 let coffeeAppPromise;
+let thuocAppPromise;
 let brandAppPromise;
 let blogAppPromise;
 
@@ -55,6 +56,20 @@ function syncCoffeeRoute() {
   void coffeeAppPromise.then(({ mountCoffeeApp }) => mountCoffeeApp(root));
 }
 
+function syncThuocRoute() {
+  const root = document.querySelector('[data-thuoc-app]');
+  if (!root) return;
+  const hashRoute = location.hash.startsWith('#/thuoc');
+  const directRoute = Boolean(root.dataset.initialRoute);
+  const active = hashRoute || directRoute;
+  root.hidden = !active;
+  document.body.classList.toggle('thuoc-route', active);
+  if (!active) return;
+  if (!requireAuth()) return;
+  thuocAppPromise ??= import('./thuoc/main.js');
+  void thuocAppPromise.then(({ mountThuocApp }) => mountThuocApp(root));
+}
+
 function syncBrandRoute() {
   const root = document.querySelector('[data-brand-app]');
   if (!root) return;
@@ -85,11 +100,13 @@ function syncBlogRoute() {
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncCoffeeRoute);
+window.addEventListener('hashchange', syncThuocRoute);
 window.addEventListener('hashchange', syncBrandRoute);
 window.addEventListener('hashchange', syncBlogRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncCoffeeRoute();
+syncThuocRoute();
 syncBrandRoute();
 syncBlogRoute();
 
@@ -99,9 +116,10 @@ window.addEventListener('blogco:auth-changed', () => {
   syncWaterRoute();
   syncHealthRoute();
   syncCoffeeRoute();
+  syncThuocRoute();
 });
 window.addEventListener('hashchange', () => {
-  const dedicated = '[data-water-app][data-initial-route]:not([hidden]), [data-health-app][data-initial-route]:not([hidden]), [data-coffee-app][data-initial-route]:not([hidden])';
+  const dedicated = '[data-water-app][data-initial-route]:not([hidden]), [data-health-app][data-initial-route]:not([hidden]), [data-coffee-app][data-initial-route]:not([hidden]), [data-thuoc-app][data-initial-route]:not([hidden])';
   if (!isSensitiveRoute(location.hash) && !document.querySelector(dedicated)) hideAuthLock();
 });
 mountAuthControl();

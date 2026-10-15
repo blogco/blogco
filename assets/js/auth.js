@@ -15,7 +15,7 @@ const EVT = 'blogco:auth-changed';
 export const DEFAULT_PASSCODE = '123456';
 
 // Hash routes that must be unlocked before their app mounts.
-export const SENSITIVE_PREFIXES = ['#/water', '#/health', '#/coffee'];
+export const SENSITIVE_PREFIXES = ['#/water', '#/health', '#/coffee', '#/thuoc'];
 
 export function isSensitiveRoute(hash = '') {
   return SENSITIVE_PREFIXES.some((prefix) => hash.startsWith(prefix));

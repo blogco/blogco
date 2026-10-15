@@ -18,10 +18,11 @@ globalThis.localStorage = (() => {
 })();
 
 test('marks only the personal modules as sensitive', () => {
-  assert.deepEqual(SENSITIVE_PREFIXES, ['#/water', '#/health', '#/coffee']);
+  assert.deepEqual(SENSITIVE_PREFIXES, ['#/water', '#/health', '#/coffee', '#/thuoc']);
   assert.equal(isSensitiveRoute('#/health/vaccine'), true);
   assert.equal(isSensitiveRoute('#/coffee/stats'), true);
   assert.equal(isSensitiveRoute('#/water/add'), true);
+  assert.equal(isSensitiveRoute('#/thuoc/stats'), true);
   assert.equal(isSensitiveRoute('#/brand-guidelines'), false);
   assert.equal(isSensitiveRoute(''), false);
 });
