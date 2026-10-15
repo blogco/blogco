@@ -38,6 +38,12 @@ function markdownFromHtml(html = '') {
   return cleanMarkdown(turndown.turndown(html || ''));
 }
 
+let markedPromise;
+function loadMarked() {
+  markedPromise ??= import('marked').then((mod) => mod.marked || mod.default);
+  return markedPromise;
+}
+
 function formatBytes(bytes = 0) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -53,6 +59,7 @@ const TOOLBAR = [
   { action: 'number', label: '1.', title: 'Danh sách số', cmd: 'insertOrderedList' },
   { action: 'quote', label: '❝', title: 'Trích dẫn', block: 'blockquote' },
   { action: 'link', label: '🔗', title: 'Chèn liên kết', link: true },
+  { action: 'image', label: '🖼️', title: 'Chèn ảnh vào bài (chọn nhiều ảnh)', image: true },
   { action: 'clear', label: '✨', title: 'Xoá định dạng', clear: true },
 ];
 
@@ -81,7 +88,7 @@ function renderEditor(root) {
           <input type="text" data-blog-title value="${escapeHtml(draft.title)}" placeholder="VD: Kinh nghiệm uống cà phê lành mạnh">
         </label>
 
-        <div class="blog-toolbar" role="toolbar" aria-label="Định dạng văn bản">${toolbarHtml()}</div>
+        <div class="blog-toolbar" role="toolbar" aria-label="Định dạng văn bản">${toolbarHtml()}<input type="file" accept="image/*" multiple data-blog-image-input hidden></div>
 
         <label class="blog-field blog-field--grow">Nội dung bài viết
           <div class="blog-rich" data-blog-body contenteditable="true" role="textbox" aria-multiline="true" spellcheck="false" data-placeholder="Dán nội dung bài viết vào đây — xuống dòng và đoạn văn tự nhận."></div>
@@ -89,6 +96,7 @@ function renderEditor(root) {
 
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>💾 Lưu &amp; Sync GitHub</button>
+          <button type="button" class="blog-ghost" data-blog-preview-open>👁️ Xem trước</button>
           <button type="button" class="blog-ghost" data-blog-clear>🗑️ Xoá nháp</button>
         </div>
         <p class="blog-status" data-blog-status role="status" aria-live="polite"></p>
@@ -135,6 +143,23 @@ function renderEditor(root) {
           <p class="blog-thumb__credit" data-blog-credit></p>
         </fieldset>
       </aside>
+    </div>
+
+    <div class="blog-preview-overlay" data-blog-preview-overlay hidden>
+      <div class="blog-preview-modal" role="dialog" aria-modal="true" aria-labelledby="blog-preview-label">
+        <div class="blog-preview-modal__head">
+          <span id="blog-preview-label">👁️ Xem trước bài viết</span>
+          <button type="button" class="blog-ghost blog-ghost--sm" data-blog-preview-close>✖️ Đóng</button>
+        </div>
+        <article class="blog-preview-modal__body">
+          <h1 class="blog-preview-modal__title" data-blog-preview-title></h1>
+          <p class="blog-preview-modal__meta" data-blog-preview-meta></p>
+          <figure class="blog-preview-modal__cover" data-blog-preview-cover-wrap hidden>
+            <img data-blog-preview-cover alt="Ảnh đại diện">
+          </figure>
+          <div class="blog-preview-modal__content md-content" data-blog-preview-content></div>
+        </article>
+      </div>
     </div>
   </section>`;
   const rich = root.querySelector('[data-blog-body]');
@@ -196,6 +221,10 @@ function applyTool(root, action) {
   if (spec.link) {
     const url = window.prompt('Nhập địa chỉ liên kết:', 'https://');
     if (url) runCommand(root, 'createLink', url);
+    return;
+  }
+  if (spec.image) {
+    root.querySelector('[data-blog-image-input]')?.click();
     return;
   }
   if (spec.clear) {
@@ -273,6 +302,97 @@ function acceptFile(root, file, state) {
   setStatus(root, 'Ảnh sẵn sàng — sẽ được upload lên GitHub khi bạn bấm Lưu.');
 }
 
+// Insert HTML where the caret is (falls back to appending at the end).
+function insertHtmlAtCursor(root, html) {
+  const rich = richEl(root);
+  if (!rich) return;
+  rich.focus();
+  const selection = window.getSelection();
+  const hasCaret = selection && selection.rangeCount
+    && rich.contains(selection.getRangeAt(0).commonAncestorContainer);
+  try {
+    if (hasCaret) document.execCommand('insertHTML', false, html);
+    else rich.insertAdjacentHTML('beforeend', html);
+  } catch {
+    rich.insertAdjacentHTML('beforeend', html);
+  }
+  syncEmptyState(root);
+}
+
+// Toolbar 🖼️ button: pick any number of files, preview them inline at the caret
+// and stage each one for upload when the post is saved.
+function acceptToolbarImages(root, fileList, state) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  let added = 0;
+  let skipped = 0;
+  for (const file of files) {
+    if (!/^image\//.test(file.type) || file.size > MAX_IMAGE_BYTES) { skipped += 1; continue; }
+    const id = `img${++state.imageSeq}`;
+    const url = URL.createObjectURL(file);
+    state.blobs.add(url);
+    state.images.set(id, { file, url });
+    const label = escapeHtml(file.name.replace(/\.[^.]+$/, ''));
+    insertHtmlAtCursor(root, `<p><img src="${url}" alt="${label}" data-blog-upload="${id}"></p>`);
+    added += 1;
+  }
+  if (added) {
+    setStatus(root, `Đã chèn ${added} ảnh — sẽ upload lên GitHub khi bạn bấm Lưu.${skipped ? ` (bỏ qua ${skipped} tệp không hợp lệ)` : ''}`);
+  } else {
+    setStatus(root, 'Không có ảnh hợp lệ nào được chọn.', 'error');
+  }
+}
+
+// Upload every staged inline image and swap its blob URL for the GitHub URL.
+async function resolvePendingImages(root, state, { repo, branch, token, slug }) {
+  if (!state.images.size) return;
+  const media = mediaConfig();
+  for (const [id, item] of Array.from(state.images.entries())) {
+    const img = root.querySelector(`[data-blog-upload="${id}"]`);
+    if (!img) { state.images.delete(id); continue; }
+    const filename = uploadFilename(slug, item.file.name);
+    const asset = await uploadImage({ repo, branch, dir: media.dir, filename, file: item.file, token });
+    img.src = assetPublicUrl(media.siteUrl, asset.path);
+    img.removeAttribute('data-blog-upload');
+    if (state.blobs.has(item.url)) { URL.revokeObjectURL(item.url); state.blobs.delete(item.url); }
+    state.images.delete(id);
+  }
+}
+
+// Preview the finished post (title + cover + body) exactly as it will publish,
+// including the thumbnail and every inline/gallery image.
+function openPreview(root, state) {
+  const overlay = root.querySelector('[data-blog-preview-overlay]');
+  if (!overlay) return;
+  const form = readForm(root);
+  const coverUrl = state.thumb?.url || (state.file ? state.previewUrl : '');
+  overlay.querySelector('[data-blog-preview-title]').textContent = form.title || 'Chưa có tiêu đề';
+  const tags = String(form.tags || '').split(',').map((tag) => tag.trim()).filter(Boolean);
+  overlay.querySelector('[data-blog-preview-meta]').textContent = [
+    form.author,
+    tags.length ? tags.map((tag) => `#${tag}`).join(' ') : '',
+    new Date().toLocaleDateString('vi-VN'),
+  ].filter(Boolean).join(' · ');
+  const coverWrap = overlay.querySelector('[data-blog-preview-cover-wrap]');
+  const coverImg = overlay.querySelector('[data-blog-preview-cover]');
+  if (coverUrl) { coverImg.src = coverUrl; coverWrap.hidden = false; }
+  else { coverImg.removeAttribute('src'); coverWrap.hidden = true; }
+
+  const content = overlay.querySelector('[data-blog-preview-content]');
+  content.innerHTML = '<p class="blog-preview__loading">Đang dựng bản xem trước…</p>';
+  overlay.hidden = false;
+  const markdown = markdownFromHtml(form.html);
+  loadMarked().then((marked) => {
+    const render = typeof marked === 'function' ? marked : marked.parse;
+    content.innerHTML = markdown ? render(markdown) : '<p><em>Chưa có nội dung.</em></p>';
+  });
+}
+
+function closePreview(root) {
+  const overlay = root.querySelector('[data-blog-preview-overlay]');
+  if (overlay) overlay.hidden = true;
+}
+
 async function onSave(root, state) {
   const form = readForm(root);
   const body = markdownFromHtml(form.html);
@@ -287,6 +407,12 @@ async function onSave(root, state) {
   if (saveButton) saveButton.disabled = true;
   try {
     const slug = slugify(form.title);
+    if (state.images?.size) {
+      setStatus(root, 'Đang upload ảnh trong bài lên GitHub…');
+      await resolvePendingImages(root, state, { repo: form.repo, branch: form.branch, token: form.token, slug });
+    }
+    // Re-read after inline uploads so the Markdown holds the final image URLs.
+    const body = markdownFromHtml(richEl(root)?.innerHTML || '');
     let cover = null;
 
     if (form.imageMode === 'upload') {
@@ -346,7 +472,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
   if (!root) return;
   if (!root.dataset.mounted) {
     root.dataset.mounted = 'true';
-    const state = { thumb: null, file: null, previewUrl: '' };
+    const state = { thumb: null, file: null, previewUrl: '', images: new Map(), blobs: new Set(), imageSeq: 0 };
     const dropzone = () => root.querySelector('[data-blog-dropzone]');
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch { /* ignore */ }
 
@@ -368,6 +494,9 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         return;
       }
       if (event.target.closest('[data-blog-save]')) { void onSave(root, state); return; }
+      if (event.target.closest('[data-blog-preview-open]')) { openPreview(root, state); return; }
+      if (event.target.closest('[data-blog-preview-close]')) { closePreview(root); return; }
+      if (event.target.closest('[data-blog-preview-overlay]') && !event.target.closest('.blog-preview-modal')) { closePreview(root); return; }
       if (event.target.closest('[data-blog-clear]')) {
         if (window.confirm('Xoá bản nháp đang soạn trên thiết bị này?')) {
           root.querySelector('[data-blog-title]').value = '';
@@ -376,6 +505,9 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
           if (rich) rich.innerHTML = '';
           clearDraft();
           if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+          state.blobs.forEach((url) => URL.revokeObjectURL(url));
+          state.blobs.clear();
+          state.images.clear();
           state.file = null;
           state.thumb = null;
           resetDropzone(root);
@@ -395,6 +527,11 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       const input = event.target;
       if (input.matches?.('[data-blog-file]')) {
         acceptFile(root, input.files?.[0], state);
+        input.value = '';
+        return;
+      }
+      if (input.matches?.('[data-blog-image-input]')) {
+        acceptToolbarImages(root, input.files, state);
         input.value = '';
         return;
       }
