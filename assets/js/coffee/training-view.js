@@ -1,119 +1,145 @@
-// Trang "AI Training" — UI 5 bước dạy OCR học hoá đơn mẫu.
+// Trang "AI Training — Huấn luyện đọc hoá đơn" (#/coffee/training).
 //
-// Route: #/coffee/training. Markup + wiring nằm ở đây; logic học thuần nằm ở
-// training.js; OCR tái dùng recognizeImage/parseHighlandsReceipt của ocr.js.
+// Workbench 7 bước: tải hoá đơn → AI phân tích → sửa dữ liệu → xác minh →
+// xác nhận dữ liệu chuẩn → đưa vào tập training → xem kết quả. Logic thuần nằm ở
+// extract/verify/training-model/training-store; component bảng ở training-table.js;
+// lịch sử ở training-history.js. Ở đây chỉ dựng markup + nối sự kiện.
 
-import { escapeHtml } from './store.js';
-import { recognizeImage, parseHighlandsReceipt } from './ocr.js';
-import { extractReceipt } from './extract.js';
+import { escapeHtml, formatVnd, toNumber } from './store.js';
+import { recognizeImage, isPdf, pdfToPageCanvases } from './ocr.js';
+import { LINE_TYPES, LINE_TYPE_LABELS } from './extract.js';
 import {
-  BRANDS, LABEL_FIELDS, brandLabel, brandSlug, learnFromSample, nextSampleId,
-  loadPatterns, loadTrainingIndex, saveTrainingSample, getSaveMode, hasGitHubToken,
-  setGitHubToken, applyLearnedFixes, accuracyFromCount,
+  BRANDS, brandLabel, brandSlug, loadPatterns, learnFromSample, nextSampleId,
+  saveTrainingSample, getSaveMode, hasGitHubToken, setGitHubToken, loadTrainingIndex,
+  accuracyFromCount, applyLearnedFixes,
 } from './training.js';
+import {
+  createSession, recompute as recomputeSession, updateItem, addManualItem, removeItem, reclassifyLine,
+  buildLabeledFields, editedFieldCount, canConfirm, reviewFields, clone,
+} from './training-model.js';
+import {
+  listTrainingRecords, getTrainingRecord, saveTrainingRecord, removeTrainingRecord,
+  sessionFromRecord, filterTrainingRecords, TRAINING_STATUS,
+} from './training-store.js';
+import { VERIFY_STATUS } from './verify.js';
+import { renderItemsTable, formatMoneyInput, parseMoneyInput } from './training-table.js';
+import { renderTrainingHistory } from './training-history.js';
 
-function fieldInput(name, label, value = '') {
-  return `<label class="coffee-field">${escapeHtml(label)}
-    <input name="${name}" data-training-field="${name}" type="text" value="${escapeHtml(value)}" placeholder="—">
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const OCR_MAX_PDF_PAGES = 5;
+const PREVIEW_MAX_PDF_PAGES = 8;
+const ACCEPTED = /(image\/(png|jpe?g|webp|bmp|gif)|application\/pdf)/i;
+
+function verifyChip(status) {
+  const meta = VERIFY_STATUS[status] || VERIFY_STATUS.insufficient;
+  return `<span class="coffee-chip is-${meta.tone}">${escapeHtml(meta.label)}</span>`;
+}
+
+function statusChip(state) {
+  const map = {
+    idle: ['muted', 'Sẵn sàng'],
+    analyzing: ['warning', 'Đang xử lý'],
+    ready: ['success', 'Sẵn sàng'],
+    saving: ['warning', 'Đang lưu'],
+    saved: ['success', 'Đã lưu'],
+    error: ['danger', 'Lỗi'],
+  };
+  const [tone, label] = map[state.status] || map.idle;
+  return `<span class="coffee-chip is-${tone}" data-header-status>${escapeHtml(label)}</span>`;
+}
+
+function receiptInput(field, value, label, { suffix = 'đ', placeholder = '?' } = {}) {
+  return `<label class="coffee-field coffee-reconcile__field">${escapeHtml(label)}
+    <span class="coffee-money-input"><input type="text" inputmode="numeric" data-receipt-field="${field}" value="${formatMoneyInput(value)}" placeholder="${placeholder}"><span aria-hidden="true">${escapeHtml(suffix)}</span></span>
   </label>`;
 }
 
-export function renderTrainingPage() {
-  const brandRadios = BRANDS.map((brand, index) => `<label class="coffee-training-brand">
-    <input type="radio" name="trainingBrand" value="${brand.id}"${index === 0 ? ' checked' : ''}>
-    <span>${escapeHtml(brand.label)}</span>
-  </label>`).join('');
+// ---------------------------------------------------------------------------
+// Markup
+// ---------------------------------------------------------------------------
 
+export function renderTrainingPage() {
   return `<section class="coffee-screen" data-training aria-labelledby="coffee-title">
-    <div class="coffee-page-heading">
+    <div class="coffee-page-heading coffee-training-head">
       <a class="coffee-back" href="#/coffee" aria-label="Quay lại">← Quay lại</a>
       <p class="coffee-eyebrow">BLOGCO · CHI PHÍ CÀ PHÊ</p>
-      <h1 id="coffee-title" tabindex="-1">🧠 AI Training</h1>
-      <p>Dạy AI nhận diện hoá đơn: upload mẫu, sửa text OCR, gán nhãn trường rồi lưu vào DB GitHub. Càng nhiều mẫu, OCR càng chính xác.</p>
+      <h1 id="coffee-title" tabindex="-1">AI Training – Huấn luyện đọc hoá đơn</h1>
+      <p>Tải hoá đơn mẫu, để AI trích xuất, sửa lại cho đúng rồi xác nhận thành dữ liệu chuẩn. Dữ liệu đã xác nhận được lưu vào tập training để cải thiện OCR — mô hình chỉ được huấn luyện lại khi pipeline backend thực sự hỗ trợ.</p>
+      <div class="coffee-training-head__status">
+        <span data-header-status-slot>${statusChip({ status: 'idle' })}</span>
+        <span class="coffee-chip coffee-chip--muted" data-header-counts>0 hoá đơn · 0 chờ xác nhận · 0 cần sửa</span>
+      </div>
+      <div class="coffee-invoice__actions">
+        <button type="button" class="coffee-secondary-button" data-toggle-history>🕘 Lịch sử training</button>
+      </div>
     </div>
 
-    <section class="coffee-card coffee-training-step">
-      <h2 class="coffee-section-title">1 · Chọn thương hiệu</h2>
-      <div class="coffee-training-brands">${brandRadios}</div>
-      <label class="coffee-field coffee-training-custom" data-training-custom hidden> Tên thương hiệu khác
-        <input name="trainingBrandCustom" type="text" maxlength="60" placeholder="Ví dụ: Cộng Cà Phê">
-      </label>
+    <p class="coffee-training-alert" data-training-alert role="status" aria-live="polite" hidden></p>
+
+    <section class="coffee-card coffee-training-step" data-upload-card>
+      <div class="coffee-card-heading"><h2 class="coffee-section-title">1 · Tải hoá đơn</h2><span class="coffee-chip coffee-chip--muted">PDF · PNG · JPG</span></div>
+      <div data-upload-body></div>
     </section>
 
-    <section class="coffee-card coffee-training-step">
-      <h2 class="coffee-section-title">2 · Upload hoá đơn mẫu</h2>
-      <label class="coffee-dropzone" data-training-dropzone>
-        <input type="file" accept="image/*,application/pdf,.pdf" multiple data-training-input hidden aria-label="Chọn ảnh hoặc PDF hoá đơn mẫu">
-        <span class="coffee-dropzone__hint">
-          <span aria-hidden="true">📥</span>
-          <span>Kéo ảnh/PDF vào đây hoặc bấm để chọn</span>
-          <small>JPG · PNG · WebP · PDF · tối đa 10MB/tệp · chọn được nhiều tệp</small>
-        </span>
-      </label>
-      <p class="coffee-muted" data-training-filecount>Chưa chọn ảnh nào.</p>
+    <section class="coffee-training-workspace" data-workspace hidden>
+      <ol class="coffee-steps" data-steps aria-label="Tiến trình training">
+        <li data-step="upload">Tải lên</li>
+        <li data-step="analyze">AI phân tích</li>
+        <li data-step="edit">Sửa dữ liệu</li>
+        <li data-step="verify">Xác minh</li>
+        <li data-step="confirm">Xác nhận</li>
+        <li data-step="train">Tập training</li>
+      </ol>
+
+      <div class="coffee-tabs" role="tablist" data-tabs>
+        <button type="button" role="tab" class="coffee-tab is-active" data-tab="invoice">Hoá đơn gốc</button>
+        <button type="button" role="tab" class="coffee-tab" data-tab="data">Dữ liệu nhận diện</button>
+      </div>
+
+      <div class="coffee-training-grid" data-grid>
+        <div class="coffee-training-col coffee-training-col--invoice" data-invoice-viewer></div>
+        <div class="coffee-training-col coffee-training-col--data" data-data-col>
+          <section class="coffee-card coffee-training-panel" aria-label="Bảng sản phẩm">
+            <div class="coffee-card-heading"><h2 class="coffee-section-title">2 · Sản phẩm nhận diện</h2><span data-items-summary></span></div>
+            <div class="coffee-invoice__actions">
+              <button type="button" class="coffee-secondary-button" data-add-item>＋ Thêm sản phẩm thủ công</button>
+              <button type="button" class="coffee-ghost-button" data-undo disabled>↶ Hoàn tác xoá/sửa</button>
+            </div>
+            <div data-items-table></div>
+          </section>
+
+          <section class="coffee-card coffee-training-panel" aria-label="Các dòng chưa phân loại">
+            <div class="coffee-card-heading"><h2 class="coffee-section-title">3 · Các dòng AI chưa phân loại chắc chắn</h2></div>
+            <p class="coffee-muted">Đổi loại cho từng dòng nếu AI hiểu sai. Dòng không phải sản phẩm sẽ không bị tính vào số món.</p>
+            <div data-lines-panel></div>
+          </section>
+
+          <section class="coffee-card coffee-training-panel" aria-label="Đối chiếu hoá đơn">
+            <div class="coffee-card-heading"><h2 class="coffee-section-title">4 · Đối chiếu hoá đơn</h2><span data-reconcile-chip></span></div>
+            <div data-reconcile-panel></div>
+          </section>
+
+          <section class="coffee-card coffee-training-panel" aria-label="Xác nhận và lưu">
+            <div class="coffee-card-heading"><h2 class="coffee-section-title">5 · Xác nhận dữ liệu chuẩn</h2></div>
+            <div data-confirm-panel></div>
+            <div class="coffee-workflow-actions">
+              <button type="button" class="coffee-secondary-button" data-save-draft>💾 Lưu bản nháp</button>
+              <button type="button" class="coffee-primary-button" data-confirm disabled>✅ Xác nhận dữ liệu chuẩn</button>
+            </div>
+          </section>
+        </div>
+      </div>
     </section>
 
-    <section class="coffee-card coffee-training-step">
-      <h2 class="coffee-section-title">3 · Kiểm tra / sửa text OCR</h2>
-      <div class="coffee-invoice__actions">
-        <button type="button" class="coffee-secondary-button" data-training-ocr>🔍 OCR ảnh đã chọn</button>
-        <button type="button" class="coffee-ghost-button" data-training-clear>Xoá text</button>
-      </div>
-      <p class="coffee-invoice__status" data-training-status role="status" aria-live="polite"></p>
-      <textarea class="coffee-invoice__text coffee-training-text" data-training-text rows="10" placeholder="Text OCR thô (bạn có thể sửa trực tiếp tại đây)"></textarea>
+    <section class="coffee-card coffee-training-step" data-trainset-card hidden>
+      <div class="coffee-card-heading"><h2 class="coffee-section-title">6 · Đưa vào tập training</h2></div>
+      <p class="coffee-muted">Dữ liệu đã xác nhận được lưu thành mẫu chuẩn (ground truth). Việc này <strong>không</strong> huấn luyện lại mô hình ngay — mẫu được dùng để cải thiện OCR ở pipeline backend.</p>
+      <div data-trainset-body></div>
     </section>
 
-    <section class="coffee-card coffee-training-step">
-      <h2 class="coffee-section-title">4 · Đánh dấu các trường quan trọng</h2>
-      <p class="coffee-muted">Bôi đen text ở ô trên rồi bấm nhãn tương ứng, hoặc bấm “Gợi ý từ OCR” để AI tự điền.</p>
-      <div class="coffee-training-labels">
-        ${LABEL_FIELDS.map(([field, label]) => `<button type="button" class="coffee-ghost-button coffee-training-label" data-label-field="${field}">${escapeHtml(label)}</button>`).join('')}
-      </div>
-      <div class="coffee-form-grid coffee-training-fields">
-        ${fieldInput('brand', '🏷 Thương hiệu')}
-        ${fieldInput('address', '🏷 Địa chỉ')}
-        ${fieldInput('phone', '🏷 SĐT')}
-        ${fieldInput('shopId', '🏷 ShopID')}
-        ${fieldInput('checkNo', '🏷 Check')}
-        ${fieldInput('datetime', '🏷 Ngày giờ')}
-        ${fieldInput('cashier', '🏷 Thu ngân')}
-        ${fieldInput('pager', '🏷 Pager')}
-        ${fieldInput('pos', '🏷 POS')}
-        ${fieldInput('subtotal', '🏷 Thành tiền')}
-        ${fieldInput('total', '🏷 Tổng tiền')}
-        ${fieldInput('payment', '🏷 Thanh toán')}
-      </div>
-      <label class="coffee-field coffee-field--full">🍹 Danh sách món (JSON)
-        <textarea name="items" data-training-field="items" rows="4" placeholder='[{"qty":1,"name":"Matcha Latte Da L","price":69000,"discount":-13800}]'></textarea>
-      </label>
-      <div class="coffee-invoice__actions">
-        <button type="button" class="coffee-secondary-button" data-training-suggest>✨ Gợi ý từ OCR</button>
-      </div>
-      <details class="coffee-ocr-json" data-training-json hidden>
-        <summary>🧪 Trích xuất chuẩn (JSON) xem trước</summary>
-        <p class="coffee-ocr-json__note" data-training-json-note></p>
-        <pre class="coffee-ocr-json__pre" data-training-json-pre></pre>
-      </details>
-    </section>
-
-    <section class="coffee-card coffee-training-step">
-      <h2 class="coffee-section-title">5 · Huấn luyện &amp; lưu vào DB</h2>
-      <label class="coffee-field coffee-field--full">GitHub Personal Access Token (contents:write) — chỉ lưu trên thiết bị này
-        <input name="trainingToken" data-training-token type="password" autocomplete="off" placeholder="ghp_… (bỏ trống nếu dùng CMS local hoặc tải file)">
-      </label>
-      <p class="coffee-muted" data-training-savehint></p>
-      <div class="coffee-invoice__actions">
-        <button type="button" class="coffee-primary-button" data-training-save>🧠 Huấn luyện AI với mẫu này</button>
-        <button type="button" class="coffee-secondary-button" data-training-download>💾 Export training data</button>
-        <button type="button" class="coffee-ghost-button" data-training-import-trigger>⬆ Import từ máy khác</button>
-        <input type="file" accept="application/json,.json" data-training-import hidden aria-label="Chọn file training để nhập">
-      </div>
-      <p class="coffee-invoice__status" data-training-result role="status" aria-live="polite"></p>
-    </section>
-
-    <section class="coffee-card coffee-training-step">
-      <h2 class="coffee-section-title">📊 Tiến độ học</h2>
-      <div data-training-progress><p class="coffee-muted">Đang tải…</p></div>
+    <section class="coffee-card coffee-training-step" data-history-card hidden>
+      <div class="coffee-card-heading"><h2 class="coffee-section-title">7 · Lịch sử training &amp; quản lý dữ liệu mẫu</h2></div>
+      <div data-history></div>
     </section>
 
     <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">← Danh sách hoá đơn</a></div>
@@ -121,289 +147,674 @@ export function renderTrainingPage() {
   <div class="coffee-toast" data-coffee-toast role="status" aria-live="polite" aria-atomic="true"></div>`;
 }
 
-function showToast(root, text, isError = false) {
-  const toast = root.querySelector('[data-coffee-toast]');
-  if (!toast) return;
-  toast.textContent = text;
-  toast.classList.toggle('is-error', isError);
-  toast.classList.add('is-visible');
-  clearTimeout(showToast.timeout);
-  showToast.timeout = setTimeout(() => toast.classList.remove('is-visible'), 4200);
-}
+// ---------------------------------------------------------------------------
+// Mount / wiring
+// ---------------------------------------------------------------------------
 
-function progressMarkup(index) {
-  const brands = index?.brands || {};
-  const slugs = ['highlands', 'starbucks', 'phuclong'];
-  const rows = slugs.map((slug) => {
-    const entry = brands[slug] || { samples: 0, accuracy: 0.45 };
-    const accuracy = Math.round((entry.accuracy ?? accuracyFromCount(entry.samples)) * 100);
-    const label = brandLabel(slug);
-    return `<li class="coffee-stat-row">
-      <span class="coffee-stat-row__label">${escapeHtml(label)}<small>${entry.samples} mẫu đã học</small></span>
-      <span class="coffee-stat-bar" role="img" aria-label="${escapeHtml(label)}: ${accuracy}%"><span style="width:${accuracy}%"></span></span>
-      <strong>${accuracy}%</strong>
-    </li>`;
-  }).join('');
-  const total = slugs.reduce((sum, slug) => sum + (brands[slug]?.samples || 0), 0);
-  const highlands = brands.highlands?.samples || 0;
-  const hint = highlands >= 12 ? 'Highlands đã đủ mẫu để đạt ~95%.' : `💡 Upload thêm ${Math.max(1, 12 - highlands)} mẫu Highlands để tiệm cận 95%.`;
-  return `<ul class="coffee-stat-list">${rows}</ul>
-    <p class="coffee-muted">Tổng mẫu đã học: <strong>${total}</strong> · ${escapeHtml(hint)}</p>
-    <p class="coffee-muted">Lần học gần nhất: ${escapeHtml(index?.updatedAt ? new Date(index.updatedAt).toLocaleString('vi-VN') : '—')}</p>`;
-}
-
-function readField(container, name) {
-  return container.querySelector(`[data-training-field="${name}"]`)?.value || '';
-}
-
-function collectSample(container, brand) {
-  const labeledFields = {};
-  for (const [field] of LABEL_FIELDS) {
-    const value = readField(container, field).trim();
-    if (value) labeledFields[field] = value;
-  }
-  const itemsRaw = readField(container, 'items').trim();
-  if (itemsRaw) {
-    try {
-      labeledFields.items = JSON.parse(itemsRaw);
-    } catch {
-      throw new Error('Danh sách món (JSON) không hợp lệ.');
-    }
-  }
-  return {
-    id: container.dataset.sampleId || '',
-    brand: brandSlug(brand),
-    createdAt: new Date().toISOString(),
-    source: 'training',
-    rawText: container.querySelector('[data-training-text]')?.value || '',
-    labeledFields,
-  };
-}
-
-function fillSuggestion(container, text) {
-  let parsed;
-  try {
-    parsed = parseHighlandsReceipt(text);
-  } catch {
-    return 0;
-  }
-  const map = {
-    brand: parsed.brand, address: parsed.address, phone: parsed.phone, shopId: parsed.shopId,
-    checkNo: parsed.checkNo, datetime: parsed.datetime, cashier: parsed.cashier,
-    pager: parsed.pager, pos: parsed.pos, subtotal: parsed.subtotal, total: parsed.total,
-    payment: parsed.payment,
-  };
-  let filled = 0;
-  for (const [field, value] of Object.entries(map)) {
-    if (value === null || value === undefined || value === '') continue;
-    const input = container.querySelector(`[data-training-field="${field}"]`);
-    if (input && !input.value.trim()) { input.value = String(value); filled += 1; }
-  }
-  if (Array.isArray(parsed.items) && parsed.items.length) {
-    const itemsField = container.querySelector('[data-training-field="items"]');
-    if (itemsField && !itemsField.value.trim()) { itemsField.value = JSON.stringify(parsed.items, null, 2); filled += 1; }
-  }
-  return filled;
-}
-
-// Xem trước cấu trúc trích xuất chuẩn (system prompt hoá đơn chính xác) từ text OCR.
-function renderExtractPreview(container, text) {
-  const panel = container.querySelector('[data-training-json]');
-  const pre = container.querySelector('[data-training-json-pre]');
-  const note = container.querySelector('[data-training-json-note]');
-  if (!panel || !pre) return;
-  let extraction;
-  try {
-    extraction = extractReceipt(text);
-  } catch {
-    panel.hidden = true;
-    return;
-  }
-  pre.textContent = JSON.stringify(extraction, null, 2);
-  if (note) {
-    const { validation } = extraction;
-    const label = { passed: '✅ Khớp tổng', failed: '⚠️ Lệch tổng', not_verified: '❔ Chưa xác minh' }[validation.arithmetic_check]
-      || validation.arithmetic_check;
-    const parts = [`${extraction.items.length} dòng hàng`, label];
-    if (validation.discrepancy_amount) parts.push(`lệch ${Number(validation.discrepancy_amount).toLocaleString('vi-VN')} đ`);
-    if (validation.warnings.length) parts.push(`${validation.warnings.length} cảnh báo`);
-    note.textContent = parts.join(' · ');
-  }
-  panel.hidden = false;
-}
-
-// Gắn sự kiện cho trang training sau khi markup được render vào `root`.
 export async function mountTraining(root) {
   const container = root.querySelector('[data-training]');
   if (!container) return;
-  const status = container.querySelector('[data-training-status]');
-  const result = container.querySelector('[data-training-result]');
-  const textArea = container.querySelector('[data-training-text]');
-  const fileCount = container.querySelector('[data-training-filecount]');
-  const saveHint = container.querySelector('[data-training-savehint]');
-  const tokenInput = container.querySelector('[data-training-token]');
-  const state = { files: [], sampleId: '', index: null, patterns: {}, brand: 'highlands' };
 
-  if (tokenInput && hasGitHubToken()) tokenInput.value = '••••••••••••••••';
-
-  const currentBrand = () => {
-    const picked = container.querySelector('input[name="trainingBrand"]:checked')?.value || 'highlands';
-    if (picked !== 'other') return picked;
-    return container.querySelector('[name="trainingBrandCustom"]')?.value?.trim() || 'other';
+  const state = {
+    session: null,
+    file: null,
+    previewUrl: '',
+    previewPages: [],
+    zoom: 1,
+    status: 'idle',
+    progress: '',
+    pageCount: 0,
+    totalPages: 0,
+    undoStack: [],
+    filters: { query: '', status: '', from: '', to: '' },
+    brand: 'highlands',
+    patterns: {},
+    activeTab: 'invoice',
+    trainsetStatus: '',
   };
 
-  const refreshSaveHint = () => {
-    const mode = tokenInput?.value && !tokenInput.value.startsWith('•') ? 'github' : getSaveMode();
-    const label = mode === 'github' ? 'sẽ push trực tiếp lên GitHub (data/ocr-training/)'
-      : mode === 'cms' ? 'sẽ lưu qua CMS local rồi push GitHub'
-      : 'chưa có token/CMS — hệ thống sẽ tải file JSON để bạn commit thủ công';
-    if (saveHint) saveHint.textContent = `Chế độ lưu: ${label}.`;
-  };
+  const $ = (selector) => container.querySelector(selector);
+  const alertBox = $('[data-training-alert]');
 
-  const loadBrand = async (brand) => {
-    const { data } = await loadPatterns(brand);
-    state.patterns = data || { patterns: {}, vietnameseFixes: {} };
-  };
+  function showToast(text, isError = false) {
+    const toast = root.querySelector('[data-coffee-toast]');
+    if (!toast) return;
+    toast.textContent = text;
+    toast.classList.toggle('is-error', isError);
+    toast.classList.add('is-visible');
+    clearTimeout(showToast.timeout);
+    showToast.timeout = setTimeout(() => toast.classList.remove('is-visible'), 4500);
+  }
 
-  const refreshProgress = async () => {
-    const { data } = await loadTrainingIndex();
-    state.index = data;
-    const host = container.querySelector('[data-training-progress]');
-    if (host) host.innerHTML = progressMarkup(data);
-  };
+  function setAlert(text, tone = 'warning') {
+    if (!alertBox) return;
+    if (!text) { alertBox.hidden = true; alertBox.textContent = ''; return; }
+    alertBox.hidden = false;
+    alertBox.textContent = text;
+    alertBox.dataset.tone = tone;
+  }
 
-  // Brand radios + custom name.
-  container.querySelectorAll('input[name="trainingBrand"]').forEach((radio) => {
-    radio.addEventListener('change', async () => {
-      const custom = container.querySelector('[data-training-custom]');
-      if (custom) custom.hidden = currentBrand() !== 'other';
-      state.brand = currentBrand();
-      await loadBrand(state.brand);
-    });
-  });
+  function pushUndo() {
+    if (!state.session) return;
+    state.undoStack.push(clone({ items: state.session.items, receipt: state.session.receipt, lines: state.session.lines, meta: state.session.meta }));
+    if (state.undoStack.length > 30) state.undoStack.shift();
+    const undo = $('[data-undo]');
+    if (undo) undo.disabled = false;
+  }
 
-  // File dropzone.
-  const input = container.querySelector('[data-training-input]');
-  input?.addEventListener('change', () => {
-    state.files = [...(input.files || [])];
-    if (fileCount) fileCount.textContent = state.files.length ? `Đã chọn ${state.files.length} ảnh: ${state.files.map((f) => f.name).join(', ')}` : 'Chưa chọn ảnh nào.';
-  });
-  const zone = container.querySelector('[data-training-dropzone]');
-  zone?.addEventListener('dragover', (event) => { event.preventDefault(); zone.classList.add('is-dragover'); });
-  zone?.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
-  zone?.addEventListener('drop', (event) => {
-    event.preventDefault();
-    zone.classList.remove('is-dragover');
-    state.files = [...(event.dataTransfer?.files || [])];
-    if (fileCount) fileCount.textContent = state.files.length ? `Đã chọn ${state.files.length} ảnh: ${state.files.map((f) => f.name).join(', ')}` : 'Chưa chọn ảnh nào.';
-  });
+  function currentBrand() { return state.brand; }
 
-  // OCR.
-  container.querySelector('[data-training-ocr]')?.addEventListener('click', async () => {
-    if (!state.files.length) { if (status) status.textContent = 'Hãy chọn ít nhất một ảnh hoá đơn mẫu.'; return; }
-    const chunks = [];
-    for (const file of state.files) {
-      try {
-        const text = await recognizeImage(file, {
-          onProgress: (message) => {
-            if (status && message?.status) status.textContent = `OCR ${file.name}: ${message.status}${message.progress ? ` ${Math.round(message.progress * 100)}%` : ''}`;
-          },
-        });
-        chunks.push(text);
-      } catch (error) {
-        if (status) status.textContent = `${error.message} (${file.name})`;
-      }
+  // --- Upload render -------------------------------------------------------
+  function renderUpload() {
+    const body = $('[data-upload-body]');
+    if (!body) return;
+    if (!state.file) {
+      body.innerHTML = `
+        <label class="coffee-dropzone" data-dropzone>
+          <input type="file" accept="application/pdf,.pdf,image/png,image/jpeg,image/jpg,image/webp" data-file-input hidden aria-label="Chọn hoá đơn PDF/ảnh">
+          <span class="coffee-dropzone__hint">
+            <span aria-hidden="true">📥</span>
+            <span>Kéo hoá đơn PDF/ảnh vào đây hoặc bấm để chọn</span>
+            <small>PDF · PNG · JPG/JPEG · tối đa 15MB</small>
+          </span>
+        </label>`;
+      return;
     }
-    const combined = [textArea.value.trim(), ...chunks].filter(Boolean).join('\n\n---\n\n');
-    textArea.value = combined;
-    if (status) status.textContent = 'OCR xong. Sửa lại text cho đúng rồi gán nhãn.';
-  });
-  container.querySelector('[data-training-clear]')?.addEventListener('click', () => { textArea.value = ''; if (status) status.textContent = 'Đã xoá text OCR.'; });
+    const sizeKb = Math.max(1, Math.round((state.file.size || 0) / 1024));
+    body.innerHTML = `
+      <div class="coffee-file-row">
+        <span aria-hidden="true">📄</span>
+        <div><strong>${escapeHtml(state.file.name)}</strong><small>${sizeKb.toLocaleString('vi-VN')} KB · ${escapeHtml(state.file.type || 'không rõ định dạng')}</small></div>
+        <span class="coffee-chip ${state.status === 'analyzing' ? 'is-warning' : 'is-success'}">${state.status === 'analyzing' ? 'Đang xử lý' : 'Đã nạp'}</span>
+      </div>
+      ${state.progress ? `<div class="coffee-progress" role="progressbar" aria-label="Tiến trình xử lý"><span style="width:${state.progressPercent || 0}%"></span></div><p class="coffee-muted">${escapeHtml(state.progress)}</p>` : ''}
+      ${state.totalPages > OCR_MAX_PDF_PAGES ? `<p class="coffee-training-alert" data-tone="warning">⚠️ Hoá đơn ${state.totalPages} trang nhưng chỉ ${OCR_MAX_PDF_PAGES} trang đầu được OCR. Hãy kiểm tra kỹ phần bị bỏ qua.</p>` : ''}
+      <div class="coffee-invoice__actions">
+        <button type="button" class="coffee-primary-button" data-analyze ${state.status === 'analyzing' ? 'disabled' : ''}>🔍 Phân tích hoá đơn</button>
+        <button type="button" class="coffee-ghost-button" data-replace>Thay file</button>
+        <button type="button" class="coffee-ghost-button coffee-ghost-button--danger" data-clear-file>Huỷ</button>
+        <input type="file" accept="application/pdf,.pdf,image/png,image/jpeg,image/jpg,image/webp" data-file-input hidden aria-label="Chọn hoá đơn khác">
+      </div>`;
+  }
 
-  // Label buttons — gán đoạn text đang bôi đen vào trường.
-  container.querySelectorAll('[data-label-field]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const field = button.dataset.labelField;
-      const input = container.querySelector(`[data-training-field="${field}"]`);
-      if (!input) return;
-      const selected = textArea.value.slice(textArea.selectionStart, textArea.selectionEnd).trim();
-      if (selected) input.value = selected;
-      else input.focus();
-      if (status) status.textContent = selected ? `Đã gán "${selected.slice(0, 40)}" vào ${button.textContent.trim()}.` : `Bôi đen text ở ô OCR rồi bấm lại nhãn ${button.textContent.trim()}.`;
+  // --- Viewer render -------------------------------------------------------
+  function renderViewer() {
+    const viewer = $('[data-invoice-viewer]');
+    if (!viewer) return;
+    const pages = state.previewPages.length
+      ? state.previewPages
+      : (state.previewUrl ? [{ url: state.previewUrl, label: 'Trang 1' }] : []);
+    if (!pages.length) {
+      viewer.innerHTML = `<section class="coffee-card coffee-training-panel"><p class="coffee-empty">Chưa có bản xem trước hoá đơn.</p></section>`;
+      return;
+    }
+    viewer.innerHTML = `<section class="coffee-card coffee-training-panel coffee-invoice-viewer">
+      <div class="coffee-card-heading"><h2 class="coffee-section-title">Hoá đơn gốc</h2>
+        <div class="coffee-viewer-zoom">
+          <button type="button" class="coffee-ghost-button" data-zoom="-1" aria-label="Thu nhỏ">−</button>
+          <span data-zoom-label>${Math.round(state.zoom * 100)}%</span>
+          <button type="button" class="coffee-ghost-button" data-zoom="1" aria-label="Phóng to">＋</button>
+        </div>
+      </div>
+      <div class="coffee-invoice-scroll" data-invoice-scroll>
+        ${pages.map((page) => `<figure class="coffee-invoice-page"><img src="${escapeHtml(page.url)}" alt="${escapeHtml(page.label || 'Hoá đơn')}" style="width:${Math.round(state.zoom * 100)}%"><figcaption>${escapeHtml(page.label || '')}</figcaption></figure>`).join('')}
+      </div>
+    </section>`;
+  }
+
+  // --- Items table render --------------------------------------------------
+  function renderTable() {
+    const host = $('[data-items-table]');
+    if (host) host.innerHTML = renderItemsTable(state.session.items);
+    const summary = $('[data-items-summary]');
+    if (summary) {
+      const count = state.session.items.length;
+      const flagged = state.session.items.filter((item) => item.needsReview).length;
+      summary.innerHTML = `<span class="coffee-chip coffee-chip--muted">${count} sản phẩm</span>${flagged ? ` <span class="coffee-chip is-warning">${flagged} cần kiểm tra</span>` : ''}`;
+    }
+    const undo = $('[data-undo]');
+    if (undo) undo.disabled = state.undoStack.length === 0;
+  }
+
+  // --- Lines panel ---------------------------------------------------------
+  function renderLines() {
+    const host = $('[data-lines-panel]');
+    if (!host) return;
+    const types = state.session.lines;
+    const uncertain = types.filter((line) => ['unknown', 'modifier'].includes(line.type));
+    const others = types.filter((line) => !['unknown', 'modifier'].includes(line.type));
+    const lineRow = (line) => `<li class="coffee-line" data-line-index="${line.index}">
+      <span class="coffee-line__text" title="${escapeHtml(line.text)}">${escapeHtml(line.text || '(dòng trống)')}</span>
+      ${line.amount !== null ? `<span class="coffee-line__amount">${line.amount.toLocaleString('vi-VN')} đ</span>` : ''}
+      <select data-line-type="${line.index}" aria-label="Loại của dòng ${line.index + 1}">
+        ${LINE_TYPES.map(([key, label]) => `<option value="${key}"${line.type === key ? ' selected' : ''}>${escapeHtml(label)}</option>`).join('')}
+      </select>
+    </li>`;
+    host.innerHTML = `
+      ${uncertain.length
+        ? `<ul class="coffee-line-list">${uncertain.map(lineRow).join('')}</ul>`
+        : '<p class="coffee-muted">Không còn dòng nào chưa phân loại chắc chắn.</p>'}
+      <details class="coffee-lines-all"><summary>Xem tất cả ${types.length} dòng OCR</summary>
+        <ul class="coffee-line-list">${others.map(lineRow).join('') || '<li class="coffee-muted">—</li>'}</ul>
+      </details>`;
+  }
+
+  // --- Reconcile panel -----------------------------------------------------
+  function renderReconcile() {
+    const host = $('[data-reconcile-panel]');
+    if (!host) return;
+    const v = state.session.verification;
+    const r = state.session.receipt;
+    const netRows = state.session.items.filter((item) => item.netAmount !== null);
+    const related = v.status === 'mismatch'
+      ? state.session.items.filter((item) => item.needsReview || item.discountAmount > 0)
+      : [];
+    host.innerHTML = `
+      <dl class="coffee-reconcile-list">
+        <div><dt>Tổng tiền hàng trước giảm <small>(AI tính)</small></dt><dd>${formatVnd(v.grossSum)}</dd></div>
+        <div><dt>Tổng giảm giá <small>(AI tính)</small></dt><dd>${v.discountTotal ? `− ${formatVnd(v.discountTotal)}` : '0 đ'}</dd></div>
+        <div><dt>Thành tiền sau giảm <small>(AI tính)</small></dt><dd>${formatVnd(v.netSum)}</dd></div>
+        <div><dt>Tổng tiền AI tính</dt><dd><strong>${formatVnd(v.computedTotal)}</strong></dd></div>
+        <div><dt>Tổng tiền trên hoá đơn <small>(OCR)</small></dt><dd>${v.printedTotal === null ? '—' : formatVnd(v.printedTotal)}</dd></div>
+        <div><dt>Chênh lệch</dt><dd class="${v.discrepancy ? 'is-danger' : ''}">${v.discrepancy === null ? '—' : `${v.discrepancy > 0 ? '+' : ''}${formatVnd(v.discrepancy)}`}</dd></div>
+      </dl>
+      <p class="coffee-reconcile-msg is-${VERIFY_STATUS[v.status]?.tone || 'muted'}">${escapeHtml((v.messages || [])[0] || '')}</p>
+      ${related.length ? `<p class="coffee-muted">Dòng có khả năng liên quan: ${escapeHtml(related.map((item) => item.name || '?').join(', '))}</p>` : ''}
+      <details class="coffee-reconcile-edit"><summary>Chỉnh số liệu OCR (thuế, phí, giảm giá, tổng)</summary>
+        <div class="coffee-form-grid coffee-reconcile__grid">
+          ${receiptInput('levelDiscount', r.levelDiscount, 'Giảm giá cấp hoá đơn')}
+          ${receiptInput('tax', r.tax, 'Thuế (VAT)')}
+          ${receiptInput('fee', r.fee, 'Phí / dịch vụ')}
+          ${receiptInput('subtotal', r.subtotal, 'Tổng tiền hàng (OCR)')}
+          ${receiptInput('total', r.total, 'Tổng thanh toán (OCR)')}
+        </div>
+      </details>`;
+    const chip = $('[data-reconcile-chip]');
+    if (chip) chip.innerHTML = verifyChip(v.status);
+  }
+
+  // --- Confirm panel -------------------------------------------------------
+  function renderConfirm() {
+    const host = $('[data-confirm-panel]');
+    if (!host) return;
+    const reviews = reviewFields(state.session);
+    const ok = canConfirm(state.session);
+    host.innerHTML = ok
+      ? '<p class="coffee-reconcile-msg is-success">✅ Dữ liệu đã khớp và đủ điều kiện xác nhận.</p>'
+      : `<p class="coffee-reconcile-msg is-warning">Chưa thể xác nhận. Còn ${reviews.length || state.session.items.length} mục cần kiểm tra:</p>
+         <ul class="coffee-review-list">${reviews.slice(0, 8).map((item) => `<li>${escapeHtml(item)}</li>`).join('') || '<li>Cần bổ sung sản phẩm hoặc tổng thanh toán.</li>'}</ul>
+         <p class="coffee-muted">Bạn vẫn có thể lưu bản nháp; các mục chưa xác minh sẽ được ghi rõ.</p>`;
+    const confirmBtn = $('[data-confirm]');
+    if (confirmBtn) confirmBtn.disabled = !ok;
+  }
+
+  function renderHeaderCounts() {
+    const records = listTrainingRecords();
+    const pending = records.filter((record) => record.status === 'pending' || record.status === 'draft').length;
+    const needsFix = records.filter((record) => record.verification?.status && record.verification.status !== 'verified').length;
+    const slot = $('[data-header-counts]');
+    if (slot) slot.textContent = `${records.length} hoá đơn · ${pending} chờ xác nhận · ${needsFix} cần sửa`;
+    const statusSlot = $('[data-header-status-slot]');
+    if (statusSlot) statusSlot.innerHTML = statusChip(state);
+  }
+
+  function renderTrainset() {
+    const host = $('[data-trainset-body]');
+    if (!host) return;
+    const mode = getSaveMode();
+    const modeLabel = mode === 'cms' ? 'CMS local → GitHub'
+      : mode === 'github' ? 'GitHub API (PAT)'
+      : 'tải file JSON để commit thủ công';
+    host.innerHTML = `
+      <div class="coffee-form-grid">
+        <label class="coffee-field">Thương hiệu
+          <select data-brand-select>
+            ${BRANDS.map((brand) => `<option value="${brand.id}"${brand.id === state.brand ? ' selected' : ''}>${escapeHtml(brand.label)}</option>`).join('')}
+          </select>
+        </label>
+        <label class="coffee-field">GitHub token (contents:write) — chỉ lưu trên thiết bị
+          <input type="password" data-trainset-token autocomplete="off" placeholder="${hasGitHubToken() ? '••••••••' : 'ghp_… (bỏ trống nếu dùng CMS/tải file)'}">
+        </label>
+      </div>
+      <p class="coffee-muted">Chế độ lưu hiện tại: <strong>${escapeHtml(modeLabel)}</strong>.</p>
+      <div class="coffee-invoice__actions">
+        <button type="button" class="coffee-primary-button" data-add-training ${canConfirm(state.session) ? '' : 'disabled'}>🧠 Đưa vào tập training</button>
+        <button type="button" class="coffee-secondary-button" data-export-sample>💾 Export mẫu</button>
+      </div>
+      ${state.trainsetStatus ? `<p class="coffee-invoice__status">${escapeHtml(state.trainsetStatus)}</p>` : ''}
+      <div data-training-progress></div>`;
+  }
+
+  function renderHistory() {
+    const host = $('[data-history]');
+    if (!host) return;
+    const records = filterTrainingRecords(listTrainingRecords(), state.filters);
+    host.innerHTML = renderTrainingHistory(records, state.filters);
+  }
+
+  function renderWorkspaceVisibility() {
+    const workspace = $('[data-workspace]');
+    const trainset = $('[data-trainset-card]');
+    const ready = Boolean(state.session);
+    if (workspace) workspace.hidden = !ready;
+    if (trainset) trainset.hidden = !ready;
+  }
+
+  function renderAll() {
+    renderUpload();
+    renderWorkspaceVisibility();
+    if (state.session) {
+      renderViewer();
+      renderTable();
+      renderLines();
+      renderReconcile();
+      renderConfirm();
+      renderTrainset();
+    }
+    renderHeaderCounts();
+    renderHistory();
+    applyTab();
+  }
+
+  function applyTab() {
+    const grid = $('[data-grid]');
+    if (grid) grid.dataset.active = state.activeTab;
+    container.querySelectorAll('[data-tab]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.tab === state.activeTab);
     });
-  });
+  }
 
-  // Suggest from OCR.
-  container.querySelector('[data-training-suggest]')?.addEventListener('click', () => {
-    const text = applyLearnedFixes(textArea.value, state.patterns?.vietnameseFixes || {});
-    const filled = fillSuggestion(container, text);
-    renderExtractPreview(container, text);
-    if (status) status.textContent = filled ? `Đã gợi ý ${filled} trường từ OCR.` : 'Không đọc thêm được trường nào — bạn gán nhãn thủ công.';
-  });
+  // --- Derived refresh (không re-render input để giữ focus) ----------------
+  function refreshDerived() {
+    if (!state.session) return;
+    state.session = recalcSession(state.session);
+    state.session.items.forEach((item) => {
+      const cell = container.querySelector(`[data-net-for="${CSS.escape(item.id)}"]`);
+      if (cell) cell.textContent = item.netAmount === null ? '—' : item.netAmount.toLocaleString('vi-VN');
+    });
+    const summary = $('[data-items-summary]');
+    if (summary) {
+      const flagged = state.session.items.filter((item) => item.needsReview).length;
+      summary.innerHTML = `<span class="coffee-chip coffee-chip--muted">${state.session.items.length} sản phẩm</span>${flagged ? ` <span class="coffee-chip is-warning">${flagged} cần kiểm tra</span>` : ''}`;
+    }
+    renderReconcile();
+    renderConfirm();
+    const addTrain = $('[data-add-training]');
+    if (addTrain) addTrain.disabled = !canConfirm(state.session);
+  }
 
-  // Save / train.
-  container.querySelector('[data-training-save]')?.addEventListener('click', async () => {
+  // recalc wrapper (dùng updateItem để đảm bảo recompute)
+  function recalcSession(session) {
+    // recompute qua updateItem không phù hợp; dùng recompute trực tiếp.
+    return recomputeSession(session);
+  }
+
+  // --- File handling -------------------------------------------------------
+  function resetFile() {
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.file = null;
+    state.previewUrl = '';
+    state.previewPages = [];
+    state.progress = '';
+    state.status = 'idle';
+    state.totalPages = 0;
+    state.zoom = 1;
+    setAlert('');
+    renderAll();
+  }
+
+  async function buildPreview(file) {
+    state.previewPages = [];
+    if (isPdf(file)) {
+      try {
+        const { canvases, total } = await pdfToPageCanvases(file, { maxPages: PREVIEW_MAX_PDF_PAGES, scale: 1.6 });
+        state.totalPages = total;
+        state.previewPages = canvases.map((canvas, index) => ({ url: canvas.toDataURL('image/jpeg', 0.82), label: `Trang ${index + 1}/${total}` }));
+      } catch (error) {
+        setAlert(`Không xem trước được PDF: ${error.message}`, 'danger');
+      }
+    } else if (state.previewUrl) {
+      state.previewPages = [{ url: state.previewUrl, label: 'Ảnh hoá đơn' }];
+    }
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    if (!(ACCEPTED.test(file.type) || isPdf(file) || /\.(png|jpe?g|webp|pdf)$/i.test(file.name))) {
+      setAlert('Định dạng không hỗ trợ. Chỉ nhận PDF, PNG, JPG/JPEG, WebP.', 'danger');
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setAlert(`File ${Math.round(file.size / 1024 / 1024)}MB vượt giới hạn 15MB.`, 'danger');
+      return;
+    }
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.file = file;
+    state.status = 'idle';
+    state.progress = '';
+    state.session = null;
+    state.undoStack = [];
+    setAlert('');
+    if (!isPdf(file)) state.previewUrl = URL.createObjectURL(file);
+    else state.previewUrl = '';
+    await buildPreview(file);
+    renderAll();
+    const first = $('[data-analyze]');
+    first?.focus?.({ preventScroll: true });
+    setAlert('Đã nạp file. Bấm “Phân tích hoá đơn” để trích xuất — thao tác này chưa đưa dữ liệu vào tập training.', 'info');
+  }
+
+  // --- Analyze -------------------------------------------------------------
+  async function analyze() {
+    if (!state.file) return;
+    state.status = 'analyzing';
+    state.progress = 'Đang tải bộ OCR…';
+    state.progressPercent = 8;
+    renderUpload();
+    try {
+      const text = await recognizeImage(state.file, {
+        maxPdfPages: OCR_MAX_PDF_PAGES,
+        onProgress: (message) => {
+          if (message?.status) {
+            state.progress = `OCR: ${message.status}${message.progress ? ` ${Math.round(message.progress * 100)}%` : ''}`;
+            state.progressPercent = message.progress ? Math.max(8, Math.round(message.progress * 100)) : state.progressPercent;
+            renderUpload();
+          }
+        },
+      });
+      if (!text.trim()) {
+        state.status = 'error';
+        state.progress = '';
+        renderAll();
+        setAlert('OCR không đọc được chữ nào. Hãy thử ảnh rõ hơn hoặc kiểm tra file.', 'danger');
+        return;
+      }
+      // Áp bảng sửa lỗi tiếng Việt đã học trước khi trích xuất.
+      let ocrText = text;
+      try {
+        const { data: patterns } = await loadPatterns(currentBrand());
+        state.patterns = patterns || {};
+        ocrText = applyLearnedFixes(text, patterns?.vietnameseFixes || {});
+      } catch { /* dùng text gốc */ }
+
+      state.session = createSession(ocrText, {
+        fileName: state.file.name,
+        fileSize: state.file.size,
+        pageCount: state.pageCount,
+        pageWarning: state.totalPages > OCR_MAX_PDF_PAGES ? `Chỉ OCR ${OCR_MAX_PDF_PAGES}/${state.totalPages} trang` : '',
+        brand: currentBrand(),
+      });
+      state.session.original.rawOcrText = ocrText;
+      state.undoStack = [];
+      state.status = 'ready';
+      state.progress = '';
+      setAlert('');
+      renderAll();
+      const totalSlots = $('[data-workspace]')?.querySelector('[data-reconcile-chip]')?.innerHTML || '';
+      showToast(`Đã phân tích: ${state.session.items.length} sản phẩm. Kiểm tra và xác nhận.`);
+      void totalSlots;
+    } catch (error) {
+      state.status = 'error';
+      state.progress = '';
+      renderAll();
+      setAlert(`${error.message} Bạn có thể thử lại hoặc dùng file khác.`, 'danger');
+    }
+  }
+
+  // --- Save / confirm ------------------------------------------------------
+  function persist(status, note = '') {
+    if (!state.session) return;
+    state.session.editedFieldCount = editedFieldCount(state.session);
+    state.session.status = status;
+    try {
+      const record = saveTrainingRecord(state.session, { status, note });
+      state.session.id = record.id;
+      showToast(status === 'confirmed' ? 'Đã lưu và xác nhận dữ liệu chuẩn.' : 'Đã lưu bản nháp.');
+      renderHeaderCounts();
+      renderHistory();
+      return record;
+    } catch (error) {
+      setAlert(error.message || 'Không lưu được dữ liệu.', 'danger');
+      showToast(error.message || 'Không lưu được dữ liệu.', true);
+      return null;
+    }
+  }
+
+  function confirmData() {
+    if (!canConfirm(state.session)) return;
+    persist('confirmed', 'Người dùng xác nhận dữ liệu chuẩn.');
+  }
+
+  async function addToTrainingSet() {
+    if (!canConfirm(state.session)) return;
+    const tokenInput = $('[data-trainset-token]');
     const tokenValue = tokenInput?.value?.trim() || '';
     if (tokenValue && !tokenValue.startsWith('•')) setGitHubToken(tokenValue);
+    const brand = currentBrand();
+    const slug = brandSlug(brand);
     try {
-      const brand = currentBrand();
-      const slug = brandSlug(brand);
-      const rawText = textArea.value.trim();
-      if (!rawText) throw new Error('Chưa có text OCR. Hãy OCR hoặc dán text hoá đơn.');
-      const sample = collectSample(container, brand);
-      if (!Object.keys(sample.labeledFields).length) throw new Error('Chưa gán nhãn trường nào.');
+      const rawText = state.session.editedText || state.session.rawText;
       const { data: patterns } = await loadPatterns(brand);
+      const labeledFields = buildLabeledFields(state.session, { brandLabel: brandLabel(brand) });
+      const sample = {
+        id: '', brand: slug, createdAt: new Date().toISOString(), source: 'training',
+        rawText, labeledFields,
+      };
       const learned = learnFromSample(brand, sample, patterns || {});
-      sample.id = sample.id || nextSampleId(brand, sample.createdAt.slice(0, 10), (patterns?.sampleCount || 0));
-      container.dataset.sampleId = sample.id;
+      sample.id = nextSampleId(brand, sample.createdAt.slice(0, 10), patterns?.sampleCount || 0);
       const outcome = await saveTrainingSample({ brand: slug, sample, patterns: learned });
-      const desc = outcome.mode === 'github' ? `đã push ${outcome.result.files} file lên GitHub`
+      const desc = outcome.mode === 'github' ? `${outcome.result.files} file đã push lên GitHub`
         : outcome.mode === 'cms' ? 'đã lưu qua CMS local'
-        : `đã tải ${outcome.result.file} (commit thủ công vào data/ocr-training/)`;
-      if (result) result.textContent = `🧠 Đã học mẫu ${sample.id} · v${learned.version} · accuracy≈${Math.round(learned.accuracy * 100)}% · ${desc}.`;
-      showToast(root, `AI đã học mẫu ${sample.id}.`);
-      await loadBrand(brand);
-      await refreshProgress();
+        : `đã tải ${outcome.result.file} (commit thủ công)`;
+      state.trainsetStatus = `Đã lưu mẫu chuẩn ${sample.id} · ${desc}. Mô hình OCR chưa tự huấn luyện lại; mẫu sẽ dùng cho pipeline cải thiện OCR.`;
+      persist('confirmed', `Đã đưa vào tập training (${outcome.mode}).`);
+      renderTrainset();
+      showToast('Đã lưu mẫu chuẩn vào tập training.');
     } catch (error) {
-      if (result) result.textContent = '';
-      showToast(root, error.message || 'Không lưu được mẫu.', true);
+      state.trainsetStatus = '';
+      renderTrainset();
+      showToast(error.message || 'Không lưu được mẫu chuẩn.', true);
+      setAlert(error.message || 'Không lưu được mẫu chuẩn.', 'danger');
     }
-  });
+  }
 
-  // Export.
-  container.querySelector('[data-training-download]')?.addEventListener('click', () => {
-    const payload = { app: 'BlogCo', feature: 'ocr-training', exportedAt: new Date().toISOString(), brand: brandSlug(currentBrand()), patterns: state.patterns, rawText: textArea.value };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ocr-training-${brandSlug(currentBrand())}.json`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  });
+  // --- History open/delete -------------------------------------------------
+  function openRecord(id) {
+    const session = sessionFromRecord(getTrainingRecord(id));
+    if (!session) return;
+    state.session = recomputeSession(session);
+    state.undoStack = [];
+    state.file = null;
+    state.previewPages = [];
+    state.previewUrl = '';
+    state.status = 'ready';
+    state.brand = session.brand || 'highlands';
+    setAlert(`Đang mở lại ${session.fileName || session.id}. Kết quả OCR gốc vẫn được giữ để đối chiếu.`, 'info');
+    renderAll();
+  }
 
-  // Import.
-  const importInput = container.querySelector('[data-training-import]');
-  container.querySelector('[data-training-import-trigger]')?.addEventListener('click', () => importInput?.click());
-  importInput?.addEventListener('change', () => {
-    const file = importInput.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+  function deleteRecord(id) {
+    if (!window.confirm(`Xoá dữ liệu training ${id}? Thao tác không thể hoàn tác.`)) return;
+    removeTrainingRecord(id);
+    showToast(`Đã xoá ${id}.`);
+    renderHeaderCounts();
+    renderHistory();
+  }
+
+  // --- Events --------------------------------------------------------------
+  container.addEventListener('change', async (event) => {
+    const target = event.target;
+    if (target.matches('[data-file-input]')) {
+      const file = target.files?.[0];
+      if (file) await handleFile(file);
+      return;
+    }
+    if (target.matches('[data-item-field]')) {
+      const row = target.closest('[data-item-row]');
+      const id = row?.dataset.itemId;
+      if (!id) return;
+      const field = target.dataset.itemField;
+      const value = field === 'category' ? target.value : target.value;
+      const patch = {};
+      if (field === 'name') patch.name = value;
+      else if (field === 'category') patch.category = value;
+      else if (field === 'quantity') patch.quantity = value.trim() === '' ? null : Math.max(0, Math.round(toNumber(value)));
+      else patch[field] = parseMoneyInput(value);
+      state.session = updateItem(state.session, id, patch);
+      if (field !== 'name' && field !== 'category') target.value = formatMoneyInput(parseMoneyInput(target.value));
+      if (field === 'name') renderTable();
+      else refreshDerived();
+      return;
+    }
+    if (target.matches('[data-line-type]')) {
+      pushUndo();
+      state.session = reclassifyLine(state.session, target.dataset.lineType, target.value);
+      renderTable();
+      renderLines();
+      refreshDerived();
+      return;
+    }
+    if (target.matches('[data-receipt-field]')) {
+      const field = target.dataset.receiptField;
+      const value = parseMoneyInput(target.value);
+      target.value = formatMoneyInput(value);
+      state.session.receipt[field] = value;
+      refreshDerived();
+      return;
+    }
+    if (target.matches('[data-brand-select]')) {
+      state.brand = target.value;
       try {
-        const payload = JSON.parse(String(reader.result || 'null'));
-        if (payload.rawText) textArea.value = payload.rawText;
-        if (payload.patterns) state.patterns = payload.patterns;
-        fillSuggestion(container, textArea.value);
-        showToast(root, 'Đã nhập training data từ file.');
-      } catch {
-        showToast(root, 'File training không hợp lệ.', true);
-      }
-    };
-    reader.readAsText(file);
+        const { data } = await loadPatterns(state.brand);
+        state.patterns = data || {};
+      } catch { /* ignore */ }
+      return;
+    }
+    if (target.matches('[data-history-status]')) { state.filters.status = target.value; renderHistory(); return; }
+    if (target.matches('[data-history-from]')) { state.filters.from = target.value; renderHistory(); return; }
+    if (target.matches('[data-history-to]')) { state.filters.to = target.value; renderHistory(); return; }
   });
 
-  refreshSaveHint();
-  await loadBrand(currentBrand());
-  await refreshProgress();
+  container.addEventListener('input', (event) => {
+    const target = event.target;
+    if (target.matches('[data-item-field]') && ['quantity', 'unitPrice', 'discountAmount'].includes(target.dataset.itemField)) {
+      const row = target.closest('[data-item-row]');
+      const id = row?.dataset.itemId;
+      if (!id) return;
+      const field = target.dataset.itemField;
+      const patch = {};
+      if (field === 'quantity') patch.quantity = target.value.trim() === '' ? null : Math.max(0, Math.round(toNumber(target.value)));
+      else patch[field] = parseMoneyInput(target.value);
+      state.session = updateItem(state.session, id, patch);
+      refreshDerived();
+      return;
+    }
+    if (target.matches('[data-history-search]')) { state.filters.query = target.value; renderHistory(); return; }
+  });
+
+  container.addEventListener('dragover', (event) => {
+    const zone = event.target.closest('[data-dropzone]');
+    if (zone) { event.preventDefault(); zone.classList.add('is-dragover'); }
+  });
+  container.addEventListener('dragleave', (event) => {
+    event.target.closest('[data-dropzone]')?.classList.remove('is-dragover');
+  });
+  container.addEventListener('drop', async (event) => {
+    const zone = event.target.closest('[data-dropzone]');
+    if (!zone) return;
+    event.preventDefault();
+    zone.classList.remove('is-dragover');
+    const file = event.dataTransfer?.files?.[0];
+    if (file) await handleFile(file);
+  });
+
+  container.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target.closest('[data-analyze]')) { void analyze(); return; }
+    if (target.closest('[data-replace]')) { container.querySelector('[data-file-input]')?.click(); return; }
+    if (target.closest('[data-clear-file]')) { resetFile(); return; }
+
+    if (target.closest('[data-add-item]')) {
+      pushUndo();
+      state.session = addManualItem(state.session, {});
+      renderTable();
+      renderLines();
+      refreshDerived();
+      return;
+    }
+    const removeBtn = target.closest('[data-remove-item]');
+    if (removeBtn) {
+      pushUndo();
+      state.session = removeItem(state.session, removeBtn.dataset.removeItem);
+      renderTable();
+      refreshDerived();
+      showToast('Đã xoá dòng. Bấm “Hoàn tác xoá/sửa” nếu muốn khôi phục.');
+      return;
+    }
+    if (target.closest('[data-undo]')) {
+      const snapshot = state.undoStack.pop();
+      if (!snapshot || !state.session) return;
+      state.session.items = snapshot.items;
+      state.session.receipt = snapshot.receipt;
+      state.session.lines = snapshot.lines;
+      state.session.meta = snapshot.meta;
+      state.session = recomputeSession(state.session);
+      renderTable();
+      renderLines();
+      refreshDerived();
+      showToast('Đã hoàn tác.');
+      return;
+    }
+
+    if (target.closest('[data-save-draft]')) { persist('draft', 'Bản nháp chưa xác minh đầy đủ.'); return; }
+    if (target.closest('[data-confirm]')) { confirmData(); return; }
+    if (target.closest('[data-add-training]')) { void addToTrainingSet(); return; }
+    if (target.closest('[data-export-sample]')) {
+      const payload = { app: 'BlogCo', feature: 'ocr-training', exportedAt: new Date().toISOString(), session: state.session };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `training-${state.session.id || 'sample'}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return;
+    }
+
+    const zoom = target.closest('[data-zoom]');
+    if (zoom) {
+      state.zoom = Math.min(3, Math.max(0.5, state.zoom + Number(zoom.dataset.zoom) * 0.25));
+      renderViewer();
+      return;
+    }
+    const tab = target.closest('[data-tab]');
+    if (tab) { state.activeTab = tab.dataset.tab; applyTab(); return; }
+
+    if (target.closest('[data-toggle-history]')) {
+      const card = $('[data-history-card]');
+      if (card) card.hidden = !card.hidden;
+      if (card && !card.hidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    const openBtn = target.closest('[data-open-record]');
+    if (openBtn) { openRecord(openBtn.dataset.openRecord); return; }
+    const delBtn = target.closest('[data-delete-record]');
+    if (delBtn) { deleteRecord(delBtn.dataset.deleteRecord); return; }
+  });
+
+  // --- Init ----------------------------------------------------------------
+  try {
+    const { data: index } = await loadTrainingIndex();
+    const host = $('[data-training-progress]');
+    if (host && index?.brands) {
+      const rows = ['highlands', 'starbucks', 'phuclong'].map((slug) => {
+        const entry = index.brands[slug] || { samples: 0 };
+        const percent = Math.round((entry.accuracy ?? accuracyFromCount(entry.samples)) * 100);
+        return `<li class="coffee-stat-row"><span class="coffee-stat-row__label">${escapeHtml(brandLabel(slug))}<small>${entry.samples} mẫu</small></span><span class="coffee-stat-bar"><span style="width:${percent}%"></span></span><strong>${percent}%</strong></li>`;
+      }).join('');
+      host.innerHTML = `<h3 class="coffee-section-title">Tiến độ học theo thương hiệu</h3><ul class="coffee-stat-list">${rows}</ul>`;
+    }
+  } catch { /* best effort */ }
+
+  renderAll();
 }
