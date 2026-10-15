@@ -1,21 +1,18 @@
-// Router + view layer for the "Tra cứu cửa hàng" feature.
+// Router + view layer for the "Cửa hàng" feature.
 //
-// Routes (hash based, mounted on the home page and dedicated pages):
-//   #/stores/search   → tra cứu cửa hàng Highlands + Starbucks
+// Route (hash based, mounted on the home page and dedicated pages):
 //   #/stores/add      → nhập / sửa cửa hàng thủ công (lưu localStorage)
 //
-// The built-in catalogue is hard-coded in `assets/data/stores.json`; anything
-// the user adds is stored locally and merged on render.
+// The built-in catalogue lives in `assets/data/stores.json`; anything the user
+// adds is stored locally and merged on render.
 
 import {
-  addCustomStore, allStores, BRANDS, exportCustomStores, importCustomStores,
-  normalizeText, readCustomStores, removeCustomStore, searchStores, uniqueValues,
-  updateCustomStore,
+  addCustomStore, BRANDS, exportCustomStores, importCustomStores,
+  normalizeText, readCustomStores, removeCustomStore, updateCustomStore,
 } from './store.js';
 
 const mountedRoots = new WeakSet();
 let pendingToast = '';
-let searchState = { brand: 'all', query: '', city: '', district: '' };
 let editingId = '';
 
 function escapeHtml(value = '') {
@@ -105,88 +102,6 @@ function pageHeader(title, description) {
   </div>`;
 }
 
-function brandBadge(store) {
-  return `<span class="store-badge" style="--store-brand:${escapeHtml(store.brandColor)}">${escapeHtml(store.brandEmoji)} ${escapeHtml(store.brandName)}</span>`;
-}
-
-function storeCard(store, query = '') {
-  const custom = store.custom ? '<span class="store-tag">Tự thêm</span>' : '';
-  return `<li class="store-card" style="--store-brand:${escapeHtml(store.brandColor)}">
-    <div class="store-card__head">${brandBadge(store)}${custom}</div>
-    <p class="store-card__address">📍 ${highlight(store.address, query)}, ${highlight(store.district, query)}, ${highlight(store.city, query)}</p>
-    <p class="store-card__meta"><span>📞 ${escapeHtml(store.phone || '—')}</span><span>🕐 ${escapeHtml(store.hours || '—')}</span><span class="store-card__id">${escapeHtml(store.id)}</span></p>
-  </li>`;
-}
-
-// ---------------------------------------------------------------------------
-// Search page
-// ---------------------------------------------------------------------------
-
-function renderSearchPage(root) {
-  const stores = allStores();
-  const result = searchStores(stores, searchState);
-  const cities = uniqueValues(stores, 'city');
-  const districts = uniqueValues(
-    stores.filter((store) => !searchState.city || store.city === searchState.city),
-    'district',
-  );
-  const brandOption = (key, label, emoji) => {
-    const checked = searchState.brand === key ? ' checked' : '';
-    return `<label class="store-radio"><input type="radio" name="brand" value="${key}"${checked}> ${emoji ? `${emoji} ` : ''}${escapeHtml(label)}</label>`;
-  };
-
-  root.innerHTML = `${pageHeader('Tra cứu cửa hàng', 'Tìm cửa hàng Highlands Coffee và Starbucks theo thương hiệu, thành phố, quận hoặc địa chỉ.')}
-  <section class="store-card store-panel">
-    <form id="stores-search-form" class="store-search" role="search">
-      <fieldset class="store-brands">
-        <legend>Thương hiệu</legend>
-        <div class="store-brands__row">
-          ${brandOption('highlands', BRANDS.highlands.name, catalogueEmoji('highlands'))}
-          ${brandOption('starbucks', BRANDS.starbucks.name, catalogueEmoji('starbucks'))}
-          ${brandOption('all', 'Tất cả')}
-        </div>
-      </fieldset>
-      <label class="store-field store-field--search">🔍 Tìm kiếm
-        <input type="search" name="query" value="${escapeHtml(searchState.query)}" placeholder="Tên đường, quận, thành phố...">
-      </label>
-      <div class="store-filters">
-        <label class="store-field">Thành phố
-          <select name="city">
-            <option value="">Tất cả</option>
-            ${cities.map((city) => `<option value="${escapeHtml(city)}"${city === searchState.city ? ' selected' : ''}>${escapeHtml(city)}</option>`).join('')}
-          </select>
-        </label>
-        <label class="store-field">Quận / Huyện
-          <select name="district">
-            <option value="">Tất cả</option>
-            ${districts.map((district) => `<option value="${escapeHtml(district)}"${district === searchState.district ? ' selected' : ''}>${escapeHtml(district)}</option>`).join('')}
-          </select>
-        </label>
-        <div class="store-filters__actions">
-          <button class="store-button" type="submit">Tra cứu</button>
-          <button class="store-button store-button--ghost" type="button" data-stores-reset>Xoá lọc</button>
-        </div>
-      </div>
-    </form>
-  </section>
-  <section class="store-results" aria-live="polite">
-    <p class="store-results__count">Kết quả: <strong>${result.length}</strong> cửa hàng</p>
-    ${result.length
-      ? `<ul class="store-grid">${result.map((store) => storeCard(store, searchState.query)).join('')}</ul>`
-      : '<p class="store-empty">Không tìm thấy cửa hàng phù hợp. Thử từ khoá khác hoặc thêm cửa hàng ở mục “Nhập dữ liệu”.</p>'}
-  </section>
-  <p class="store-note">Dữ liệu mang tính tham khảo, tổng hợp từ trang công khai của thương hiệu. Bạn có thể bổ sung cửa hàng còn thiếu ở mục <a href="#/stores/add">Nhập dữ liệu</a>.</p>
-  ${toastMarkup()}`;
-}
-
-function catalogueEmoji(key) {
-  return BRANDS[key]?.emoji || '';
-}
-
-// ---------------------------------------------------------------------------
-// Add / edit page
-// ---------------------------------------------------------------------------
-
 function customList() {
   const custom = readCustomStores();
   if (!custom.length) return '<p class="store-empty">Chưa có cửa hàng nào do bạn thêm.</p>';
@@ -253,14 +168,12 @@ function routeName(root) {
   const hash = location.hash.startsWith('#/stores') ? location.hash.slice(1).replace(/\/$/, '') : '';
   if (hash) return hash;
   const initial = root.dataset.initialRoute;
-  return initial ? `/stores/${initial}` : '/stores/search';
+  return initial ? `/stores/${initial}` : '/stores/add';
 }
 
 function showRoute(root) {
-  const route = routeName(root);
-  if (route === '/stores/add') renderAddForm(root);
-  else renderSearchPage(root);
-  document.title = `${route === '/stores/add' ? 'Nhập dữ liệu cửa hàng' : 'Tra cứu cửa hàng'} | BlogCo`;
+  renderAddForm(root);
+  document.title = 'Nhập dữ liệu cửa hàng | BlogCo';
   if (pendingToast) {
     const message = pendingToast;
     pendingToast = '';
@@ -268,16 +181,6 @@ function showRoute(root) {
   }
   const heading = root.querySelector('h1[tabindex="-1"]');
   if (heading) heading.focus({ preventScroll: true });
-}
-
-function readSearchForm(form) {
-  const data = new FormData(form);
-  searchState = {
-    brand: String(data.get('brand') || 'all'),
-    query: String(data.get('query') || ''),
-    city: String(data.get('city') || ''),
-    district: String(data.get('district') || ''),
-  };
 }
 
 function download(filename, content) {
@@ -301,11 +204,6 @@ export function mountStoresApp(root) {
   root.addEventListener('click', (event) => {
     const target = event.target;
 
-    if (target.closest('[data-stores-reset]')) {
-      searchState = { brand: 'all', query: '', city: '', district: '' };
-      showRoute(root);
-      return;
-    }
     const edit = target.closest('[data-store-edit]');
     if (edit) {
       editingId = edit.dataset.storeEdit;
@@ -360,40 +258,9 @@ export function mountStoresApp(root) {
     input.value = '';
   });
 
-  // Live filter on typing without losing focus: re-render, then restore the
-  // caret/focus to the search input.
-  let liveTimer;
-  root.addEventListener('input', (event) => {
-    const form = event.target.closest('#stores-search-form');
-    if (!form || event.target.name !== 'query') return;
-    const caret = event.target.selectionStart;
-    clearTimeout(liveTimer);
-    liveTimer = setTimeout(() => {
-      readSearchForm(form);
-      renderSearchPage(root);
-      const next = root.querySelector('#stores-search-form [name="query"]');
-      if (next) {
-        next.focus();
-        next.setSelectionRange(caret, caret);
-      }
-    }, 160);
-  });
-
-  root.addEventListener('change', (event) => {
-    if (event.target.closest('#stores-search-form')) {
-      readSearchForm(event.target.closest('#stores-search-form'));
-      renderSearchPage(root);
-    }
-  });
-
   root.addEventListener('submit', (event) => {
     event.preventDefault();
     const form = event.target;
-    if (form.id === 'stores-search-form') {
-      readSearchForm(form);
-      renderSearchPage(root);
-      return;
-    }
     if (form.id === 'stores-add-form') {
       try {
         if (!form.reportValidity()) return;

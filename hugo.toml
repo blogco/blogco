@@ -22,8 +22,8 @@ enableGitInfo = false
 
 [params]
   description = 'BlogCo — chia sẻ kiến thức và góc nhìn.'
-  mainSections = ['posts']
-  defaultTheme = 'auto'
+  defaultTheme = 'light'
+  disableThemeToggle = true
   ShowReadingTime = true
   ShowShareButtons = false
   ShowPostNavLinks = true
@@ -36,12 +36,7 @@ enableGitInfo = false
     Content = 'Góc chia sẻ kiến thức, công nghệ và những ý tưởng đáng khám phá.'
 
 [outputs]
-  home = ['HTML', 'RSS', 'JSON']
-
-[outputFormats.JSON]
-  mediaType = 'application/json'
-  baseName = 'index'
-  isPlainText = true
+  home = ['HTML', 'RSS']
 
 [markup.highlight]
   noClasses = false

@@ -2,13 +2,9 @@
   <nav class="header-nav" aria-label="Điều hướng chính">
     {{- $page := . -}}
     {{- $homeURL := site.Home.RelPermalink -}}
-    {{- $postsURL := "posts/" | relURL -}}
-    {{- $knowledgeURL := "kien-thuc/" | relURL -}}
     {{- $storesURL := "cua-hang/" | relURL -}}
     {{- $lessonsURL := "giao-an/" | relURL -}}
     {{- $coffeeURL := "ca-phe/" | relURL -}}
-    {{- $isPosts := hasPrefix $page.RelPermalink $postsURL -}}
-    {{- $isKnowledge := hasPrefix $page.RelPermalink $knowledgeURL -}}
     {{- $isStores := hasPrefix $page.RelPermalink $storesURL -}}
     {{- $isLessons := hasPrefix $page.RelPermalink $lessonsURL -}}
     {{- $isCoffee := hasPrefix $page.RelPermalink $coffeeURL -}}
@@ -18,8 +14,6 @@
     </button>
     <ul id="blogco-primary-menu" class="menu navbar__menu" data-primary-nav>
       <li><a class="navbar__link{{ if $page.IsHome }} is-active{{ end }}" href="{{ $homeURL }}" data-nav-key="home" data-nav-path="{{ $homeURL }}"{{ if $page.IsHome }} aria-current="page"{{ end }}>Trang chủ</a></li>
-      <li><a class="navbar__link{{ if $isPosts }} is-active{{ end }}" href="{{ $postsURL }}" data-nav-key="posts" data-nav-path="{{ $postsURL }}"{{ if $isPosts }} aria-current="page"{{ end }}>Bài viết</a></li>
-      <li><a class="navbar__link{{ if $isKnowledge }} is-active{{ end }}" href="{{ $knowledgeURL }}" data-nav-key="knowledge" data-nav-path="{{ $knowledgeURL }}"{{ if $isKnowledge }} aria-current="page"{{ end }}>Kiến thức</a></li>
       <li class="navbar__dropdown" data-nav-dropdown>
         <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-wellness-menu" data-nav-key="wellness" data-nav-path="{{ $homeURL }}">❤️ Sức khoẻ <span aria-hidden="true">▾</span></button>
         <ul class="navbar__submenu" id="navbar-wellness-menu" role="menu">
@@ -28,7 +22,7 @@
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/health/history">🩺 Lịch sử khám bệnh</a></li>
         </ul>
       </li>
-      <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>
+      <li class="navbar__dropdown{{ if $isCoffee }} is-active{{ end }}" data-nav-dropdown>
         <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-coffee-menu" data-nav-key="coffee" data-nav-path="{{ $homeURL }}">☕ Cà phê <span aria-hidden="true">▾</span></button>
         <ul class="navbar__submenu" id="navbar-coffee-menu" role="menu">
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee">🧾 Danh sách chi phí</a></li>
@@ -39,22 +33,16 @@
       <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>
         <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-stores-menu" data-nav-key="stores" data-nav-path="{{ $storesURL }}">🏪 Cửa hàng <span aria-hidden="true">▾</span></button>
         <ul class="navbar__submenu" id="navbar-stores-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/stores/search">🔍 Tra cứu cửa hàng</a></li>
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/stores/add">＋ Nhập dữ liệu cửa hàng</a></li>
         </ul>
       </li>
       <li class="navbar__dropdown{{ if $isLessons }} is-active{{ end }}" data-nav-dropdown>
         <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-lessons-menu" data-nav-key="lessons" data-nav-path="{{ $lessonsURL }}">📚 Giáo án <span aria-hidden="true">▾</span></button>
         <ul class="navbar__submenu" id="navbar-lessons-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/lessons/korean">🇰🇷 Tiếng Hàn cơ bản</a></li>
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/lessons/typing">⌨️ Tin học tiếng Hàn</a></li>
         </ul>
       </li>
       <li><a class="navbar__link" href="{{ $homeURL }}#/brand-guidelines" data-nav-key="brand" data-nav-path="{{ $homeURL }}">🎨 Brand</a></li>
     </ul>
-    <button id="theme-toggle" class="theme-toggle navbar__theme-toggle" type="button" aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện">
-      <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-      <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
-    </button>
   </nav>
 </header>

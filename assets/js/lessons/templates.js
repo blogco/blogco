@@ -4,7 +4,6 @@
 import { KEYBOARD_ROWS } from './typing.js';
 
 const MODES = {
-  korean: { emoji: '🇰🇷', label: 'Tiếng Hàn cơ bản' },
   typing: { emoji: '⌨️', label: 'Tin học tiếng Hàn' },
 };
 
@@ -34,7 +33,7 @@ export function formatLessonDate(lesson = {}) {
 
 // Chuẩn hoá giáo án về dạng thống nhất (nhận cả snake_case từ AI lẫn camelCase).
 export function normalizeLesson(raw = {}, config = {}) {
-  const mode = raw.mode || config.mode || 'korean';
+  const mode = raw.mode || config.mode || 'typing';
   const layout = raw.keyboardLayout || raw.keyboard_layout || null;
   const keyboardLayout = layout ? {
     image: layout.image || '/images/lessons/hangul-keyboard.png',
@@ -88,7 +87,7 @@ export function normalizeLesson(raw = {}, config = {}) {
 }
 
 function meta(lesson) {
-  const mode = MODES[lesson.mode] || MODES.korean;
+  const mode = MODES[lesson.mode] || MODES.typing;
   return { ...mode, date: formatLessonDate(lesson) };
 }
 

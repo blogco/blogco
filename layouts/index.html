@@ -1,25 +1,3 @@
 {{- define "main" -}}
 {{- partial "home_info.html" . -}}
-{{- $posts := where site.RegularPages "Type" "in" site.Params.mainSections -}}
-{{- $posts = $posts.ByDate.Reverse -}}
-
-<section class="home-posts" aria-labelledby="home-posts-title">
-  <header class="home-posts__header">
-    <h2 id="home-posts-title">Bài viết mới nhất</h2>
-  </header>
-
-  {{- if gt (len $posts) 0 }}
-    {{- $paginator := .Paginate $posts }}
-    <div class="home-posts__grid">
-      {{- range $paginator.Pages }}
-        {{- partial "post-card.html" . }}
-      {{- end }}
-    </div>
-    {{- if gt $paginator.TotalPages 1 }}
-      {{- partial "pagination.html" (dict "pager" $paginator "class" "home-posts__pagination" "label" "Phân trang bài viết mới nhất") }}
-    {{- end }}
-  {{- else }}
-    <p class="home-posts__empty">Chưa có bài viết nào.</p>
-  {{- end }}
-</section>
 {{- end -}}

@@ -1,10 +1,8 @@
 const featureLoaders = {
-  search: () => import('./features/search.js'),
   markdown: () => import('./features/markdown.js'),
   transformers: () => import('./features/transformers.js'),
 };
 
-import './category-bar.js';
 import './navigation.js';
 import './github-actions.js';
 

@@ -1,5 +1,5 @@
 +++
-title = 'Tra cứu cửa hàng'
-description = 'Tra cứu cửa hàng Highlands Coffee và Starbucks Việt Nam, hoặc bổ sung cửa hàng còn thiếu.'
-layout = 'list'
+title = 'Cửa hàng'
+description = 'Bổ sung cửa hàng Highlands Coffee hoặc Starbucks còn thiếu, lưu cục bộ trên thiết bị.'
+layout = 'add'
 +++

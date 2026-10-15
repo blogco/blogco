@@ -1,7 +1,6 @@
 // Router + giao diện cho tính năng "Soạn giáo án".
 //
 // Route (hash, dùng trên trang chủ và trang riêng):
-//   #/lessons/korean  → giáo án tiếng Hàn cơ bản
 //   #/lessons/typing  → giáo án tin học tiếng Hàn (đánh máy)
 //
 // Trạng thái form + giáo án cuối được lưu cục bộ (localStorage). API key chỉ
@@ -10,10 +9,9 @@
 import { generateLesson, PROVIDERS } from './ai.js';
 import { lessonToSlides, escapeHtml } from './templates.js';
 import { exportLessonPdf, slugifyFileName } from './export-pdf.js';
-import { META as KOREAN_META } from './korean.js';
 import { META as TYPING_META } from './typing.js';
 
-const MODES = { korean: KOREAN_META, typing: TYPING_META };
+const MODES = { typing: TYPING_META };
 const STORE_KEY = 'blogco.lessons.v1';
 const SLIDE_WIDTH_PX = 1122.52; // 297mm @ 96dpi
 const SLIDE_HEIGHT_PX = 793.7; // 210mm @ 96dpi
@@ -63,10 +61,10 @@ function routeMode(root) {
   const hash = location.hash.startsWith('#/lessons') ? location.hash.slice(1).replace(/\/$/, '') : '';
   if (hash) {
     const segment = hash.split('/')[2];
+    if (segment === 'korean') return 'typing';
     if (segment === 'typing') return 'typing';
-    if (segment === 'korean') return 'korean';
   }
-  return root.dataset.initialRoute === 'typing' ? 'typing' : 'korean';
+  return 'typing';
 }
 
 function currentConfig(mode) {

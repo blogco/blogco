@@ -2,7 +2,6 @@
 // Thứ tự ưu tiên: mô hình cục bộ (transformers.js) → API (OpenAI/Gemini) → mẫu rule-based.
 // Với chế độ "auto": dùng API nếu có key, ngược lại dùng mẫu có sẵn (tải model cục bộ rất nặng).
 
-import { buildLesson as buildKoreanLesson, buildPrompt as koreanPrompt } from './korean.js';
 import { buildLesson as buildTypingLesson, buildPrompt as typingPrompt } from './typing.js';
 
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1';
@@ -18,15 +17,15 @@ export const PROVIDERS = {
 };
 
 function builderFor(mode) {
-  return mode === 'typing' ? buildTypingLesson : buildKoreanLesson;
+  return buildTypingLesson;
 }
 
 function promptFor(mode, config) {
-  return mode === 'typing' ? typingPrompt(config) : koreanPrompt(config);
+  return typingPrompt(config);
 }
 
 export function buildFallbackLesson(config = {}) {
-  return builderFor(config.mode || 'korean')(config);
+  return builderFor(config.mode || 'typing')(config);
 }
 
 // Gộp JSON do AI trả về lên bản mẫu để luôn đủ trường (keyboard rows, tools…).
@@ -139,7 +138,7 @@ async function generateWithLocalModel(config, options, onProgress) {
 }
 
 export async function generateLesson(config = {}, options = {}) {
-  const mode = config.mode || 'korean';
+  const mode = config.mode || 'typing';
   const provider = options.provider || 'auto';
   const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
   const errors = [];

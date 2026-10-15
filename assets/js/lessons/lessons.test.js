@@ -2,22 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { lessonToSlides, normalizeLesson, renderSlidesHtml, chunk, escapeHtml } from './templates.js';
-import { buildLesson as buildKoreanLesson, buildPrompt as buildKoreanPrompt, detectPack } from './korean.js';
 import { buildLesson as buildTypingLesson } from './typing.js';
 import { mergeLesson, parseLessonJson, buildFallbackLesson } from './ai.js';
 import { slugifyFileName } from './export-pdf.js';
-
-const koreanConfig = {
-  mode: 'korean',
-  topic: 'Chào hỏi cơ bản',
-  level: 'Sơ cấp 2',
-  audience: 'Người mới bắt đầu',
-  duration: 90,
-  sessions: 1,
-  skills: ['Nghe', 'Nói'],
-  language: 'vi',
-  notes: '',
-};
 
 const typingConfig = {
   mode: 'typing',
@@ -37,14 +24,6 @@ test('escapeHtml encodes dangerous characters', () => {
 test('chunk splits arrays into fixed groups', () => {
   assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
   assert.deepEqual(chunk([], 2), []);
-});
-
-test('Korean lesson yields 10-15 slides', () => {
-  const lesson = buildKoreanLesson(koreanConfig);
-  const slides = lessonToSlides(lesson, koreanConfig);
-  assert.ok(slides.length >= 10, `expected >= 10 slides, got ${slides.length}`);
-  assert.ok(slides.length <= 15, `expected <= 15 slides, got ${slides.length}`);
-  assert.ok(slides[0].html.includes('pdf-slide--cover'));
 });
 
 test('Typing lesson yields 10-15 slides with keyboard diagram', () => {
@@ -91,24 +70,10 @@ test('mergeLesson keeps fallback structure while overriding AI fields', () => {
   assert.equal(merged.generatedBy, 'ai');
 });
 
-test('detectPack maps topics to content packs', () => {
-  assert.equal(detectPack('Chào hỏi và giới thiệu'), 'greeting');
-  assert.equal(detectPack('Gọi món ở nhà hàng'), 'food');
-  assert.equal(detectPack('Du lịch Hàn Quốc'), 'travel');
-  assert.equal(detectPack('Một chủ đề lạ'), 'default');
-});
-
 test('buildFallbackLesson returns rule-based lesson', () => {
-  const lesson = buildFallbackLesson(koreanConfig);
+  const lesson = buildFallbackLesson(typingConfig);
   assert.equal(lesson.generatedBy, 'rule');
-  assert.ok(lesson.vocabulary.length >= 10);
-  assert.ok(lesson.dialogue.length >= 6);
-});
-
-test('buildKoreanPrompt includes topic and JSON template', () => {
-  const prompt = buildKoreanPrompt(koreanConfig);
-  assert.ok(prompt.includes('Chào hỏi cơ bản'));
-  assert.ok(prompt.includes('"vocabulary"'));
+  assert.ok(Array.isArray(lesson.objectives));
 });
 
 test('slugifyFileName produces safe ascii filename', () => {
