@@ -23,6 +23,7 @@ import {
   renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf, rowToItems,
 } from './manual.js';
 import { renderAiInsights } from './insights.js';
+import { renderDashboard } from './dashboard.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -319,27 +320,13 @@ function renderDetail(root, id) {
 function renderStats(root) {
   const state = getCoffeeState();
   const stats = computeCoffeeStats(state.receipts, { budget: state.profile.monthlyBudget });
-  const maxMonth = stats.maxMonthTotal || 1;
-  const recentMonths = [...stats.byMonth].slice(0, 12).reverse();
-  const monthRows = recentMonths.map((month) => {
-    const width = Math.round((month.total / maxMonth) * 100);
-    return `<li class="coffee-stat-row">
-      <span class="coffee-stat-row__label">${escapeHtml(month.label)}<small>${month.count} hoá đơn</small></span>
-      <span class="coffee-stat-bar" role="img" aria-label="${escapeHtml(month.label)}: ${escapeHtml(formatVnd(month.total))}"><span style="width:${width}%"></span></span>
-      <strong>${escapeHtml(formatVnd(month.total))}</strong>
-    </li>`;
-  }).join('');
-  const yearRows = stats.byYear.map((year) => `<li><span>${escapeHtml(year.year)}</span><strong>${escapeHtml(formatVnd(year.total))} <small>(${year.count})</small></strong></li>`).join('');
-  const storeRows = stats.byStore.slice(0, 8).map((store) => `<li><span>${escapeHtml(store.store)}</span><strong>${escapeHtml(formatVnd(store.total))} <small>(${store.count})</small></strong></li>`).join('');
-  const categoryRows = stats.byCategory.map((category) => `<li><span>${escapeHtml(category.label)}</span><strong>${escapeHtml(formatVnd(category.total))} <small>(${category.count})</small></strong></li>`).join('');
-  const itemRows = stats.topItems.map((item) => `<li><span>${escapeHtml(item.name)}</span><strong>${item.count}× · ${escapeHtml(formatVnd(item.total))}</strong></li>`).join('');
   const budget = stats.budget || 0;
   const monthPct = budget ? Math.min(100, Math.round((stats.currentMonthTotal / budget) * 100)) : 0;
   const budgetClass = !budget ? '' : monthPct >= 100 ? 'is-danger' : monthPct >= 80 ? 'is-warning' : 'is-success';
 
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
-    ${pageHeader('Thống kê chi phí đi cà phê', 'Tổng hợp chi phí theo tháng, quán, nhóm đồ uống và món gọi nhiều nhất.')}
-    ${stats.count === 0 ? '<p class="coffee-empty">Chưa có dữ liệu để thống kê. Thêm một hoá đơn để bắt đầu.</p>' : `
+    ${pageHeader('Thống kê chi phí & phân tích tài chính', 'Tổng hợp chi phí theo mùa, thương hiệu và nhóm đồ uống, kèm phân tích thói quen & sức khỏe bằng AI.')}
+    ${stats.count === 0 ? '<p class="coffee-empty">Chưa có dữ liệu để thống kê. Thêm một hoá đơn hoặc nhập chi phí thủ công để bắt đầu.</p>' : `
     <div class="coffee-summary-grid">
       <div class="coffee-summary-card"><span>Tổng chi phí</span><strong>${escapeHtml(formatVnd(stats.totalSpend))}</strong></div>
       <div class="coffee-summary-card"><span>Số hoá đơn</span><strong>${stats.count}</strong></div>
@@ -360,27 +347,9 @@ function renderStats(root) {
       </form>
     </section>
 
-    <section class="coffee-card"><h2 class="coffee-section-title">Theo tháng</h2>
-      ${monthRows ? `<ul class="coffee-stat-list">${monthRows}</ul>` : '<p class="coffee-muted">Chưa có dữ liệu.</p>'}
-    </section>
+    ${renderDashboard(state.receipts)}
+    ${renderAiInsights(state.receipts)}`}
 
-    <div class="coffee-stats-grid">
-      <section class="coffee-card"><h2 class="coffee-section-title">Theo năm</h2>
-        <ul class="coffee-stat-simple">${yearRows || '<li class="coffee-muted">—</li>'}</ul>
-      </section>
-      <section class="coffee-card"><h2 class="coffee-section-title">Theo quán</h2>
-        <ul class="coffee-stat-simple">${storeRows || '<li class="coffee-muted">—</li>'}</ul>
-      </section>
-      <section class="coffee-card"><h2 class="coffee-section-title">Theo nhóm đồ uống</h2>
-        <ul class="coffee-stat-simple">${categoryRows || '<li class="coffee-muted">—</li>'}</ul>
-      </section>
-    </div>
-
-    <section class="coffee-card"><h2 class="coffee-section-title">Món gọi nhiều nhất</h2>
-      <ul class="coffee-stat-simple">${itemRows || '<li class="coffee-muted">Chưa có chi tiết món.</li>'}</ul>
-    </section>`}
-
-    ${renderAiInsights(state.receipts)}
     <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">← Danh sách</a></div>
   </section>${toastMarkup()}`;
 }

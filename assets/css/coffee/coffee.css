@@ -2,23 +2,36 @@
    Follows the water/health module layout with a warm coffee-house palette. */
 
 :root {
-  --coffee-brown: #6f4e37;
-  --coffee-brown-dark: #4b3621;
-  --coffee-amber: #b45309;
-  --coffee-soft: #f5e9dc;
-  --coffee-ink: #1f2937;
-  --coffee-muted: #6b7280;
-  --coffee-border: #e7d9c7;
-  --coffee-danger: #b91c1c;
-  --coffee-warning: #b45309;
-  --coffee-success: #15803d;
-  --coffee-glass: rgba(255, 253, 250, .92);
+  /* BlogCo teal / mint design system */
+  --coffee-primary: #26A69A;
+  --coffee-primary-dark: #1d8378;
+  --coffee-primary-alt: #31B4AC;
+  --coffee-mint: #A3E4D7;
+  --coffee-mint-soft: #B2EBF2;
+  --coffee-bg: #F8F9FA;
+  --coffee-gray: #E0E0E0;
+  --coffee-gray-text: #757575;
+
+  --coffee-ink: #0F172A;
+  --coffee-muted: #64748B;
+  --coffee-border: #E2E8F0;
+  --coffee-danger: #EF4444;
+  --coffee-warning: #F59E0B;
+  --coffee-success: #10B981;
+  --coffee-glass: #FFFFFF;
+
+  /* Legacy aliases kept so existing components inherit the new palette. */
+  --coffee-brown: var(--coffee-primary);
+  --coffee-brown-dark: var(--coffee-primary-dark);
+  --coffee-amber: var(--coffee-primary-dark);
+  --coffee-soft: #E8F6F3;
 }
 
 body.coffee-route {
   color: var(--coffee-ink);
-  background: linear-gradient(150deg, #fdf6ee 0%, #fff 65%, #f7ede0 100%);
+  background: radial-gradient(1200px 600px at 80% -10%, #E7F6F3 0%, rgba(231, 246, 243, 0) 60%), var(--coffee-bg);
   color-scheme: light;
+  font-family: Inter, "Be Vietnam Pro", Roboto, "SF Pro Display", system-ui, -apple-system, sans-serif;
 }
 body.coffee-route main.main > :not(#coffee-app) { display: none !important; }
 body.coffee-route #coffee-app { display: block; }
@@ -533,4 +546,83 @@ body.coffee-route .category-bar { display: none; }
   .coffee-screen { width: 100%; padding: 0; }
   .coffee-card,
   .coffee-page-heading { border-color: #d6c7b5 !important; box-shadow: none !important; break-inside: avoid; }
+}
+
+/* ========================================================================
+   Teal design-system refresh + financial dashboard charts
+   ======================================================================== */
+.coffee-page-heading { background: #fff; box-shadow: 0 10px 30px rgba(15, 23, 42, .06); }
+.coffee-page-heading--hero { background: linear-gradient(120deg, #E7F6F3, #fff 60%); }
+.coffee-back,
+.coffee-screen a { color: var(--coffee-primary-dark); }
+.coffee-primary-button { border-color: var(--coffee-primary-dark); background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(38, 166, 154, .28); }
+.coffee-primary-button:hover { background: var(--coffee-primary-dark); }
+.coffee-secondary-button { border-color: var(--coffee-primary); color: var(--coffee-primary-dark) !important; }
+.coffee-screen :focus-visible { outline-color: var(--coffee-primary); }
+.coffee-chip { color: var(--coffee-primary-dark); border-color: var(--coffee-mint); background: #EAF8F5; }
+.coffee-budget-bar { background: #E8EDF1; }
+.coffee-budget-bar > span { background: linear-gradient(90deg, var(--coffee-primary), var(--coffee-mint)); }
+.coffee-stat-bar { background: #E8EDF1; }
+.coffee-stat-bar > span { background: linear-gradient(90deg, var(--coffee-primary), var(--coffee-primary-alt)); }
+.coffee-toast { background: #0F172A; }
+.coffee-manual-table thead th { border-bottom: 2px solid var(--coffee-primary-dark); color: #06302c; background: linear-gradient(180deg, #B2EBF2 0%, #7FD9CF 100%); box-shadow: 0 4px 14px rgba(38, 166, 154, .25); }
+.coffee-manual-th-sub { color: #0f6b62; }
+.coffee-manual-cell--index { color: var(--coffee-primary-dark); }
+.coffee-manual-row:nth-child(even) td { background: #F7FCFB; }
+.coffee-manual-row:hover td { background: #EDF8F6; }
+.coffee-manual-input:focus { border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(38, 166, 154, .25); }
+.coffee-season-chip { color: var(--coffee-primary-dark); border-color: var(--coffee-mint); background: #EAF8F5; }
+.coffee-ai-insights__head { border-color: var(--coffee-mint); background: linear-gradient(120deg, #E7F6F3, #fff 70%); box-shadow: 0 12px 32px rgba(38, 166, 154, .1); }
+.coffee-insight-list li { border-bottom-color: var(--coffee-border); }
+.coffee-insight-health { border-color: #FDE68A; }
+
+/* Dashboard ----------------------------------------------------------------- */
+.coffee-dash { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.coffee-dash-hero__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .6rem; margin-bottom: .4rem; }
+.coffee-dash-hero__title { margin: .1rem 0 .2rem; font-size: 1.12rem; font-weight: 700; }
+.coffee-dash-hero__meta { display: flex; flex-wrap: wrap; gap: .4rem; }
+.coffee-chart-scroll { overflow-x: auto; }
+.coffee-chart { display: block; width: 100%; height: auto; min-width: 360px; }
+.coffee-chart--donut { width: 100%; max-width: 240px; min-width: 0; margin: 0 auto; }
+.cc-axis-line { stroke: var(--coffee-border); stroke-width: 1.5; }
+.cc-axis-label { fill: var(--coffee-gray-text); font-size: 12px; font-weight: 600; }
+.cc-axis-sub { fill: #94A3B8; font-size: 10px; }
+.cc-seg-label { fill: #fff; font-size: 11px; font-weight: 700; }
+.cc-total-label { fill: var(--coffee-ink); font-size: 12px; font-weight: 800; }
+.cc-bar-value { fill: var(--coffee-primary-dark); font-size: 12px; font-weight: 700; }
+.cc-donut-value { fill: var(--coffee-ink); font-size: 22px; font-weight: 800; }
+.cc-donut-label { fill: var(--coffee-gray-text); font-size: 11px; font-weight: 600; }
+.coffee-chart-empty { margin: .4rem 0; color: var(--coffee-muted) !important; font-size: .88rem; }
+
+.coffee-chart-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; margin: .6rem 0 0; padding: 0; list-style: none; }
+.coffee-chart-legend li { display: flex; align-items: center; gap: .4rem; font-size: .85rem; }
+.coffee-chart-legend__dot { width: .7rem; height: .7rem; border-radius: 3px; flex: 0 0 auto; }
+.coffee-chart-legend__name { color: var(--coffee-muted); }
+.coffee-chart-legend strong { color: var(--coffee-ink); font-variant-numeric: tabular-nums; }
+
+.coffee-dash-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.coffee-dash-panel { margin: 0; }
+.coffee-dash-panel__title { margin: 0 0 .7rem; font-size: 1rem; font-weight: 700; }
+.coffee-donut-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.coffee-donut-wrap .coffee-chart-legend { flex: 1 1 12rem; margin: 0; flex-direction: column; gap: .5rem; }
+.coffee-donut-wrap .coffee-chart-legend li { width: 100%; justify-content: space-between; }
+.coffee-dash-foot { margin: .7rem 0 0 !important; color: var(--coffee-muted) !important; font-size: .82rem; }
+.coffee-dash-kpis { display: flex; gap: 1.25rem; margin-bottom: .4rem; }
+.coffee-dash-kpis span { display: block; color: var(--coffee-muted); font-size: .78rem; }
+.coffee-dash-kpis strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+
+/* Nutrition meters ---------------------------------------------------------- */
+.coffee-meter-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.5rem; margin-top: .4rem; }
+.coffee-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .3rem; }
+.coffee-meter__label { font-weight: 600; font-size: .88rem; }
+.coffee-meter__value { font-variant-numeric: tabular-nums; }
+.coffee-meter__track { height: 12px; border-radius: 99px; background: #EAEFF2; overflow: hidden; }
+.coffee-meter__track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coffee-primary), var(--coffee-primary-alt)); transition: width .3s ease; }
+.coffee-meter.is-warning .coffee-meter__track > span { background: linear-gradient(90deg, #F59E0B, #FCD34D); }
+.coffee-meter.is-danger .coffee-meter__track > span { background: linear-gradient(90deg, #EF4444, #F87171); }
+.coffee-meter__hint { margin: .25rem 0 0 !important; color: var(--coffee-muted) !important; font-size: .76rem; }
+
+@media (max-width: 860px) {
+  .coffee-dash-grid { grid-template-columns: 1fr; }
+  .coffee-meter-grid { grid-template-columns: 1fr; }
 }

@@ -10,6 +10,7 @@
 import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { normalizeName, classifyItem, CATEGORY_LABELS } from './menu.js';
 import { seasonOf, SEASON_LABELS } from './season.js';
+import { progressMeter } from './charts.js';
 
 // ---------------------------------------------------------------------------
 // Nhận diện thành phần theo tên món (đã bỏ dấu, chữ thường)
@@ -29,6 +30,51 @@ export function classifyHealth(name = '') {
     highCalorie: !healthy && HIGH_CAL_RE.test(text),
     healthy,
   };
+}
+
+// Ước lượng dinh dưỡng theo TÊN món (gram đường, mg caffeine, kcal / khẩu phần).
+// Chỉ là con số tham khảo để vẽ biểu đồ xu hướng, không phải dữ liệu nhãn sản phẩm.
+const NUTRITION_RULES = [
+  [/khong duong|it duong|no sugar|khong sua|it sua|khong da/, { sugar: 2, caffeine: 30, calories: 30 }],
+  [/matcha/, { sugar: 32, caffeine: 70, calories: 190 }],
+  [/tra sua|milk ?tea/, { sugar: 40, caffeine: 30, calories: 300 }],
+  [/ca phe sua|sua da|bac xiu|bac siu/, { sugar: 22, caffeine: 110, calories: 150 }],
+  [/freeze|sinh to|smoothie|frappe|milkshake|da xay/, { sugar: 45, caffeine: 20, calories: 320 }],
+  [/tra dao|tra sen|tra thach|tra trai cay|hong tra|peach/, { sugar: 28, caffeine: 25, calories: 120 }],
+  [/tra xanh|tra den|oolong|o long|\btra\b|tea/, { sugar: 6, caffeine: 40, calories: 20 }],
+  [/mocha|caramel|latte|cappuccino|macchiato/, { sugar: 24, caffeine: 95, calories: 190 }],
+  [/ca phe|coffee|espresso|americano|cold brew|phin|robusta|arabica/, { sugar: 3, caffeine: 120, calories: 15 }],
+  [/banh|croissant|muffin|cookie|brownie|tiramisu|cake|flan|panna/, { sugar: 20, caffeine: 2, calories: 300 }],
+  [/nuoc ngot|soda|pepsi|coca|sting/, { sugar: 35, caffeine: 20, calories: 150 }],
+  [/nuoc ep|juice/, { sugar: 24, caffeine: 0, calories: 120 }],
+  [/nuoc suoi|nuoc loc|atiso/, { sugar: 0, caffeine: 0, calories: 0 }],
+];
+
+export const WEEKLY_SUGAR_LIMIT = 175;   // ~25 g đường tự do/ngày (WHO) × 7
+export const WEEKLY_CAFFEINE_LIMIT = 2800; // ~400 mg caffeine/ngày × 7
+
+export function estimateNutrition(name = '') {
+  const text = normalizeName(name);
+  if (!text) return { sugar: 0, caffeine: 0, calories: 0 };
+  let estimate = null;
+  for (const [pattern, value] of NUTRITION_RULES) {
+    if (pattern.test(text)) { estimate = { ...value }; break; }
+  }
+  if (!estimate) {
+    const flags = classifyHealth(name);
+    if (flags.sweet) estimate = { sugar: 25, caffeine: flags.caffeine ? 60 : 0, calories: 180 };
+    else if (flags.caffeine) estimate = { sugar: 2, caffeine: 90, calories: 15 };
+    else estimate = { sugar: 0, caffeine: 0, calories: 0 };
+  }
+  // Ưu tiên tuyệt đối nếu người dùng ghi rõ "không đường".
+  if (/khong duong|no sugar/.test(text)) estimate.sugar = 0;
+  return estimate;
+}
+
+function limitTone(pct) {
+  if (pct >= 100) return 'danger';
+  if (pct >= 70) return 'warning';
+  return 'primary';
 }
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -80,12 +126,14 @@ export function buildInsights(receipts = [], { now = new Date(), weekDays = 7 } 
   const categoryCounts = new Map();
 
   const health = { sweetWeek: 0, sweetMonth: 0, caffeineWeek: 0, caffeineMonth: 0, highCalWeek: 0, healthyWeek: 0, lateCaffeine: 0 };
+  const nutrition = { sugarWeek: 0, sugarPrevWeek: 0, caffeineWeek: 0, caffeinePrevWeek: 0, caloriesWeek: 0 };
   let itemCount = 0;
 
   list.forEach((receipt) => {
     const date = receipt?.date || '';
     const day = dayNumber(date);
     const inWeek = day !== null && nowDay !== null && day <= nowDay && day > nowDay - weekDays;
+    const inPrevWeek = day !== null && nowDay !== null && day <= nowDay - weekDays && day > nowDay - weekDays * 2;
     const inMonth = String(date).slice(0, 7) === monthKey;
 
     const brand = String(receipt?.store || '').trim() || 'Không rõ';
@@ -122,6 +170,17 @@ export function buildInsights(receipts = [], { now = new Date(), weekDays = 7 } 
       if (flags.highCalorie && inWeek) health.highCalWeek += qty;
       if (flags.healthy && inWeek) health.healthyWeek += qty;
       if (flags.caffeine && isLate) health.lateCaffeine += qty;
+
+      const est = estimateNutrition(name);
+      if (inWeek) {
+        nutrition.sugarWeek += est.sugar * qty;
+        nutrition.caffeineWeek += est.caffeine * qty;
+        nutrition.caloriesWeek += est.calories * qty;
+      }
+      if (inPrevWeek) {
+        nutrition.sugarPrevWeek += est.sugar * qty;
+        nutrition.caffeinePrevWeek += est.caffeine * qty;
+      }
     });
   });
 
@@ -159,6 +218,19 @@ export function buildInsights(receipts = [], { now = new Date(), weekDays = 7 } 
 
   const alternatives = buildAlternatives(categoryCounts);
 
+  const sugarPct = WEEKLY_SUGAR_LIMIT ? Math.round((nutrition.sugarWeek / WEEKLY_SUGAR_LIMIT) * 100) : 0;
+  const sugarPrevPct = WEEKLY_SUGAR_LIMIT ? Math.round((nutrition.sugarPrevWeek / WEEKLY_SUGAR_LIMIT) * 100) : 0;
+  const caffeinePct = WEEKLY_CAFFEINE_LIMIT ? Math.round((nutrition.caffeineWeek / WEEKLY_CAFFEINE_LIMIT) * 100) : 0;
+  const caffeinePrevPct = WEEKLY_CAFFEINE_LIMIT ? Math.round((nutrition.caffeinePrevWeek / WEEKLY_CAFFEINE_LIMIT) * 100) : 0;
+
+  if (nutrition.sugarWeek > WEEKLY_SUGAR_LIMIT) {
+    const over = Math.round(((nutrition.sugarWeek - WEEKLY_SUGAR_LIMIT) / WEEKLY_SUGAR_LIMIT) * 100);
+    alerts.unshift({
+      tone: 'warning', icon: '🍬', title: 'Đường vượt ngưỡng',
+      message: `Lượng đường tuần này ước tính ~${nutrition.sugarWeek} g, cao hơn ${over}% so với mức khuyến nghị (${WEEKLY_SUGAR_LIMIT} g/tuần) — nên giảm đồ uống ngọt để đỡ mệt mỏi buổi chiều.`,
+    });
+  }
+
   return {
     hasData: list.length > 0,
     receiptCount: list.length,
@@ -172,6 +244,12 @@ export function buildInsights(receipts = [], { now = new Date(), weekDays = 7 } 
       .map(([category, count]) => ({ category, label: CATEGORY_LABELS[category] || CATEGORY_LABELS.other, count }))
       .sort((a, b) => b.count - a.count),
     health,
+    nutrition: {
+      ...nutrition,
+      sugarPct, sugarPrevPct, caffeinePct, caffeinePrevPct,
+      sugarTone: limitTone(sugarPct), caffeineTone: limitTone(caffeinePct),
+      sugarLimit: WEEKLY_SUGAR_LIMIT, caffeineLimit: WEEKLY_CAFFEINE_LIMIT,
+    },
     alerts,
     alternatives,
   };
@@ -194,49 +272,79 @@ export function renderAiInsights(receipts = [], options = {}) {
   const body = !data.hasData
     ? '<p class="coffee-empty">Chưa có dữ liệu để phân tích. Thêm giao dịch (hoặc hoá đơn) rồi bấm “Làm mới Insights”.</p>'
     : `
+    <section class="coffee-card coffee-insight-nutrition">
+      <p class="coffee-eyebrow">XU HƯỚNG NẠP DINH DƯỠNG</p>
+      <h3 class="coffee-insight-card__title">📈 Đường &amp; Caffeine (tuần này so với tuần trước)</h3>
+      <div class="coffee-meter-grid">
+        ${progressMeter({
+          label: 'Đường · Tuần này',
+          value: data.nutrition.sugarWeek, max: data.nutrition.sugarLimit,
+          valueText: `${data.nutrition.sugarWeek} g · ${data.nutrition.sugarPct}%`,
+          tone: data.nutrition.sugarTone,
+          hint: `Khuyến nghị ≤ ${data.nutrition.sugarLimit} g/tuần`,
+        })}
+        ${progressMeter({
+          label: 'Đường · Tuần trước',
+          value: data.nutrition.sugarPrevWeek, max: data.nutrition.sugarLimit,
+          valueText: `${data.nutrition.sugarPrevWeek} g · ${data.nutrition.sugarPrevPct}%`,
+          tone: 'primary',
+        })}
+        ${progressMeter({
+          label: 'Caffeine · Tuần này',
+          value: data.nutrition.caffeineWeek, max: data.nutrition.caffeineLimit,
+          valueText: `${data.nutrition.caffeineWeek} mg · ${data.nutrition.caffeinePct}%`,
+          tone: data.nutrition.caffeineTone,
+          hint: `Khuyến nghị ≤ ${data.nutrition.caffeineLimit} mg/tuần`,
+        })}
+        ${progressMeter({
+          label: 'Caffeine · Tuần trước',
+          value: data.nutrition.caffeinePrevWeek, max: data.nutrition.caffeineLimit,
+          valueText: `${data.nutrition.caffeinePrevWeek} mg · ${data.nutrition.caffeinePrevPct}%`,
+          tone: 'primary',
+        })}
+      </div>
+    </section>
+
     <div class="coffee-insight-grid">
       <section class="coffee-card coffee-insight-card">
         <p class="coffee-eyebrow">THÓI QUEN</p>
-        <h3 class="coffee-insight-card__title">⭐ Món yêu thích (Top Favorite Items)</h3>
+        <h3 class="coffee-insight-card__title">🟢 Top món ưa thích</h3>
         <ul class="coffee-insight-list">${listRows(data.topItems, { empty: 'Chưa có tên món — thêm cột Items khi nhập liệu.' })}</ul>
-      </section>
-
-      <section class="coffee-card coffee-insight-card">
-        <p class="coffee-eyebrow">ĐỊA ĐIỂM & THỜI ĐIỂM</p>
-        <h3 class="coffee-insight-card__title">🏬 Thương hiệu ghé nhiều nhất</h3>
-        <ul class="coffee-insight-list">${listRows(data.topBrands, { empty: 'Chưa có dữ liệu.', format: (entry) => formatVnd(entry.total) })}</ul>
-        <h3 class="coffee-insight-card__title coffee-insight-card__title--sub">🌦️ Mùa & thời điểm thường mua</h3>
+        <h3 class="coffee-insight-card__title coffee-insight-card__title--sub">🏬 Thương hiệu &amp; mùa thường ghé</h3>
         <div class="coffee-insight-tags">
-          ${data.topSeasons.length
-            ? data.topSeasons.map((season) => `<span class="coffee-chip">${escapeHtml(season.label)} · ${season.count}</span>`).join('')
-            : '<span class="coffee-chip coffee-chip--muted">Chưa rõ mùa</span>'}
+          ${data.topBrands.slice(0, 4).map((brand) => `<span class="coffee-chip">${escapeHtml(brand.name)} · ${brand.count}</span>`).join('')}
+          ${data.topSeasons.slice(0, 2).map((season) => `<span class="coffee-chip coffee-chip--muted">${escapeHtml(season.label)} · ${season.count}</span>`).join('')}
           ${data.peakWeekday ? `<span class="coffee-chip coffee-chip--muted">Thường mua: ${escapeHtml(data.peakWeekday.label)}</span>` : ''}
         </div>
       </section>
+
+      <section class="coffee-card coffee-insight-card coffee-insight-health">
+        <p class="coffee-eyebrow">CẢNH BÁO SỨC KHỎE</p>
+        <h3 class="coffee-insight-card__title">🟠 Cảnh báo từ AI</h3>
+        <ul class="coffee-insight-alerts">
+          ${data.alerts.map((alert) => `<li class="coffee-insight-alert is-${alert.tone}">
+            <span class="coffee-insight-alert__icon" aria-hidden="true">${alert.icon}</span>
+            <span><strong>${escapeHtml(alert.title)}</strong> — ${escapeHtml(alert.message)}</span>
+          </li>`).join('')}
+        </ul>
+      </section>
     </div>
 
-    <section class="coffee-card coffee-insight-card coffee-insight-health">
-      <p class="coffee-eyebrow">SỨC KHỎE & DINH DƯỠNG</p>
-      <h3 class="coffee-insight-card__title">🩺 Cảnh báo & lời khuyên từ AI</h3>
-      <ul class="coffee-insight-alerts">
-        ${data.alerts.map((alert) => `<li class="coffee-insight-alert is-${alert.tone}">
-          <span class="coffee-insight-alert__icon" aria-hidden="true">${alert.icon}</span>
-          <span><strong>${escapeHtml(alert.title)}</strong> — ${escapeHtml(alert.message)}</span>
-        </li>`).join('')}
-      </ul>
-      <h3 class="coffee-insight-card__title coffee-insight-card__title--sub">🥗 Gợi ý thay thế lành mạnh</h3>
+    <section class="coffee-card coffee-insight-card coffee-insight-reco">
+      <p class="coffee-eyebrow">AI RECOMMENDATIONS</p>
+      <h3 class="coffee-insight-card__title">💡 Đề xuất thay thế thông minh</h3>
       <ul class="coffee-insight-alt">
         ${data.alternatives.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}
       </ul>
-      <p class="coffee-insight-note">Phân tích dựa trên TÊN món đã nhập, không phải tư vấn y khoa. Thành phần và khẩu phần thực tế thay đổi theo công thức mỗi quán.</p>
+      <p class="coffee-insight-note">Phân tích dựa trên TÊN món đã nhập (ước lượng tham khảo), không phải tư vấn y khoa. Thành phần và khẩu phần thực tế thay đổi theo công thức mỗi quán.</p>
     </section>`;
 
   return `<section class="coffee-ai-insights" data-ai-insights aria-labelledby="ai-insights-title">
     <div class="coffee-ai-insights__head">
       <div>
         <p class="coffee-eyebrow">BLOGCO · AI</p>
-        <h2 id="ai-insights-title">💡 AI Insights &amp; Phân Tích Thói Quen</h2>
-        <p class="coffee-muted">Tần suất món yêu thích, thương hiệu ghé nhiều, mùa mua sắm và cảnh báo sức khỏe từ danh sách món.</p>
+        <h2 id="ai-insights-title">💡 AI Health &amp; Financial Insights</h2>
+        <p class="coffee-muted">Phân tích thói quen gọi món và cảnh báo sức khỏe tự động từ danh sách món.</p>
       </div>
       <button type="button" class="coffee-secondary-button" data-ai-refresh>🔄 Làm mới Insights</button>
     </div>
