@@ -113,12 +113,12 @@ export function renderManualTable(rows = [{}]) {
     <table class="coffee-manual-table">
       <thead>
         <tr>
-          <th class="coffee-manual-cell--index" scope="col">#</th>
-          <th scope="col">Brand <span class="coffee-manual-th-sub">Thương hiệu</span></th>
-          <th class="coffee-manual-cell--amount" scope="col">Amount <span class="coffee-manual-th-sub">Số tiền (đ)</span></th>
-          <th scope="col">Date of transaction <span class="coffee-manual-th-sub">Ngày giao dịch</span></th>
-          <th class="coffee-manual-cell--season" scope="col">Seasons <span class="coffee-manual-th-sub">Mùa (tự động)</span></th>
-          <th scope="col">Items <span class="coffee-manual-th-sub">Tên món (cách nhau dấu phẩy)</span></th>
+          <th class="coffee-manual-cell--index" scope="col">STT</th>
+          <th scope="col">Thương hiệu / Quán</th>
+          <th class="coffee-manual-cell--amount" scope="col">Số tiền (đ)</th>
+          <th scope="col">Ngày giao dịch</th>
+          <th class="coffee-manual-cell--season" scope="col">Mùa <span class="coffee-manual-th-sub">tự động theo ngày</span></th>
+          <th scope="col">Món / Nội dung <span class="coffee-manual-th-sub">nhiều món cách nhau dấu phẩy</span></th>
           <th class="coffee-manual-cell--action" scope="col"><span class="coffee-visually-hidden">Thao tác</span></th>
         </tr>
       </thead>

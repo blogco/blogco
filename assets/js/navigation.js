@@ -32,6 +32,8 @@ function syncActiveNavigation() {
     if (key === 'stores') isActive = hashRoute.startsWith('/stores') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
     if (key === 'lessons') isActive = hashRoute.startsWith('/lessons') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
     if (key === 'water') isActive = hashRoute === '/water/add' || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
+    if (key === 'brand') isActive = hashRoute === '/brand-guidelines' || hashRoute === '/ci';
+    if (key === 'coffee') isActive = hashRoute.startsWith('/coffee') || (!hashRoute && (currentPath === targetPath || currentPath.startsWith(targetPath)));
 
     link.classList.toggle('is-active', isActive);
     const dropdown = link.closest('[data-nav-dropdown]');

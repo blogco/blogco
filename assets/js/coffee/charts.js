@@ -3,33 +3,33 @@
 // Every builder is a PURE function that returns an HTML/SVG string (no DOM), so
 // the layouts can be unit-tested in Node and dropped straight into innerHTML.
 //
-// Design system palette (teal / mint / neutral, matching the BlogCo dashboard).
+// Design system palette (Samsung corporate blue / neutral), matching coffee.css.
 
 import { escapeHtml } from './store.js';
 
 export const PALETTE = Object.freeze({
-  primary: '#26A69A',
-  primaryAlt: '#31B4AC',
-  primaryDark: '#1d8378',
-  mint: '#A3E4D7',
-  mintSoft: '#B2EBF2',
-  gray: '#E0E0E0',
-  grayText: '#757575',
-  bg: '#F8F9FA',
-  border: '#E2E8F0',
-  ink: '#0F172A',
-  warning: '#F59E0B',
-  warningSoft: '#FDE68A',
-  danger: '#EF4444',
-  success: '#10B981',
-  info: '#3B82F6',
+  primary: '#1428A0',
+  primaryAlt: '#2E4BD6',
+  primaryDark: '#0E1E78',
+  mint: '#7C93E8',
+  mintSoft: '#D5DBF0',
+  gray: '#C4CBD8',
+  grayText: '#5B6675',
+  bg: '#F4F6F9',
+  border: '#DDE2EA',
+  ink: '#0B1524',
+  warning: '#B26A00',
+  warningSoft: '#F2D6A6',
+  danger: '#C81E1E',
+  success: '#127A4B',
+  info: '#2E4BD6',
 });
 
-// Ordered palette for categorical series (brands, categories…). Teal-forward with
+// Ordered palette for categorical series (brands, categories…). Blue-forward with
 // enough contrast between neighbouring slices/segments.
 export const SERIES_COLORS = [
-  '#26A69A', '#4DB6AC', '#00897B', '#80CBC4', '#5C9EAD',
-  '#8D9DB6', '#B2DFDB', '#A3E4D7', '#C5CBE3', '#90A4AE',
+  '#1428A0', '#2E4BD6', '#5C78E6', '#7C93E8', '#0E1E78',
+  '#8FA0DA', '#B26A00', '#127A4B', '#8A94A6', '#A9B6DA',
 ];
 
 export function colorAt(index) {

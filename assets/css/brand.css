@@ -43,14 +43,15 @@ body {
   line-height: var(--lh-body);
 }
 
-/* Keep every text weight at or above 500 while leaving the category bar and
-   the lesson/slide app intact (they define their own weight scale). */
-body *:not(svg):not(svg *):not(:where(.category-bar, .category-bar *, .lessons-app, .lessons-app *, .pdf-export-root, .pdf-export-root *)) {
+/* Keep every text weight at or above 500 while leaving the category bar,
+   the lesson/slide app and the coffee expense module intact (they define
+   their own weight/type scale). */
+body *:not(svg):not(svg *):not(:where(.category-bar, .category-bar *, .lessons-app, .lessons-app *, .pdf-export-root, .pdf-export-root *, .coffee-app-container, .coffee-app-container *)) {
   font-weight: 500 !important;
 }
 
-body h1,
-body .main h1,
+body h1:not(:where(.coffee-app-container *)),
+body .main h1:not(:where(.coffee-app-container *)),
 body .posts-index__header h1,
 body .article-heading h1 {
   color: var(--text);
@@ -60,8 +61,8 @@ body .article-heading h1 {
   line-height: 1.15 !important;
 }
 
-body h2,
-body .main h2,
+body h2:not(:where(.coffee-app-container *)),
+body .main h2:not(:where(.coffee-app-container *)),
 body .article-content h2 {
   color: var(--text);
   font-size: 32px !important;
@@ -70,8 +71,8 @@ body .article-content h2 {
   line-height: 1.25 !important;
 }
 
-body h3,
-body .main h3,
+body h3:not(:where(.coffee-app-container *)),
+body .main h3:not(:where(.coffee-app-container *)),
 body .article-content h3 {
   color: var(--text);
   font-size: 24px !important;
@@ -82,8 +83,8 @@ body .article-content h3 {
 body strong,
 body b { font-weight: 700 !important; }
 
-body p:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *)),
-body li:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *)),
+body p:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *, .coffee-app-container, .coffee-app-container *)),
+body li:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *, .coffee-app-container, .coffee-app-container *)),
 body .main,
 body .article-content,
 body .posts-index__summary {
@@ -93,15 +94,15 @@ body .posts-index__summary {
   line-height: var(--lh-body) !important;
 }
 
-body a:not(.category-bar__item) {
+body a:not(.category-bar__item):not(:where(.coffee-app-container *)) {
   color: var(--accent);
   font-weight: 600 !important;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
 
-body a:not(.category-bar__item):hover,
-body a:not(.category-bar__item):focus-visible {
+body a:not(.category-bar__item):not(:where(.coffee-app-container *)):hover,
+body a:not(.category-bar__item):not(:where(.coffee-app-container *)):focus-visible {
   color: var(--accent-dark);
 }
 
@@ -1037,4 +1038,46 @@ body.article-body .blogco-header .header-nav {
   .blogco-header .navbar__menu { gap: 6px; }
   .blogco-header .navbar__link { padding-inline: 11px; font-size: 13px; letter-spacing: .05em; }
   .blogco-header .navbar__logo { font-size: 19px; }
+}
+
+/* ---------------------------------------------------------------------------
+   Re-brand: menu ☕ Cà phê theo palette Sembcorp (teal/mint)
+   Chỉ áp cho dropdown Cà phê, không đụng các mục điều hướng khác.
+   Token --blogco-* dùng chung với trang #/brand-guidelines.
+   --------------------------------------------------------------------------- */
+.blogco-header .navbar__dropdown--coffee > .navbar__link--dropdown:hover,
+.blogco-header .navbar__dropdown--coffee > .navbar__link--dropdown[aria-expanded="true"],
+.blogco-header .navbar__dropdown--coffee.is-active > .navbar__link--dropdown,
+.blogco-header .navbar__dropdown--coffee > .navbar__link--dropdown[aria-current="page"] {
+  color: #fff !important;
+  background: var(--blogco-primary, #008375);
+}
+
+.blogco-header .navbar__dropdown--coffee > .navbar__link--dropdown[aria-current="page"]::after {
+  background: var(--blogco-accent, #00BFA5);
+}
+
+.blogco-header .navbar__dropdown--coffee .navbar__submenu {
+  border-top: 3px solid var(--blogco-accent, #00BFA5);
+}
+
+.blogco-header .navbar__dropdown--coffee .navbar__submenu-link:hover,
+.blogco-header .navbar__dropdown--coffee .navbar__submenu-link:focus-visible,
+.blogco-header .navbar__dropdown--coffee .navbar__submenu-link[aria-current="page"] {
+  color: var(--blogco-primary, #008375) !important;
+  background: #e8f5f2;
+}
+
+@media (max-width: 1024px) {
+  .blogco-header .navbar__dropdown--coffee .navbar__submenu {
+    border-top: 0;
+    border-left: 3px solid var(--blogco-accent, #00BFA5);
+  }
+
+  .blogco-header .navbar__dropdown--coffee .navbar__submenu-link:hover,
+  .blogco-header .navbar__dropdown--coffee .navbar__submenu-link:focus-visible,
+  .blogco-header .navbar__dropdown--coffee .navbar__submenu-link[aria-current="page"] {
+    color: #fff !important;
+    background: var(--blogco-primary, #008375);
+  }
 }

@@ -125,22 +125,39 @@ function itemSummary(receipt) {
   return names.length > 90 ? `${names.slice(0, 90)}…` : names;
 }
 
-function renderReceiptCard(receipt) {
+function renderReceiptRow(receipt) {
   const id = escapeHtml(receipt.id);
   const items = receipt.items || [];
-  return `<li class="coffee-receipt-card">
-    <div class="coffee-receipt-card__top">
-      <p class="coffee-receipt-card__meta">📅 ${escapeHtml(formatDate(receipt.date))}${receipt.time ? ` · ${escapeHtml(receipt.time)}` : ''} · ☕ ${escapeHtml(receipt.store || 'Không rõ quán')}</p>
-      <strong class="coffee-receipt-card__total">${escapeHtml(formatVnd(receipt.total))}</strong>
+  const pay = receipt.paymentMethod ? PAYMENT_LABELS[receipt.paymentMethod] : '';
+  return `<tr>
+    <td><span class="coffee-datatable__date">${escapeHtml(formatDate(receipt.date))}</span>${receipt.time ? `<span class="coffee-datatable__time">${escapeHtml(receipt.time)}</span>` : ''}</td>
+    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span><span class="coffee-datatable__items">${escapeHtml(itemSummary(receipt))}</span></td>
+    <td>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : '<span class="coffee-muted">—</span>'}</td>
+    <td class="coffee-num">${items.length}</td>
+    <td>${pay ? `<span class="coffee-chip">${escapeHtml(pay)}</span>` : '<span class="coffee-muted">—</span>'}</td>
+    <td class="coffee-num coffee-datatable__total">${escapeHtml(formatVnd(receipt.total))}</td>
+    <td>
+      <div class="coffee-row-actions">
+        <a class="coffee-ghost-button" href="#/coffee/detail/${id}">Chi tiết</a>
+        <a class="coffee-ghost-button" href="#/coffee/edit/${id}">Sửa</a>
+        <button type="button" class="coffee-ghost-button coffee-ghost-button--danger" data-delete-receipt="${id}" aria-label="Xoá hoá đơn ${id}">Xoá</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function renderRecordCard(receipt) {
+  const id = escapeHtml(receipt.id);
+  const items = receipt.items || [];
+  return `<li class="coffee-record-card">
+    <div class="coffee-record-card__top">
+      <span class="coffee-record-card__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span>
+      <strong class="coffee-record-card__total">${escapeHtml(formatVnd(receipt.total))}</strong>
     </div>
-    <p class="coffee-receipt-card__items">${escapeHtml(itemSummary(receipt))}</p>
-    <p class="coffee-receipt-card__tags">
-      <span class="coffee-chip">${items.length} món</span>
-      ${receipt.paymentMethod ? `<span class="coffee-chip">${escapeHtml(PAYMENT_LABELS[receipt.paymentMethod])}</span>` : ''}
-      ${receipt.orderCode ? `<span class="coffee-chip coffee-chip--muted">${escapeHtml(receipt.orderCode)}</span>` : ''}
-    </p>
-    <div class="coffee-receipt-card__actions">
-      <a class="coffee-text-link" href="#/coffee/detail/${id}">Xem chi tiết →</a>
+    <p class="coffee-record-card__meta">📅 ${escapeHtml(formatDate(receipt.date))}${receipt.time ? ` · ${escapeHtml(receipt.time)}` : ''} · ${items.length} món${receipt.paymentMethod ? ` · ${escapeHtml(PAYMENT_LABELS[receipt.paymentMethod])}` : ''}${receipt.orderCode ? ` · ${escapeHtml(receipt.orderCode)}` : ''}</p>
+    <p class="coffee-record-card__meta">${escapeHtml(itemSummary(receipt))}</p>
+    <div class="coffee-record-card__actions">
+      <a class="coffee-ghost-button" href="#/coffee/detail/${id}">Chi tiết</a>
       <a class="coffee-ghost-button" href="#/coffee/edit/${id}">Sửa</a>
       <button type="button" class="coffee-ghost-button coffee-ghost-button--danger" data-delete-receipt="${id}" aria-label="Xoá hoá đơn ${id}">Xoá</button>
     </div>
@@ -158,11 +175,27 @@ function renderHistoryResults(state) {
 
   let list;
   if (!all.length) {
-    list = '<p class="coffee-empty">Chưa có giao dịch nào. Bấm “Nhập chi phí thủ công” để bắt đầu thống kê chi phí đi cà phê.</p>';
+    list = '<p class="coffee-empty">Chưa có giao dịch nào. Bấm “Nhập chi phí thủ công” để bắt đầu ghi nhận chi phí đi cà phê.</p>';
   } else if (!filtered.length) {
     list = '<p class="coffee-empty">Không tìm thấy hoá đơn phù hợp với bộ lọc.</p>';
   } else {
-    list = `<ul class="coffee-receipt-list">${rows.map(renderReceiptCard).join('')}</ul>`;
+    list = `<div class="coffee-datatable-wrap">
+      <table class="coffee-datatable">
+        <thead>
+          <tr>
+            <th scope="col">Ngày</th>
+            <th scope="col">Quán / Chi nhánh</th>
+            <th scope="col">Mã HĐ</th>
+            <th scope="col" class="coffee-num">Số món</th>
+            <th scope="col">Thanh toán</th>
+            <th scope="col" class="coffee-num">Số tiền</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>${rows.map(renderReceiptRow).join('')}</tbody>
+      </table>
+    </div>
+    <ul class="coffee-record-cards">${rows.map(renderRecordCard).join('')}</ul>`;
   }
 
   const pager = totalPages > 1 ? `<nav class="coffee-pagination" aria-label="Phân trang hoá đơn">
@@ -188,13 +221,13 @@ function renderHistory(root) {
 
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
     <div class="coffee-page-heading coffee-page-heading--hero">
-      <p class="coffee-eyebrow">BLOGCO · CHI PHÍ CÀ PHÊ</p>
-      <h1 id="coffee-title" tabindex="-1">Chi phí đi cà phê</h1>
-      <p>Ghi lại chi tiêu cà phê bằng bảng nhập tay nhanh gọn rồi xem thống kê. Dữ liệu chỉ lưu trên thiết bị này.</p>
+      <p class="coffee-eyebrow">BLOGCO · EXPENSE MANAGEMENT</p>
+      <h1 id="coffee-title" tabindex="-1">Quản lý chi phí cà phê</h1>
+      <p>Ghi nhận và kiểm soát chi tiêu cà phê theo từng giao dịch. Dữ liệu được lưu cục bộ trên thiết bị này.</p>
     </div>
 
     <div class="coffee-toolbar">
-      <a class="coffee-primary-button" href="#/coffee/add">✍️ Nhập chi phí thủ công</a>
+      <a class="coffee-primary-button" href="#/coffee/add">✍️ Nhập chi phí</a>
       <a class="coffee-secondary-button" href="#/coffee/stats">📊 Thống kê chi phí</a>
       <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
       <button type="button" class="coffee-secondary-button" data-import-trigger>⬆ Import</button>
@@ -202,11 +235,19 @@ function renderHistory(root) {
       <input type="file" accept="application/json,.json" data-import-input hidden aria-label="Chọn file JSON để nhập">
     </div>
 
-    <section class="coffee-card coffee-budget-strip" aria-label="Chi tiêu tháng này">
-      <div><p class="coffee-eyebrow">THÁNG NÀY</p><strong class="coffee-budget-value">${escapeHtml(formatVnd(stats.currentMonthTotal))}</strong>
-        <span class="coffee-muted">/ ${budget ? escapeHtml(formatVnd(budget)) : 'chưa đặt ngân sách'} · ${stats.count} hoá đơn · TB ${escapeHtml(formatVnd(stats.averageSpend))}/lần</span></div>
-      ${budget ? `<div class="coffee-budget-bar" role="progressbar" aria-label="Chi tiêu tháng này so với ngân sách" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${monthPct}"><span class="${budgetClass}" style="width:${monthPct}%"></span></div>` : ''}
-    </section>
+    <div class="coffee-summary-grid" aria-label="Chỉ số chi phí">
+      <div class="coffee-summary-card"><span>Chi tháng này</span><strong>${escapeHtml(formatVnd(stats.currentMonthTotal))}</strong></div>
+      <div class="coffee-summary-card"><span>Ngân sách tháng</span><strong>${budget ? escapeHtml(formatVnd(budget)) : '—'}</strong></div>
+      <div class="coffee-summary-card"><span>Giao dịch</span><strong>${stats.count}</strong></div>
+      <div class="coffee-summary-card"><span>Trung bình / lần</span><strong>${escapeHtml(formatVnd(stats.averageSpend))}</strong></div>
+    </div>
+
+    ${budget ? `<section class="coffee-card coffee-budget-strip" aria-label="Mức sử dụng ngân sách tháng">
+      <div><p class="coffee-eyebrow">MỨC SỬ DỤNG NGÂN SÁCH THÁNG</p>
+        <strong class="coffee-budget-value">${monthPct}%</strong>
+        <span class="coffee-muted">của ${escapeHtml(formatVnd(budget))} · còn lại ${escapeHtml(formatVnd(Math.max(0, budget - stats.currentMonthTotal)))}</span></div>
+      <div class="coffee-budget-bar" role="progressbar" aria-label="Chi tiêu tháng này so với ngân sách" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${monthPct}"><span class="${budgetClass}" style="width:${monthPct}%"></span></div>
+    </section>` : `<section class="coffee-card coffee-budget-strip" aria-label="Ngân sách tháng"><div><p class="coffee-eyebrow">NGÂN SÁCH THÁNG</p><span class="coffee-muted">Chưa đặt ngân sách. Vào <a href="#/coffee/stats">Thống kê</a> để thiết lập hạn mức chi tiêu.</span></div></section>`}
 
     <div class="coffee-card coffee-search">
       <label class="coffee-field coffee-field--full">
@@ -229,7 +270,11 @@ function renderHistory(root) {
       </div>
     </div>
 
-    <section class="coffee-card" aria-label="Danh sách hoá đơn">
+    <section class="coffee-card" aria-label="Danh sách chi phí">
+      <div class="coffee-card-heading">
+        <h2>Danh sách chi phí</h2>
+        <span class="coffee-chip">${state.receipts.length} giao dịch</span>
+      </div>
       ${renderHistoryResults({ allReceipts: state.receipts })}
     </section>
     <p class="coffee-disclaimer">Công cụ ghi chép cá nhân giúp bạn theo dõi chi tiêu cà phê. Số liệu do bạn nhập tay — hãy kiểm tra lại trước khi tin dùng.</p>

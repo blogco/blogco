@@ -13,6 +13,7 @@ let healthAppPromise;
 let storesAppPromise;
 let lessonsAppPromise;
 let coffeeAppPromise;
+let brandAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -79,16 +80,32 @@ function syncCoffeeRoute() {
   void coffeeAppPromise.then(({ mountCoffeeApp }) => mountCoffeeApp(root));
 }
 
+function syncBrandRoute() {
+  const root = document.querySelector('[data-brand-app]');
+  if (!root) return;
+  const hash = location.hash;
+  const hashRoute = hash.startsWith('#/brand') || hash === '#/ci' || hash.startsWith('#/ci/');
+  const directRoute = Boolean(root.dataset.initialRoute);
+  const active = hashRoute || directRoute;
+  root.hidden = !active;
+  document.body.classList.toggle('brand-route', active);
+  if (!active) return;
+  brandAppPromise ??= import('./brand/main.js');
+  void brandAppPromise.then(({ mountBrandApp }) => mountBrandApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncStoresRoute);
 window.addEventListener('hashchange', syncLessonsRoute);
 window.addEventListener('hashchange', syncCoffeeRoute);
+window.addEventListener('hashchange', syncBrandRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncStoresRoute();
 syncLessonsRoute();
 syncCoffeeRoute();
+syncBrandRoute();
 document.querySelectorAll('[data-blog-feature]').forEach((element) => {
   const feature = element.dataset.blogFeature;
   if (!(feature in featureLoaders)) return;
