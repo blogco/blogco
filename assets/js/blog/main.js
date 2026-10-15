@@ -207,23 +207,26 @@ function renderEditor(root) {
           <p class="blog-thumb__credit" data-blog-credit></p>
         </fieldset>
       </aside>
-    </div>
 
-    <div class="blog-preview-overlay" data-blog-preview-overlay hidden>
-      <div class="blog-preview-drawer" role="dialog" aria-modal="true" aria-labelledby="blog-preview-label">
-        <div class="blog-preview-drawer__head">
-          <span id="blog-preview-label">👁️ Xem trước bài viết</span>
-          <button type="button" class="blog-drawer__close" data-blog-preview-close aria-label="Đóng xem trước (Esc)">✕</button>
-        </div>
-        <div class="blog-preview-drawer__body">
-          <article class="blog-preview-drawer__article">
-            <h1 class="blog-preview-drawer__title" data-blog-preview-title></h1>
-            <p class="blog-preview-drawer__meta" data-blog-preview-meta></p>
-            <figure class="blog-preview-drawer__cover" data-blog-preview-cover-wrap hidden>
-              <img data-blog-preview-cover alt="Ảnh đại diện">
-            </figure>
-            <div class="blog-preview-drawer__content md-content" data-blog-preview-content></div>
-          </article>
+      <!-- Preview lives inside the layout so on wide screens it becomes a
+           side-by-side split pane instead of a full-screen overlay. On narrow
+           screens it falls back to a right slide-over drawer. -->
+      <div class="blog-preview-overlay" data-blog-preview-overlay hidden>
+        <div class="blog-preview-drawer" role="dialog" aria-modal="true" aria-labelledby="blog-preview-label">
+          <div class="blog-preview-drawer__head">
+            <span id="blog-preview-label">👁️ Xem trước bài viết</span>
+            <button type="button" class="blog-drawer__close" data-blog-preview-close aria-label="Đóng xem trước (Esc)">✕</button>
+          </div>
+          <div class="blog-preview-drawer__body">
+            <article class="blog-preview-drawer__article">
+              <h1 class="blog-preview-drawer__title" data-blog-preview-title></h1>
+              <p class="blog-preview-drawer__meta" data-blog-preview-meta></p>
+              <figure class="blog-preview-drawer__cover" data-blog-preview-cover-wrap hidden>
+                <img data-blog-preview-cover alt="Ảnh đại diện">
+              </figure>
+              <div class="blog-preview-drawer__content md-content" data-blog-preview-content></div>
+            </article>
+          </div>
         </div>
       </div>
     </div>
@@ -627,6 +630,7 @@ function openPreview(root) {
   const content = overlay.querySelector('[data-blog-preview-content]');
   content.innerHTML = '<p class="blog-preview__loading">Đang dựng bản xem trước…</p>';
   overlay.hidden = false;
+  root.querySelector('.blog-screen')?.classList.add('is-previewing');
   document.body.classList.add('blog-drawer-open');
   const markdown = expandFigureShortcodes(markdownFromHtml(form.html));
   void loadMarked().then((marked) => {
@@ -638,6 +642,7 @@ function openPreview(root) {
 function closePreview(root) {
   const overlay = root.querySelector('[data-blog-preview-overlay]');
   if (overlay) overlay.hidden = true;
+  root.querySelector('.blog-screen')?.classList.remove('is-previewing');
   document.body.classList.remove('blog-drawer-open');
 }
 
