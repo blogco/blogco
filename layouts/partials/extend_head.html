@@ -8,6 +8,16 @@
 <meta name="blogco-lock-hash" content="{{ . }}">
 {{- end }}
 
+{{- /* Blog editor: repo/branch + optional stock-photo keys (read by assets/js/blog). */ -}}
+<meta name="blogco-gh-repo" content="{{ site.Params.githubRepo | default "blogco/blogco" }}">
+<meta name="blogco-gh-branch" content="{{ site.Params.blog.branch | default "main" }}">
+{{- with site.Params.media.unsplashKey }}
+<meta name="blogco-unsplash-key" content="{{ . }}">
+{{- end }}
+{{- with site.Params.media.pexelsKey }}
+<meta name="blogco-pexels-key" content="{{ . }}">
+{{- end }}
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">

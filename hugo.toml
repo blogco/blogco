@@ -42,6 +42,17 @@ enableGitInfo = false
     passcodeHash = '7c531d72f7f14604e25fbb7862b1ed4e2b8f9a64534e32f4d877e645e6364da3'
     disableLock = false
 
+  mainSections = ['posts']
+
+  [params.blog]
+    branch = 'main'
+
+  # Optional stock-photo providers for auto thumbnails. Leave empty to use the
+  # built-in auto illustration (picsum.photos seeded by slug).
+  [params.media]
+    unsplashKey = ''
+    pexelsKey = ''
+
   [params.homeInfoParams]
     Title = 'BlogCo'
     Content = 'Góc chia sẻ kiến thức, công nghệ và những ý tưởng đáng khám phá.'

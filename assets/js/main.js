@@ -11,6 +11,7 @@ let waterAppPromise;
 let healthAppPromise;
 let coffeeAppPromise;
 let brandAppPromise;
+let blogAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -68,14 +69,29 @@ function syncBrandRoute() {
   void brandAppPromise.then(({ mountBrandApp }) => mountBrandApp(root));
 }
 
+function syncBlogRoute() {
+  const root = document.querySelector('[data-blog-app]');
+  if (!root) return;
+  const hash = location.hash;
+  const hashRoute = hash === '#/blog' || hash.startsWith('#/blog/');
+  const active = hashRoute || Boolean(root.dataset.initialRoute);
+  root.hidden = !active;
+  document.body.classList.toggle('blog-route', active);
+  if (!active) return;
+  blogAppPromise ??= import('./blog/main.js');
+  void blogAppPromise.then(({ mountBlogApp }) => mountBlogApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncCoffeeRoute);
 window.addEventListener('hashchange', syncBrandRoute);
+window.addEventListener('hashchange', syncBlogRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncCoffeeRoute();
 syncBrandRoute();
+syncBlogRoute();
 
 // Unlock/lock → re-evaluate the sensitive apps; leave the home/brand pages
 // without a lingering lock overlay when no personal route is active.
