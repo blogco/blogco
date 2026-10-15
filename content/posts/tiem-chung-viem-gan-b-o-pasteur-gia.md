@@ -28,75 +28,14 @@ Chi phí tiêm vắc xin viêm gan B phụ thuộc vào độ tuổi (trẻ em h
 
   
 
-**Loại vắc xin**
-
-**Tên vắc xin / Dung tích**
-
-**Xuất xứ**
-
-**Đối tượng**
-
-**Giá tham khảo (VNĐ/mũi)**
-
-**Viêm gan B trẻ em**
-
-Euvax B (0.5ml)
-
-Hàn Quốc
-
-Trẻ em
-
-~ 95.000 – 160.000
-
-**Viêm gan B trẻ em**
-
-Hepavax Gene / Gene-HBvax (0.5ml)
-
-Việt Nam / Hàn Quốc
-
-Trẻ em
-
-~ 116.000 – 145.000
-
-**Viêm gan B người lớn**
-
-Engerix B (1ml)
-
-Bỉ
-
-Người lớn
-
-~ 235.000
-
-**Viêm gan B người lớn**
-
-Euvax B / Gene-HBvax (1ml)
-
-Hàn Quốc / Việt Nam
-
-Người lớn
-
-~ 150.000 – 160.000
-
-**Viêm gan B người lớn**
-
-Heberbiovac HB (1ml)
-
-Cu-ba
-
-Người lớn
-
-~ 140.000
-
-**Viêm gan A + B (Kết hợp)**
-
-Twinrix (1ml)
-
-Bỉ
-
-Người lớn & Trẻ em
-
-~ 560.000 – 620.000
+| Loại vắc xin | Tên vắc xin / Dung tích | Xuất xứ | Đối tượng | Giá tham khảo (VNĐ/mũi) |
+| --- | --- | --- | --- | --- |
+| Viêm gan B trẻ em | Euvax B (0.5ml) | Hàn Quốc | Trẻ em | ~ 95.000 – 160.000 |
+| Viêm gan B trẻ em | Hepavax Gene / Gene-HBvax (0.5ml) | Việt Nam / Hàn Quốc | Trẻ em | ~ 116.000 – 145.000 |
+| Viêm gan B người lớn | Engerix B (1ml) | Bỉ | Người lớn | ~ 235.000 |
+| Viêm gan B người lớn | Euvax B / Gene-HBvax (1ml) | Hàn Quốc / Việt Nam | Người lớn | ~ 150.000 – 160.000 |
+| Viêm gan B người lớn | Heberbiovac HB (1ml) | Cu-ba | Người lớn | ~ 140.000 |
+| Viêm gan A + B (Kết hợp) | Twinrix (1ml) | Bỉ | Người lớn & Trẻ em | ~ 560.000 – 620.000 |
 
 > **Lưu ý:**
 > 
