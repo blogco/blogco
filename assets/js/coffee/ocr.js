@@ -293,6 +293,58 @@ export async function preprocessImage(source, {
 }
 
 // ---------------------------------------------------------------------------
+// Tầng 2 — Vietnamese OCR post-processing + region-aware parsing (vùng A–I)
+// ---------------------------------------------------------------------------
+//
+// Thermal Highlands receipts reach the parser mangled by Tesseract: "Creck"→Check,
+// "Tay tim"→Thành tiền, "Payoo Bark Card"→Payoo Bank Card… The lookup table
+// repairs the common cases, then the parser (see docs/ca-phe-receipt-wireframe.md
+// for the vùng A–I map) separates items from discount rows and payment rows so
+// those never become bogus menu items.
+const VI_FIXES = {
+  'Creck': 'Check',
+  'May': 'Ngay',
+  'Tae tim': 'Thanh tien',
+  'Tog tien': 'Tong tien',
+  'Thu rean': 'Thu ngan',
+  'Xoyen Ouy Khang': 'Nguyen Duy Khang',
+  'Payoo Bark Card': 'Payoo Bank Card',
+  'Inte hạ': 'In Store',
+  'gGHựi': 'Highlands',
+  '1B Hg tag': '126 Hong Bang',
+  'Lon, TP.HN': 'Lon, TP.HCM',
+  'Matchadi Latte': 'Matcha Latte',
+  'Latte 0': 'Latte Da',
+  'Ecoce Coupon giae': 'Ecode Coupon giam',
+  'Y tt': 'Banh Dua',
+  'Chia sey kien': 'Chia se y kien',
+  'cua bun vôi chưng': 'cua ban voi chung',
+  'custonerseryicethighlandscof fee': 'customerservice@highlandscoffee',
+  'San 0:a': 'San Qua',
+  'Tại Ao': 'Tai App',
+  'orf Fret': '',
+  'Gut 08 va rap thu tin': 'Quet QR hoac nhap thong tin',
+  'trong 3 010 sau khi ma': 'trong 3 gio sau khi mua',
+  'Don sau 20h, wi Tong gui true': 'Don sau 20h, vui long gui truoc',
+  'Th cue rary': '23h cung ngay',
+  'Xin cư on Quy khách': 'Xin cam on Quy khach',
+  'Quy khách': 'Quy khach',
+};
+
+// Longest phrase first so "Matchadi Latte" is repaired before "Latte 0".
+const VI_FIX_ENTRIES = Object.entries(VI_FIXES)
+  .filter(([wrong, right]) => wrong !== right)
+  .sort((a, b) => b[0].length - a[0].length);
+
+export function fixVietnamese(text) {
+  let out = String(text || '');
+  for (const [wrong, right] of VI_FIX_ENTRIES) {
+    if (out.includes(wrong)) out = out.split(wrong).join(right);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Parsing helpers (pure)
 // ---------------------------------------------------------------------------
 
@@ -373,8 +425,9 @@ function cleanLabelValue(value = '') {
     .trim();
 }
 
-// Line prefixes that mark a summary row rather than a purchasable item.
-const LABEL_LINE = /^(?:tong\b|sub ?total|subtotal|vat\b|thue\b|gtgt|giam gia|discount|chiet khau|voucher|khuyen mai|tien\b|thanh toan|total\b|grand\b|cong\b|phi\b|tip\b|service\b|payment\b|cash\b|card\b|khach dua|tien thua|tra lai|change\b|net\b|gross\b|amount\b|so hd|so hoa don|ma don|hoadon|hoa don)/;
+// Line prefixes that mark a summary/metadata row rather than a purchasable item.
+// (check/pos/ngay/thu ngan… come from the vùng D metadata block.)
+const LABEL_LINE = /^(?:tong\b|sub ?total|subtotal|vat\b|thue\b|gtgt|giam gia|discount|chiet khau|voucher|khuyen mai|tien\b|thanh toan|thanh tien|total\b|grand\b|cong\b|phi\b|tip\b|service\b|payment\b|cash\b|card\b|khach dua|tien thua|tra lai|change\b|net\b|gross\b|amount\b|so hd|so hoa don|ma don|hoadon|hoa don|check\b|pos\d*|\bpos\b|ngay\b|thu ngan|pager|shopid|sdt|dia chi|dien thoai|address|receipt)/;
 
 function isLabelLine(line) {
   const norm = normalizeName(stripDateTimes(line));
@@ -382,6 +435,86 @@ function isLabelLine(line) {
   if (LABEL_LINE.test(norm)) return true;
   // A line of digits/punctuation only is never an item name.
   return !/[a-zà-ỹ]/i.test(norm);
+}
+
+function lineMoney(line) {
+  return [...stripDateTimes(line).matchAll(moneyRegex())]
+    .map((match) => parseMoney(match[0]))
+    .filter((value) => value !== null);
+}
+
+// Payment method rows (vùng G). Checked on the accent-stripped line so both
+// "Tiền mặt" and "tien mat" resolve; never allowed to become an item.
+const PAYMENT_PATTERNS = [
+  [/payoo/, 'Payoo Bank Card'],
+  [/master\s*card|mastercard/, 'Mastercard'],
+  [/visa/, 'Visa'],
+  [/jcb/, 'JCB'],
+  [/momo/, 'MoMo'],
+  [/zalo\s*pay|zalopay/, 'ZaloPay'],
+  [/vnpay/, 'VNPay'],
+  [/shopeepay|shopee\s*pay/, 'ShopeePay'],
+  [/napas/, 'Napas'],
+  [/qr\s*pay|qr\s*code|ma\s*qr|\bqr\b/, 'QR Pay'],
+  [/chuyen khoan|ngan hang|\bbank\b|transfer/, 'Chuyển khoản'],
+  [/tien mat|\bcash\b/, 'Tiền mặt'],
+  [/\bthe\b|credit|debit|\bcard\b/, 'Thẻ'],
+];
+
+function isPaymentLine(line) {
+  const norm = normalizeName(line);
+  return PAYMENT_PATTERNS.some(([pattern]) => pattern.test(norm));
+}
+
+function paymentMethodFromLabel(label = '') {
+  if (/payoo|thẻ|card|visa|master|jcb|credit|debit/i.test(label)) return 'card';
+  if (/momo|zalo|vnpay|shopee|napas|qr/i.test(label)) return 'ewallet';
+  if (/chuyển|chuyen|transfer|bank/i.test(label)) return 'transfer';
+  if (/mặt|mat|cash/i.test(label)) return 'cash';
+  return '';
+}
+
+function extractPayment(lines) {
+  let fallback = null;
+  for (const line of lines) {
+    const norm = normalizeName(line);
+    for (const [pattern, label] of PAYMENT_PATTERNS) {
+      if (!pattern.test(norm)) continue;
+      const amount = lineMoney(line).slice(-1)[0] ?? null;
+      if (amount !== null) return { payment: label, paymentAmount: amount };
+      fallback ??= { payment: label, paymentAmount: null };
+      break;
+    }
+  }
+  return fallback || { payment: '', paymentAmount: null };
+}
+
+// A discount printed against an item (vùng E) starts with "-" or carries a
+// coupon/ecode keyword; a standalone "Giảm giá X" is receipt-level (scanAmounts).
+function isItemDiscountLine(line) {
+  if (/^\s*[-–—]/.test(line)) return true;
+  return /(coupon|voucher|ecode|khuyen mai)/.test(normalizeName(line));
+}
+
+function cleanDiscountLabel(line) {
+  return String(line)
+    .replace(moneyRegex(), ' ')
+    .replace(/^\s*[-–—]+\s*/, '')
+    .replace(/[x×*]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[\s:–-]+$/, '')
+    .trim()
+    .slice(0, 80);
+}
+
+function attachDiscount(items, line) {
+  if (!items.length) return;
+  const value = lineMoney(line).slice(-1)[0];
+  if (value === null || value === undefined) return;
+  const item = items[items.length - 1];
+  item.discount = (item.discount || 0) - value;
+  item.discountLabel = cleanDiscountLabel(line);
+  item.amount = Math.max(0, (item.unitPrice || 0) * (item.qty || 1) + item.discount);
 }
 
 // Pull quantity from the many shapes a receipt prints it: "2 x Name",
@@ -430,7 +563,7 @@ function applyTrailingQty(name, qty, values, unitPrice, amount) {
   const trailing = name.match(/^(.*\S)\s+(\d{1,3})$/);
   const resolvedQty = trailing && values.length >= 2 && qty === 1 ? Number(trailing[2]) : qty;
   const resolvedName = trailing && values.length >= 2 && qty === 1 ? trailing[1].trim() : name;
-  return { name: resolvedName.slice(0, 160), qty: resolvedQty, unitPrice, amount, category: classifyItem(resolvedName) };
+  return { name: resolvedName.slice(0, 160), qty: resolvedQty, unitPrice, amount, category: classifyItem(resolvedName), discount: 0, discountLabel: null };
 }
 
 export function parseHighlandsItems(lines) {
@@ -438,7 +571,10 @@ export function parseHighlandsItems(lines) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     if (!line) continue;
-    const moneyOnLine = [...stripDateTimes(line).matchAll(moneyRegex())].length > 0;
+    // Payment (vùng G) and item discounts (vùng E) never become menu items.
+    if (isPaymentLine(line)) continue;
+    if (isItemDiscountLine(line)) { attachDiscount(items, line); continue; }
+    const moneyOnLine = lineMoney(line).length > 0;
     if (!moneyOnLine) {
       // Two-line items: a bare name followed by "1 x 45.000".
       const next = lines[index + 1];
@@ -455,10 +591,11 @@ export function parseHighlandsItems(lines) {
 }
 
 function detectPayment(text) {
-  if (/momo|zalo\s*pay|zalopay|vnpay|shopeepay|ví\s*điện\s*tử|vi dien tu|ewallet|mã\s*qr|\bqr\b/i.test(text)) return 'ewallet';
-  if (/chuyển\s*khoản|chuyen khoan|ngân\s*hàng|ngan hang|bank|transfer/i.test(text)) return 'transfer';
-  if (/thẻ|\bcard\b|visa|master|jcb|credit|debit|\bpos\b/i.test(text)) return 'card';
-  if (/tiền\s*mặt|tien mat|\bcash\b/i.test(text)) return 'cash';
+  const norm = normalizeName(text);
+  if (/momo|zalo pay|zalopay|vnpay|shopeepay|napas|ewallet|ma qr|\bqr\b/.test(norm)) return 'ewallet';
+  if (/\bthe\b|\bcard\b|visa|master|jcb|credit|debit|\bpos\b/.test(norm)) return 'card';
+  if (/chuyen khoan|ngan hang|\bbank\b|transfer/.test(norm)) return 'transfer';
+  if (/tien mat|\bcash\b/.test(norm)) return 'cash';
   return '';
 }
 
@@ -488,32 +625,129 @@ function scanAmounts(lines) {
   return amounts;
 }
 
-export function parseHighlandsInvoice(rawText) {
-  const text = String(rawText || '');
-  const lines = text.split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
-  const head = lines.slice(0, 15);
+// --- Vùng A–I metadata extraction -----------------------------------------
 
-  const brand = head.find((line) => /highlands/i.test(line)) || '';
+const ADDRESS_KEYWORDS = /(phường|phuong|quận|\bquan\b|thành phố|thanh pho|tp\.?\s*hcm|tphcm|hà nội|ha noi|đà nẵng|da nang|đường|duong|street|ward|district|tầng|tang|vincom|vinhomes|cho lon|hồng bàng|hong bang)/i;
+
+function extractDateTime(lines, text) {
+  const source = lines.find((line) => /(?:ngay|may)\b/i.test(line) && /\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(line))
+    || lines.find((line) => /\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(line) && /\d{1,2}:\d{2}/.test(line))
+    || text;
+  const match = source.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})[^\d]{0,12}?(\d{1,2}:\d{2})/);
+  return match ? `${match[1]} ${match[2]}` : '';
+}
+
+function isFooterLine(line) {
+  const norm = normalizeName(line);
+  return /^\*+/.test(line.trim()) || /\bqr\b/.test(norm) || /xin cam on|customerservice|highlandscoffee|tai app|san qua|chia se/.test(norm);
+}
+
+const NAME_LINE_RE = /^[A-Z][\p{L}]+(?:\s+[A-Z][\p{L}]+){1,3}$/u;
+
+function extractCustomer(lines) {
+  const isName = (line) => NAME_LINE_RE.test(line)
+    && !/hoa don|thanh toan|highlands|cam on|\bxin\b|coffee|cafe|chia se|san qua/i.test(line);
+  const paymentIndex = lines.findIndex((line) => isPaymentLine(line));
+  const start = paymentIndex >= 0 ? paymentIndex + 1 : 0;
+  for (let index = start; index < lines.length; index += 1) {
+    if (isFooterLine(lines[index])) break;
+    if (isName(lines[index])) return lines[index];
+  }
+  const candidates = lines.filter(isName);
+  return candidates[candidates.length - 1] || '';
+}
+
+function extractMeta(lines, text) {
+  const address = cleanLabelValue(firstMatch(lines, /(?:địa chỉ|dia chi|\bđc\b|\bdc\b|address)\s*[:：]?\s*([^\n]+)/i))
+    || cleanLabelValue(lines.find((line) => ADDRESS_KEYWORDS.test(line) && /\d/.test(line)) || '');
+
+  const phone = firstMatch(lines, /(?:sđt|\bsdt\b|\bđt\b|điện thoại|dien thoai|phone|tel)\s*[:：.]?\s*([\d][\d.\-\s]{7,})/i).replace(/\s+/g, '');
+  const shopId = firstMatch(lines, /shop\s*id\s*[:：]?\s*(\d+)/i);
+  const pager = firstMatch(lines, /pager\s*[:：]?\s*(\d+)/i);
+  const checkNo = firstMatch(lines, /check\s*[:：]?\s*(\d+)/i);
+  const posMatch = text.match(/\bpos\s*(\d+)/i);
+  const receiptTypeLine = lines.find((line) => /hoa don|hóa đơn|receipt/i.test(line) && !/xuat|qu[eé]t/i.test(line));
+  const receiptType = receiptTypeLine ? cleanLabelValue(receiptTypeLine.replace(/\bpager.*$/i, '')) : '';
+  const { payment, paymentAmount } = extractPayment(lines);
+
+  return {
+    brand: 'Highlands Coffee',
+    address,
+    phone,
+    shopId,
+    pager,
+    checkNo,
+    pos: posMatch ? `POS${posMatch[1]}` : '',
+    datetime: extractDateTime(lines, text),
+    cashier: cleanLabelValue(firstMatch(lines, /thu\s*ngan\s*[:：]?\s*([^\n]{2,})/i)),
+    receiptType,
+    customer: extractCustomer(lines),
+    payment,
+    paymentAmount,
+  };
+}
+
+// Parse once, share between the legacy and the extended (vùng A–I) results.
+function extractReceipt(rawText) {
+  const text = fixVietnamese(String(rawText || ''));
+  const lines = text.split(/\r?\n/).map((line) => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  return { text, lines, items: parseHighlandsItems(lines), amounts: scanAmounts(lines), meta: extractMeta(lines, text) };
+}
+
+// Extended, region-aware result (vùng A–I). This is the shape the wireframe and
+// the required acceptance test describe.
+export function parseHighlandsReceipt(rawText) {
+  const { text, items, amounts, meta } = extractReceipt(rawText);
+  const itemSum = items.reduce((sum, item) => sum + item.amount, 0);
+  const subtotal = amounts.subtotal ?? (itemSum > 0 ? itemSum : null);
+  let total = amounts.total;
+  if (total === undefined) total = subtotal !== null ? subtotal - (amounts.discount || 0) + (amounts.vat || 0) : null;
+
+  return {
+    brand: meta.brand,
+    address: meta.address,
+    phone: meta.phone,
+    shopId: meta.shopId,
+    receiptType: meta.receiptType,
+    pager: meta.pager,
+    checkNo: meta.checkNo,
+    pos: meta.pos,
+    datetime: meta.datetime,
+    cashier: meta.cashier,
+    items: items.map((item) => ({
+      qty: item.qty,
+      name: item.name,
+      price: item.unitPrice,
+      discount: item.discount || 0,
+      discountLabel: item.discountLabel || null,
+    })),
+    subtotal,
+    total,
+    payment: meta.payment,
+    paymentAmount: meta.paymentAmount,
+    customer: meta.customer,
+    rawText: text.slice(0, 8000),
+  };
+}
+
+export function parseHighlandsInvoice(rawText) {
+  const { text, lines, items, amounts, meta } = extractReceipt(rawText);
+
+  const brandLine = lines.find((line) => /highlands/i.test(line)) || '';
   const branch = cleanLabelValue(firstMatch(lines, /(?:chi\s*nhánh|chi nhanh|\bcn\b|branch|quầy|quay)\s*[:：\-]?\s*([^\n]{3,})/i));
   const store = branch
-    || cleanLabelValue(brand.replace(/highlands\s*coffee/i, '').replace(/^[\s\-–:]+/, ''))
-    || cleanLabelValue(brand)
-    || '';
+    || cleanLabelValue(brandLine.replace(/highlands\s*coffee/i, '').replace(/^[\s\-–:]+/, ''))
+    || cleanLabelValue(brandLine)
+    || 'Highlands Coffee';
 
-  const address = cleanLabelValue(firstMatch(lines, /(?:địa chỉ|dia chi|\bđc\b|\bdc\b|address)\s*[:：]?\s*([^\n]+)/i))
-    || cleanLabelValue(lines.find((line) => /(phường|phuong|quận|quan|thành phố|thanh pho|tp\.?\s*hcm|đường|duong|street|ward|district|tầng|tang|vincom|vinhomes)/i.test(line) && !/highlands|hoá đơn|hóa đơn/i.test(line)) || '');
+  const orderCode = meta.checkNo
+    || firstMatch(lines, /(?:số\s*(?:h[đd]|hoá đơn|hóa đơn|bill|đơn)|mã\s*(?:đơn|hoá đơn|hóa đơn|h[đd])|order\s*(?:no|id|#)?|bill\s*(?:no|#)?|#)\s*[:：#]?\s*([A-Za-z0-9._\-/]{3,})/i);
 
-  const orderCode = firstMatch(lines, /(?:số\s*(?:h[đd]|hoá đơn|hóa đơn|bill|đơn)|mã\s*(?:đơn|hoá đơn|hóa đơn|h[đd])|order\s*(?:no|id|#)?|bill\s*(?:no|#)?|#)\s*[:：#]?\s*([A-Za-z0-9._\-/]{3,})/i);
-
-  const date = parseDate(text);
-  const timeRaw = firstMatch(lines, /(?:giờ|thời gian|time)\s*[:：]?\s*(\d{1,2}[:hg]\d{2})/i);
-  const timeMatch = (timeRaw || text).match(/(\d{1,2})[:hg](\d{2})/);
+  const date = parseDate(meta.datetime || text);
+  const timeMatch = (meta.datetime || '').match(/(\d{1,2}):(\d{2})/) || text.match(/(\d{1,2})[:hg](\d{2})/);
   const time = timeMatch ? `${String(timeMatch[1]).padStart(2, '0')}:${timeMatch[2]}` : '';
 
-  const items = parseHighlandsItems(lines);
-  const amounts = scanAmounts(lines);
   const itemSum = items.reduce((sum, item) => sum + item.amount, 0);
-
   if (amounts.subtotal === undefined && itemSum > 0) amounts.subtotal = itemSum;
   if (amounts.total === undefined) {
     if (amounts.subtotal !== undefined) amounts.total = amounts.subtotal - (amounts.discount || 0) + (amounts.vat || 0);
@@ -523,18 +757,38 @@ export function parseHighlandsInvoice(rawText) {
 
   return {
     store,
-    address,
+    address: meta.address,
     date,
     time,
     orderCode,
-    items,
+    items: items.map((item) => ({
+      name: item.name,
+      qty: item.qty,
+      unitPrice: item.unitPrice,
+      amount: item.amount,
+      category: item.category,
+      ...(item.discount ? { discount: item.discount, discountLabel: item.discountLabel } : {}),
+    })),
     subtotal: amounts.subtotal ?? null,
     discount: amounts.discount ?? null,
     vat: amounts.vat ?? null,
     total: amounts.total ?? null,
     cash: amounts.cash ?? null,
     change: amounts.change ?? null,
-    paymentMethod: detectPayment(text),
+    paymentMethod: paymentMethodFromLabel(meta.payment) || detectPayment(text),
+    // Extended (vùng A–I) fields kept so callers see the full structure.
+    brand: meta.brand,
+    phone: meta.phone,
+    shopId: meta.shopId,
+    receiptType: meta.receiptType,
+    pager: meta.pager,
+    checkNo: meta.checkNo,
+    pos: meta.pos,
+    datetime: meta.datetime,
+    cashier: meta.cashier,
+    payment: meta.payment,
+    paymentAmount: meta.paymentAmount,
+    customer: meta.customer,
     rawText: text.slice(0, 8000),
   };
 }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyItem, normalizeName } from './menu.js';
 import {
-  parseMoney, parseDate, parseItemLine, parseHighlandsInvoice,
+  parseMoney, parseDate, parseItemLine, parseHighlandsInvoice, parseHighlandsReceipt, fixVietnamese,
   toGrayscale, stretchContrast, medianFilter, adaptiveThreshold, estimateSkewAngle,
 } from './ocr.js';
 import {
@@ -211,6 +211,76 @@ test('estimateSkewAngle reports horizontal text as 0 and tilts back into line', 
   const angle = estimateSkewAngle(tilted, width, height);
   // Rotating by this angle should undo the tilt.
   assert.ok(Math.abs(angle - -5) <= 1, `expected ~-5°, got ${angle}`);
+});
+
+test('fixVietnamese repairs the common Tesseract misreads', () => {
+  assert.equal(fixVietnamese('Creck: 174294'), 'Check: 174294');
+  assert.equal(fixVietnamese('May: 15-10-2026'), 'Ngay: 15-10-2026');
+  assert.equal(fixVietnamese('Tae tim: 100.200'), 'Thanh tien: 100.200');
+  assert.equal(fixVietnamese('Tog tien: 100.200'), 'Tong tien: 100.200');
+  assert.equal(fixVietnamese('Thu rean: A'), 'Thu ngan: A');
+  assert.equal(fixVietnamese('Payoo Bark Card 100.200'), 'Payoo Bank Card 100.200');
+  assert.equal(fixVietnamese('Xoyen Ouy Khang'), 'Nguyen Duy Khang');
+});
+
+test('parseHighlandsReceipt handles the real garbled Highlands invoice by region', () => {
+  // Reconstructed OCR output for the 15-10-2026 Highlands invoice (vùng A–I).
+  const raw = `HIGHLANDS COFFEE
+gGHựi 1B Hg tag, Phuong Cho Lon, TP.HN
+SĐT: 028.7301.6978
+ShopID: 1039
+Hoa Don Thanh Toan Pager: 13
+In Store
+Creck: 174294 POS01
+May: 15-10-2026 06:52
+Thu rean: Thu Ngan ca sang 1
+1 Matchadi Latte 0 L 69.000
+-Ecoce Coupon giae -13.800
+1 Y tt 45.000
+Tae tim: 100.200
+Tog tien: 100.200
+Payoo Bark Card 100.200
+Xoyen Ouy Khang
+* Chia sey kien cua bun vôi chưng *
+custonerseryicethighlandscof fee.com.vn`;
+
+  const receipt = parseHighlandsReceipt(raw);
+  assert.equal(receipt.checkNo, '174294');
+  assert.equal(receipt.datetime, '15-10-2026 06:52');
+  assert.equal(receipt.cashier, 'Thu Ngan ca sang 1');
+  assert.equal(receipt.items.length, 2);
+  assert.equal(receipt.items[0].name, 'Matcha Latte Da L');
+  assert.equal(receipt.items[0].price, 69000);
+  assert.equal(receipt.items[0].discount, -13800);
+  assert.equal(receipt.items[1].name, 'Banh Dua');
+  assert.equal(receipt.items[1].price, 45000);
+  assert.equal(receipt.subtotal, 100200);
+  assert.equal(receipt.total, 100200);
+  assert.equal(receipt.payment, 'Payoo Bank Card');
+  assert.equal(receipt.paymentAmount, 100200);
+  assert.equal(receipt.customer, 'Nguyen Duy Khang');
+
+  // The payment row and the discount row must NOT be items.
+  assert.equal(receipt.items.some((item) => /payoo/i.test(item.name)), false);
+  assert.equal(receipt.items.some((item) => /coupon|ecode/i.test(item.name)), false);
+});
+
+test('parseHighlandsInvoice maps the same invoice into the legacy app shape', () => {
+  const raw = `HIGHLANDS COFFEE
+1 Matchadi Latte 0 L 69.000
+-Ecoce Coupon giae -13.800
+1 Y tt 45.000
+Tae tim: 100.200
+Tog tien: 100.200
+Payoo Bark Card 100.200`;
+  const result = parseHighlandsInvoice(raw);
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0].name, 'Matcha Latte Da L');
+  assert.equal(result.items[0].amount, 55200); // 69.000 − 13.800
+  assert.equal(result.items[1].amount, 45000);
+  assert.equal(result.subtotal, 100200);
+  assert.equal(result.total, 100200);
+  assert.equal(result.paymentMethod, 'card'); // Payoo Bank Card
 });
 
 test('filterReceipts searches by store, order code and item name', () => {
