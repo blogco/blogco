@@ -493,3 +493,17 @@ body.blog-drawer-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .blog-count.is-over .blog-count__main { animation: none; } }
 .blog-count__unit { font-size: 1rem; font-weight: 800; color: var(--blog-primary); }
 .blog-count__detail { margin-left: .3rem; }
+
+/* Bộ đếm: badge gọn, nằm bên trái nút Xem trước/Điểm AI --------------------- */
+.blog-toolbar__actions { flex-wrap: nowrap; align-items: center; gap: 12px; }
+.blog-count { display: inline-flex; align-items: center; margin: 0; padding: .32rem .62rem; border: 1px solid var(--blog-border); border-radius: 999px; background: var(--blog-soft); white-space: nowrap; }
+.blog-count__main { display: inline-flex; align-items: baseline; gap: .28rem; }
+.blog-count__num { font-size: 1rem; font-weight: 800; letter-spacing: -.01em; color: var(--blog-primary); }
+.blog-count__unit { font-size: .8rem; font-weight: 800; color: var(--blog-primary); }
+.blog-count__detail { margin-left: 0; font-size: .74rem; font-weight: 700; color: var(--blog-muted); }
+.blog-count__sep { font-size: .8rem; font-weight: 800; color: var(--blog-muted); }
+.blog-count__max { font-size: .74rem; font-weight: 700; color: var(--blog-muted); }
+@media (max-width: 560px) {
+  .blog-toolbar__actions { flex-wrap: wrap; }
+  .blog-count__detail, .blog-count__sep, .blog-count__max { display: none; }
+}

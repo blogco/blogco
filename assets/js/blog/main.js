@@ -145,6 +145,15 @@ function renderEditor(root, state) {
         <div class="blog-toolbar" role="toolbar" aria-label="Định dạng văn bản">
           <div class="blog-toolbar__tools">${toolbarHtml()}</div>
           <div class="blog-toolbar__actions">
+            <div class="blog-count" data-blog-count aria-live="polite" title="Số từ đã viết / giới hạn 50.000 từ">
+              <span class="blog-count__main">
+                <b class="blog-count__num" data-blog-count-words>0</b>
+                <span class="blog-count__unit">từ</span>
+                <span class="blog-count__detail" data-blog-count-detail>(0 ký tự)</span>
+                <span class="blog-count__sep">/</span>
+                <span class="blog-count__max">50.000 từ</span>
+              </span>
+            </div>
             <button type="button" class="blog-tool blog-tool--ghost" data-blog-preview-open title="Xem trước bài viết" aria-label="Xem trước bài viết">👁️ Xem trước</button>
             <button type="button" class="blog-tool blog-tool--ghost" data-blog-score-open title="Chấm điểm AI" aria-label="Chấm điểm AI">🤖 Điểm AI</button>
           </div>
@@ -162,15 +171,6 @@ function renderEditor(root, state) {
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>Lưu &amp; đồng bộ GitHub</button>
           <button type="button" class="blog-ghost" data-blog-clear>🗑️ Xoá nháp</button>
-          <div class="blog-count" data-blog-count aria-live="polite" title="Số từ đã viết / giới hạn 50.000 từ">
-            <span class="blog-count__main">
-              <b class="blog-count__num" data-blog-count-words>0</b>
-              <span class="blog-count__unit">từ</span>
-              <span class="blog-count__detail" data-blog-count-detail>(0 ký tự)</span>
-              <span class="blog-count__sep">/</span>
-              <span class="blog-count__max">50.000 từ</span>
-            </span>
-          </div>
         </div>
         <p class="blog-status" data-blog-status></p>
       </div>
