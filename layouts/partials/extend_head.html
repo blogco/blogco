@@ -11,6 +11,8 @@
 {{- /* Blog editor: repo/branch + optional stock-photo keys (read by assets/js/blog). */ -}}
 <meta name="blogco-gh-repo" content="{{ site.Params.githubRepo | default "blogco/blogco" }}">
 <meta name="blogco-gh-branch" content="{{ site.Params.blog.branch | default "main" }}">
+<meta name="blogco-uploads-dir" content="{{ site.Params.blog.uploadsDir | default "static/uploads" }}">
+<meta name="blogco-site-url" content="{{ site.Home.Permalink }}">
 {{- with site.Params.media.unsplashKey }}
 <meta name="blogco-unsplash-key" content="{{ . }}">
 {{- end }}

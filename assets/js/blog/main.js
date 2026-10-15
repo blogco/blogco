@@ -1,9 +1,22 @@
 // In-browser Markdown editor that publishes a post to the blog repository via
 // the GitHub contents API. Mounted at #/blog/new (a "Viết blog mới" entry).
+//
+// Cover image comes from one of two modes (see the “Ảnh đại diện” panel):
+//   • upload — pick/drag a file; it is committed to the repo (static/uploads)
+//              and reused as both the cover and the first image of the post.
+//   • auto   — fetch a stock photo (Unsplash/Pexels) or a seeded illustration.
 
-import { slugify, buildFrontMatter, buildPostMarkdown, isoNow, postPath } from './lib.js';
-import { getSettings, saveSettings, getDraft, saveDraft, clearDraft, commitPost } from './store.js';
+import {
+  slugify, buildFrontMatter, buildPostMarkdown, isoNow, postPath,
+  uploadFilename, assetPublicUrl,
+} from './lib.js';
+import {
+  getSettings, saveSettings, getDraft, saveDraft, clearDraft, commitPost,
+  uploadImage, mediaConfig,
+} from './store.js';
 import { pickThumbnail } from './thumbnail.js';
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 
 let markedPromise;
 function loadMarked() {
@@ -15,6 +28,12 @@ function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   })[char]);
+}
+
+function formatBytes(bytes = 0) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const TOOLBAR = [
@@ -36,12 +55,13 @@ function toolbarHtml() {
 function renderEditor(root) {
   const settings = getSettings();
   const draft = getDraft();
+  const isUpload = settings.imageMode === 'upload';
   root.innerHTML = `<section class="blog-screen" aria-labelledby="blog-title">
     <header class="blog-head">
       <a class="blog-back" href="#" data-blog-home>← Trang chủ</a>
       <p class="blog-eyebrow">BLOGCO · STUDIO</p>
       <h1 id="blog-title" tabindex="-1">Viết blog mới</h1>
-      <p>Soạn Markdown, tự lấy ảnh thumbnail và sync thẳng lên GitHub.</p>
+      <p>Soạn Markdown, chọn ảnh đại diện rồi sync thẳng lên GitHub.</p>
     </header>
 
     <div class="blog-layout">
@@ -81,14 +101,29 @@ function renderEditor(root) {
         <label class="blog-field">Tác giả (tuỳ chọn)
           <input type="text" data-blog-author value="${escapeHtml(settings.author)}" placeholder="Tên bạn">
         </label>
-        <label class="blog-check"><input type="checkbox" data-blog-autoimage ${settings.autoImage ? 'checked' : ''}> Tự lấy ảnh thumbnail</label>
 
-        <div class="blog-thumb">
-          <p class="blog-thumb__label">Thumbnail (ảnh đầu bài)</p>
-          <div class="blog-thumb__frame"><img data-blog-thumb alt="Ảnh thumbnail" hidden><span data-blog-thumb-empty>Chưa có ảnh</span></div>
-          <button type="button" class="blog-ghost blog-ghost--sm" data-blog-thumb-refresh>🔄 Lấy ảnh khác</button>
+        <fieldset class="blog-media">
+          <legend class="blog-media__legend">Ảnh đại diện &amp; ảnh đầu bài</legend>
+
+          <div class="blog-modes" role="radiogroup" aria-label="Nguồn ảnh">
+            <label class="blog-mode"><input type="radio" name="blog-image-mode" value="upload" data-blog-mode ${isUpload ? 'checked' : ''}> <span>📤 Upload từ máy</span></label>
+            <label class="blog-mode"><input type="radio" name="blog-image-mode" value="auto" data-blog-mode ${isUpload ? '' : 'checked'}> <span>✨ Tự động (Unsplash/Pexels)</span></label>
+          </div>
+
+          <div class="blog-dropzone" data-blog-dropzone role="button" tabindex="0" aria-label="Tải ảnh lên" ${isUpload ? '' : 'hidden'}>
+            <input type="file" accept="image/*" data-blog-file hidden>
+            <span class="blog-dropzone__icon" aria-hidden="true">🖼️</span>
+            <span class="blog-dropzone__hint">Kéo thả ảnh vào đây hoặc <strong>bấm để chọn</strong></span>
+            <span class="blog-dropzone__name" data-blog-filename></span>
+          </div>
+
+          <div class="blog-thumb__frame"><img data-blog-thumb alt="Ảnh đại diện" hidden><span data-blog-thumb-empty>Chưa có ảnh</span></div>
+          <div class="blog-thumb__actions">
+            <button type="button" class="blog-ghost blog-ghost--sm" data-blog-thumb-refresh>🔄 Lấy ảnh khác</button>
+            <button type="button" class="blog-ghost blog-ghost--sm" data-blog-thumb-clear>✖️ Xoá ảnh</button>
+          </div>
           <p class="blog-thumb__credit" data-blog-credit></p>
-        </div>
+        </fieldset>
 
         <div class="blog-preview" data-blog-preview hidden>
           <p class="blog-preview__label">Xem trước</p>
@@ -152,7 +187,7 @@ function readForm(root) {
     repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
     branch: root.querySelector('[data-blog-branch]')?.value?.trim() || 'main',
     author: root.querySelector('[data-blog-author]')?.value?.trim() || '',
-    autoImage: Boolean(root.querySelector('[data-blog-autoimage]')?.checked),
+    imageMode: root.querySelector('input[name="blog-image-mode"]:checked')?.value || 'auto',
   };
 }
 
@@ -165,16 +200,37 @@ function showThumb(root, image) {
     img.hidden = !image?.url;
   }
   if (empty) empty.hidden = Boolean(image?.url);
-  if (credit) credit.textContent = image?.credit ? `Ảnh: ${image.credit}${image.provider ? ` · ${image.provider}` : ''}` : (image?.provider === 'auto' ? 'Ảnh minh hoạ tự động' : '');
+  if (credit) {
+    if (image?.provider === 'upload') credit.textContent = `Ảnh tải lên: ${image.credit || 'ảnh của bạn'}`;
+    else if (image?.credit) credit.textContent = `Ảnh: ${image.credit} · ${image.provider}`;
+    else if (image?.provider === 'auto') credit.textContent = 'Ảnh minh hoạ tự động';
+    else credit.textContent = '';
+  }
 }
 
-async function refreshThumbnail(root, { force = false } = {}) {
+function setUploadZone(root, visible) {
+  const zone = root.querySelector('[data-blog-dropzone]');
+  if (zone) zone.hidden = !visible;
+}
+
+function resetDropzone(root) {
+  const zone = root.querySelector('[data-blog-dropzone]');
+  zone?.classList.remove('is-dragging', 'has-file');
+  const name = root.querySelector('[data-blog-filename]');
+  if (name) name.textContent = '';
+}
+
+async function refreshThumbnail(root) {
   const form = readForm(root);
+  if (form.imageMode === 'upload') {
+    root.querySelector('[data-blog-file]')?.click();
+    return null;
+  }
   if (!form.title && !form.tags) {
     setStatus(root, 'Nhập tiêu đề trước để lấy ảnh phù hợp.', 'error');
     return null;
   }
-  setStatus(root, 'Đang tìm ảnh thumbnail…');
+  setStatus(root, 'Đang tìm ảnh minh hoạ…');
   const image = await pickThumbnail({ title: form.title, tags: form.tags, slug: slugify(form.title) });
   showThumb(root, image);
   setStatus(root, '');
@@ -194,21 +250,65 @@ function togglePreview(root) {
   });
 }
 
-async function onSave(root, image) {
+// Accept a picked/dropped file: validate, preview locally, switch to upload mode.
+function acceptFile(root, file, state) {
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { setStatus(root, 'Chỉ hỗ trợ tệp ảnh (PNG, JPG, WEBP…).', 'error'); return; }
+  if (file.size > MAX_IMAGE_BYTES) { setStatus(root, `Ảnh vượt quá ${formatBytes(MAX_IMAGE_BYTES)}.`, 'error'); return; }
+
+  const uploadRadio = root.querySelector('input[name="blog-image-mode"][value="upload"]');
+  if (uploadRadio) uploadRadio.checked = true;
+  setUploadZone(root, true);
+
+  if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+  state.file = file;
+  state.previewUrl = URL.createObjectURL(file);
+
+  showThumb(root, { url: state.previewUrl, provider: 'upload', credit: file.name });
+  const zone = root.querySelector('[data-blog-dropzone]');
+  zone?.classList.add('has-file');
+  const name = root.querySelector('[data-blog-filename]');
+  if (name) name.textContent = `${file.name} · ${formatBytes(file.size)}`;
+  setStatus(root, 'Ảnh sẵn sàng — sẽ được upload lên GitHub khi bạn bấm Lưu.');
+}
+
+async function onSave(root, state) {
   const form = readForm(root);
   if (!form.title) { setStatus(root, 'Vui lòng nhập tiêu đề bài viết.', 'error'); return; }
   if (!form.body.trim()) { setStatus(root, 'Vui lòng nhập nội dung bài viết.', 'error'); return; }
   if (!form.token) { setStatus(root, 'Nhập GitHub token để sync.', 'error'); return; }
   if (!/^[^/\s]+\/[^/\s]+$/.test(form.repo)) { setStatus(root, 'Repository phải có dạng owner/repo.', 'error'); return; }
 
-  saveSettings({ token: form.token, repo: form.repo, branch: form.branch, author: form.author, autoImage: form.autoImage });
+  saveSettings({ token: form.token, repo: form.repo, branch: form.branch, author: form.author, imageMode: form.imageMode });
 
   const saveButton = root.querySelector('[data-blog-save]');
   if (saveButton) saveButton.disabled = true;
   try {
-    let cover = image;
-    if (!cover?.url && form.autoImage) cover = await pickThumbnail({ title: form.title, tags: form.tags, slug: slugify(form.title) });
     const slug = slugify(form.title);
+    let cover = null;
+
+    if (form.imageMode === 'upload') {
+      if (state.file) {
+        const media = mediaConfig();
+        const filename = uploadFilename(slug, state.file.name);
+        setStatus(root, 'Đang upload ảnh lên GitHub…');
+        const asset = await uploadImage({
+          repo: form.repo, branch: form.branch, dir: media.dir,
+          filename, file: state.file, token: form.token,
+        });
+        cover = { url: assetPublicUrl(media.siteUrl, asset.path), provider: 'upload', credit: state.file.name };
+      } else if (state.thumb?.provider === 'upload') {
+        cover = state.thumb;
+      } else {
+        setStatus(root, 'Hãy chọn ảnh để upload, hoặc chuyển sang chế độ “Tự động”.', 'error');
+        return;
+      }
+    } else {
+      cover = state.thumb?.provider && state.thumb.provider !== 'upload'
+        ? state.thumb
+        : await pickThumbnail({ title: form.title, tags: form.tags, slug });
+    }
+
     const frontMatter = buildFrontMatter({
       title: form.title,
       date: isoNow(),
@@ -220,10 +320,11 @@ async function onSave(root, image) {
     });
     const content = buildPostMarkdown({
       frontMatter,
-      image: form.autoImage ? (cover?.url || '') : '',
+      image: cover?.url || '',
       imageAlt: form.title,
       body: form.body,
     });
+
     setStatus(root, `Đang commit ${postPath(slug)} …`);
     const result = await commitPost({ repo: form.repo, branch: form.branch, slug, title: form.title, content, token: form.token });
     clearDraft();
@@ -243,7 +344,8 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
   if (!root) return;
   if (!root.dataset.mounted) {
     root.dataset.mounted = 'true';
-    let thumb = null;
+    const state = { thumb: null, file: null, previewUrl: '' };
+    const dropzone = () => root.querySelector('[data-blog-dropzone]');
 
     root.addEventListener('click', (event) => {
       const tool = event.target.closest('[data-blog-tool]');
@@ -256,14 +358,31 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         return;
       }
       if (event.target.closest('[data-blog-preview-toggle]')) { togglePreview(root); return; }
-      if (event.target.closest('[data-blog-thumb-refresh]')) { void refreshThumbnail(root, { force: true }).then((img) => { thumb = img; }); return; }
-      if (event.target.closest('[data-blog-save]')) { void onSave(root, thumb); return; }
+      if (event.target.closest('[data-blog-dropzone]')) {
+        if (!event.target.closest('[data-blog-file]')) root.querySelector('[data-blog-file]')?.click();
+        return;
+      }
+      if (event.target.closest('[data-blog-thumb-refresh]')) { void refreshThumbnail(root).then((img) => { if (img) state.thumb = img; }); return; }
+      if (event.target.closest('[data-blog-thumb-clear]')) {
+        if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+        state.file = null;
+        state.thumb = null;
+        resetDropzone(root);
+        showThumb(root, null);
+        setStatus(root, 'Đã xoá ảnh.');
+        return;
+      }
+      if (event.target.closest('[data-blog-save]')) { void onSave(root, state); return; }
       if (event.target.closest('[data-blog-clear]')) {
         if (window.confirm('Xoá bản nháp đang soạn trên thiết bị này?')) {
           root.querySelector('[data-blog-title]').value = '';
           root.querySelector('[data-blog-body]').value = '';
           root.querySelector('[data-blog-tags]').value = '';
           clearDraft();
+          if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+          state.file = null;
+          state.thumb = null;
+          resetDropzone(root);
           showThumb(root, null);
           setStatus(root, 'Đã xoá nháp.');
         }
@@ -275,17 +394,64 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       }
     });
 
-    root.addEventListener('input', () => {
-      const form = readForm(root);
-      saveDraft({ title: form.title, body: form.body, tags: form.tags });
+    root.addEventListener('change', (event) => {
+      const input = event.target;
+      if (input.matches?.('[data-blog-file]')) {
+        acceptFile(root, input.files?.[0], state);
+        input.value = '';
+        return;
+      }
+      if (input.matches?.('input[name="blog-image-mode"]')) {
+        const upload = input.value === 'upload';
+        setUploadZone(root, upload);
+        if (!upload && state.thumb?.provider === 'upload') {
+          // Leaving upload mode: drop the staged file preview.
+          if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+          state.file = null;
+          state.thumb = null;
+          resetDropzone(root);
+          showThumb(root, null);
+        }
+        setStatus(root, upload
+          ? 'Chế độ upload: chọn ảnh từ máy để dùng làm ảnh đại diện.'
+          : 'Chế độ tự động: bấm “Lấy ảnh khác” để tìm ảnh minh hoạ.');
+      }
     });
 
     root.addEventListener('keydown', (event) => {
+      const zone = event.target.closest?.('[data-blog-dropzone]');
+      if (zone && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        root.querySelector('[data-blog-file]')?.click();
+        return;
+      }
       if (!(event.metaKey || event.ctrlKey)) return;
       const textarea = root.querySelector('[data-blog-body]');
       if (event.target !== textarea) return;
       if (event.key === 'b') { event.preventDefault(); applyWrap(textarea, '**', '**'); }
       if (event.key === 'i') { event.preventDefault(); applyWrap(textarea, '_', '_'); }
+    });
+
+    root.addEventListener('dragover', (event) => {
+      if (!dropzone()) return;
+      event.preventDefault();
+      dropzone()?.classList.add('is-dragging');
+    });
+    root.addEventListener('dragleave', (event) => {
+      if (event.target === dropzone()) dropzone()?.classList.remove('is-dragging');
+    });
+    root.addEventListener('drop', (event) => {
+      const zone = dropzone();
+      if (!zone || !event.target.closest?.('[data-blog-dropzone]')) return;
+      event.preventDefault();
+      zone.classList.remove('is-dragging');
+      acceptFile(root, event.dataTransfer?.files?.[0], state);
+    });
+
+    root.addEventListener('input', (event) => {
+      if (event.target.matches?.('input[name="blog-image-mode"]')) return;
+      const form = readForm(root);
+      saveDraft({ title: form.title, body: form.body, tags: form.tags });
     });
   }
   renderEditor(root);

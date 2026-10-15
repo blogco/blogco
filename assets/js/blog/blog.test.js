@@ -4,6 +4,7 @@ import {
   slugify, buildFrontMatter, buildPostMarkdown, postPath, parseRepo,
   contentsApiUrl, toBase64, buildCommitPayload, commitMessage,
   thumbnailFallbackUrl, thumbnailQuery, stockApiUrl, pickStockImage,
+  arrayBufferToBase64, uploadFilename, uploadPath, assetPublicUrl,
 } from './lib.js';
 import { applyWrap, applyLinePrefix, applyBlock } from './main.js';
 
@@ -88,4 +89,38 @@ test('toolbar helpers wrap selections and prefix lines', () => {
   const block = { value: 'code', selectionStart: 0, selectionEnd: 4, focus() {} };
   applyBlock(block, '```\n', '\n```');
   assert.equal(block.value, '```\ncode\n```');
+});
+
+test('arrayBufferToBase64 encodes binary bytes without corruption', () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.equal(arrayBufferToBase64(png), 'iVBORw0KGgo=');
+  assert.equal(arrayBufferToBase64(new Uint8Array([])), '');
+  // utf-8 text should match the text helper when bytes are equivalent
+  assert.equal(arrayBufferToBase64(new TextEncoder().encode('Cà phê')), toBase64('Cà phê'));
+});
+
+test('uploadFilename keeps a slug + extension and is deterministic', () => {
+  assert.equal(uploadFilename('Cà phê sạch', 'IMG_2043.PNG', 'abc123'), 'ca-phe-sach-abc123.png');
+  assert.equal(uploadFilename('', 'photo', 'x'), 'bai-viet-x.jpg');
+  assert.equal(uploadFilename('Ảnh đẹp', 'shot.jpeg', 'z9'), 'anh-dep-z9.jpeg');
+});
+
+test('uploadPath sanitizes names and strips trailing slashes', () => {
+  assert.equal(uploadPath('static/uploads', 'Cà phê ảnh.PNG'), 'static/uploads/ca-phe-anh.png');
+  assert.equal(uploadPath('/static/uploads/', 'a b.jpg'), 'static/uploads/a-b.jpg');
+  assert.equal(uploadPath('', '   '), 'static/uploads/bai-viet.jpg');
+});
+
+test('assetPublicUrl maps a static repo path to a served absolute URL', () => {
+  assert.equal(
+    assetPublicUrl('https://blogco.github.io/blogco/', 'static/uploads/ca-phe-abc.jpg'),
+    'https://blogco.github.io/blogco/uploads/ca-phe-abc.jpg',
+  );
+  assert.equal(assetPublicUrl('/blogco', 'uploads/x.jpg'), '/blogco/uploads/x.jpg');
+});
+
+test('buildCommitPayload can pass base64 through untouched', () => {
+  const payload = buildCommitPayload({ message: 'asset: x.png', content: 'iVBORw0KGgo=', branch: 'main', encoding: 'base64' });
+  assert.deepEqual(payload, { message: 'asset: x.png', content: 'iVBORw0KGgo=', branch: 'main' });
+  assert.equal(buildCommitPayload({ message: 'm', content: 'hello', branch: 'main' }).content, 'aGVsbG8=');
 });

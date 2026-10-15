@@ -1,7 +1,7 @@
 // Local-first settings + draft for the blog editor, and the GitHub contents
 // API calls used to publish a post straight from the browser.
 
-import { contentsApiUrl, buildCommitPayload, commitMessage, postPath } from './lib.js';
+import { contentsApiUrl, buildCommitPayload, commitMessage, postPath, arrayBufferToBase64, uploadPath } from './lib.js';
 
 const SETTINGS_KEY = 'blogco.blog.settings.v1';
 const DRAFT_KEY = 'blogco.blog.draft.v1';
@@ -21,7 +21,16 @@ export function defaultSettings() {
     branch: meta('blogco-gh-branch') || 'main',
     token: '',
     author: '',
-    autoImage: true,
+    imageMode: 'auto',
+  };
+}
+
+// Where uploaded images are committed (`dir`) and the public prefix they are
+// served from (`siteUrl`, i.e. the Hugo baseURL).
+export function mediaConfig() {
+  return {
+    dir: meta('blogco-uploads-dir') || 'static/uploads',
+    siteUrl: meta('blogco-site-url') || (typeof location !== 'undefined' ? `${location.origin}/` : '/'),
   };
 }
 
@@ -106,4 +115,32 @@ export async function commitPost({ repo, branch = 'main', slug, title, content, 
     commit: data?.commit?.html_url || '',
     created: !sha,
   };
+}
+
+// Commit an already-base64-encoded binary asset (e.g. an uploaded image).
+export async function commitAsset({ repo, branch = 'main', path, base64, message = 'asset: upload', token }) {
+  if (!token) throw new Error('Chưa nhập GitHub token.');
+  const sha = await getFileSha({ repo, path, branch, token });
+  const response = await fetch(contentsApiUrl(repo, path), {
+    method: 'PUT',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildCommitPayload({ message, content: base64, branch, sha, encoding: 'base64' })),
+  });
+  if (!response.ok) throw new Error(await githubError(response));
+  const data = await response.json();
+  return {
+    path,
+    url: data?.content?.html_url || '',
+    downloadUrl: data?.content?.download_url || '',
+    created: !sha,
+  };
+}
+
+// Read a File/Blob and push it to the repo, returning its repo path + API URLs.
+export async function uploadImage({ repo, branch = 'main', dir = 'static/uploads', filename, file, token }) {
+  if (!file) throw new Error('Chưa chọn ảnh để upload.');
+  const path = uploadPath(dir, filename);
+  const base64 = arrayBufferToBase64(await file.arrayBuffer());
+  const result = await commitAsset({ repo, branch, path, base64, message: `asset: ${path.split('/').pop()}`, token });
+  return { ...result, path };
 }

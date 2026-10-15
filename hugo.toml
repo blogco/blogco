@@ -46,6 +46,8 @@ enableGitInfo = false
 
   [params.blog]
     branch = 'main'
+    # Repo folder committed images land in; served at the site root by Hugo.
+    uploadsDir = 'static/uploads'
 
   # Optional stock-photo providers for auto thumbnails. Leave empty to use the
   # built-in auto illustration (picsum.photos seeded by slug).

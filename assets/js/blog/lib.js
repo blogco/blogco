@@ -86,8 +86,49 @@ export function toBase64(text = '') {
   return btoa(binary);
 }
 
-export function buildCommitPayload({ message, content, branch = 'main', sha } = {}) {
-  const payload = { message, content: toBase64(content), branch };
+// Binary-safe base64 for uploaded image bytes (text encoding would corrupt them).
+export function arrayBufferToBase64(input) {
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// Pretty filename for an uploaded image: <slug>-<stamp>.<ext>
+export function uploadFilename(slug, originalName = '', stamp = Date.now().toString(36)) {
+  const match = String(originalName).match(/\.([a-z0-9]+)$/i);
+  const ext = (match ? match[1] : 'jpg').toLowerCase();
+  const safeStamp = String(stamp).replace(/[^a-z0-9]/gi, '') || 'x';
+  return `${slugify(slug) || 'anh'}-${safeStamp}.${ext}`;
+}
+
+// Repo path for an uploaded asset, e.g. static/uploads/ca-phe-abc.jpg
+export function uploadPath(dir, filename) {
+  const name = String(filename).trim();
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+  const safeBase = slugify(base) || 'image';
+  const cleanDir = String(dir || 'static/uploads').replace(/^\/+/, '').replace(/\/+$/, '');
+  return `${cleanDir}/${safeBase}${ext ? `.${ext}` : '.jpg'}`;
+}
+
+// Public URL for a committed asset. `static/` is stripped so a Hugo `/static`
+// file maps to its served path under the site base URL.
+export function assetPublicUrl(siteUrl, repoPath) {
+  const rel = String(repoPath).replace(/^\/+/, '').replace(/^static\//, '');
+  return `${String(siteUrl || '/').replace(/\/+$/, '')}/${rel}`;
+}
+
+export function buildCommitPayload({ message, content, branch = 'main', sha, encoding = 'utf-8' } = {}) {
+  const payload = {
+    message,
+    content: encoding === 'base64' ? String(content) : toBase64(content),
+    branch,
+  };
   if (sha) payload.sha = sha;
   return payload;
 }
