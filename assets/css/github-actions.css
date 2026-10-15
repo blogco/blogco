@@ -1,0 +1,162 @@
+/* GitHub Actions footer status widget ---------------------------------------
+   Mirrors https://github.com/blogco/blogco/actions inside the footer. Fed by
+   assets/js/github-actions.js. The taller --footer-height reserves room so the
+   footer keeps a stable height across loading / loaded states. */
+
+.footer {
+  --footer-height: 150px;
+}
+
+.gh-actions {
+  box-sizing: border-box;
+  width: min(100%, 720px);
+  margin: 18px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.gh-actions__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.gh-actions__heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text) !important;
+  font-size: 12px;
+  font-weight: 700 !important;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.gh-actions__icon { flex: 0 0 auto; }
+
+.gh-actions__link {
+  flex: 0 0 auto;
+  color: var(--accent) !important;
+  font-size: 12px;
+  font-weight: 700 !important;
+}
+
+.gh-actions__link:hover { color: var(--accent-dark) !important; }
+
+.gh-actions__list {
+  display: flex;
+  min-height: 130px; /* room for 5 rows so the footer never jumps on load */
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-actions__item {
+  display: flex;
+  min-width: 0;
+  height: 26px;
+  align-items: center;
+  gap: 8px;
+  line-height: 1;
+}
+
+.gh-actions__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.gh-actions__commit {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text) !important;
+  font-size: 12.5px;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-actions__commit:hover { color: var(--accent-dark) !important; }
+
+.gh-actions__meta {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.gh-actions__status { color: var(--muted) !important; font-size: 11px; font-weight: 700 !important; }
+.gh-actions__branch { color: var(--muted) !important; font-size: 11px; }
+.gh-actions__time { color: var(--muted) !important; font-size: 11px; }
+
+.gh-actions__sha {
+  color: var(--muted) !important;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+
+.gh-actions__sha:hover { color: var(--accent) !important; }
+
+/* Reset the theme's generic footer span margins inside the widget. */
+.gh-actions span { margin-inline: 0; }
+
+.gh-actions__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted) !important;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Status tones -------------------------------------------------------------- */
+.gh-actions__item--success .gh-actions__dot { background: #16a34a; }
+.gh-actions__item--success .gh-actions__status { color: #15803d !important; }
+
+.gh-actions__item--failure .gh-actions__dot { background: #dc2626; }
+.gh-actions__item--failure .gh-actions__status { color: #b91c1c !important; }
+
+.gh-actions__item--pending .gh-actions__dot { background: #d97706; }
+.gh-actions__item--pending .gh-actions__status { color: #b45309 !important; }
+
+.gh-actions__item--running .gh-actions__dot {
+  background: #2563eb;
+  animation: gh-actions-pulse 1.2s ease-in-out infinite;
+}
+.gh-actions__item--running .gh-actions__status { color: #1d4ed8 !important; }
+
+.gh-actions__item--neutral .gh-actions__dot { background: #64748b; }
+.gh-actions__item--neutral .gh-actions__status { color: #475569 !important; }
+
+@keyframes gh-actions-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+@media (max-width: 768px) {
+  .gh-actions__branch { display: none; }
+  .gh-actions { margin-top: 16px; }
+}
+
+@media (max-width: 560px) {
+  .gh-actions__time { display: none; }
+  .gh-actions__commit { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-actions__item--running .gh-actions__dot { animation: none; }
+}

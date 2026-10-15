@@ -6,6 +6,7 @@ const featureLoaders = {
 
 import './category-bar.js';
 import './navigation.js';
+import './github-actions.js';
 
 let waterAppPromise;
 let healthAppPromise;

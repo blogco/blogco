@@ -29,6 +29,7 @@ enableGitInfo = false
   ShowPostNavLinks = true
   ShowCodeCopyButtons = true
   ShowSearchButton = true
+  githubRepo = 'blogco/blogco'
 
   [params.homeInfoParams]
     Title = 'BlogCo'
