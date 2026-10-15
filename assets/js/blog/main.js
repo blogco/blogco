@@ -28,6 +28,7 @@ import {
   figureShortcode, expandFigureShortcodes, FIGURE_ALIGNMENTS,
 } from './rich.js';
 import { scoreArticle } from './score.js';
+import { convertToTableViaAI, extractTableMarkdown, looksLikeMarkdownTable, parseMarkdownTable, rowsToMarkdown, toMarkdownTable } from './table.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 const DEFAULT_ALIGN = 'center';
@@ -60,6 +61,17 @@ function markdownFromHtml(html = '') {
         return block ? `\n\n${block}\n\n` : '';
       },
     });
+    // A Markdown table (from “AI tạo bảng”) must survive the Goldmark build,
+    // which strips raw HTML with `unsafe = false`, so serialize it to GFM.
+    turndown.addRule('blogTable', {
+      filter: (node) => node.nodeName === 'TABLE',
+      replacement: (_content, node) => {
+        const rows = [...node.querySelectorAll('tr')].map((tr) =>
+          [...tr.children].map((cell) => (cell.textContent || '').replace(/\s+/g, ' ').trim()));
+        const markdown = rowsToMarkdown(rows);
+        return markdown ? `\n\n${markdown}\n\n` : '';
+      },
+    });
   }
   return cleanMarkdown(turndown.turndown(html || ''));
 }
@@ -87,6 +99,7 @@ const TOOLBAR = [
   { action: 'link', label: '🔗', title: 'Chèn liên kết', link: true },
   { action: 'image', label: '🖼️', title: 'Chèn ảnh vào bài (chọn nhiều ảnh)', image: true },
   { action: 'wipe', label: '🧹 Xoá trắng', title: 'Xoá trắng khung soạn thảo (làm mới bài viết)', wipe: true },
+  { action: 'table', label: '📊 Tạo bảng', title: 'AI: chuyển đoạn văn bản bôi đen thành bảng Markdown', table: true },
 ];
 
 const BUBBLE = ['bold', 'italic', 'h2', 'quote', 'link'];
@@ -215,6 +228,23 @@ function renderEditor(root, state) {
             <button type="button" class="blog-ghost blog-ghost--sm" data-blog-thumb-clear>✖️ Xoá ảnh</button>
           </div>
           <p class="blog-thumb__credit" data-blog-credit></p>
+        </fieldset>
+
+        <fieldset class="blog-media blog-ai">
+          <legend class="blog-media__legend">🤖 AI tạo bảng</legend>
+          <label class="blog-field">Nhà cung cấp
+            <select data-blog-ai-provider>
+              <option value="gemini" ${settings.aiProvider === 'gemini' ? 'selected' : ''}>Google Gemini</option>
+              <option value="openai" ${settings.aiProvider === 'openai' ? 'selected' : ''}>OpenAI</option>
+            </select>
+          </label>
+          <label class="blog-field">API key
+            <input type="password" data-blog-ai-key value="${escapeHtml(settings.aiKey)}" placeholder="Dán API key (chỉ lưu trên máy bạn)" autocomplete="off">
+          </label>
+          <label class="blog-field">Model (tuỳ chọn)
+            <input type="text" data-blog-ai-model value="${escapeHtml(settings.aiModel)}" placeholder="gemini-2.0-flash">
+          </label>
+          <p class="blog-ai__hint">Bôi đen văn bản trong editor rồi bấm <b>📊 Tạo bảng</b>. Không có key vẫn dùng được bản chuyển cục bộ.</p>
         </fieldset>
       </aside>
 
@@ -481,6 +511,89 @@ function applyTool(root, action) {
     return runCommand(root, 'formatBlock', '<p>');
   }
   return runCommand(root, action);
+}
+
+// ---------------------------------------------------------------------------
+// "Convert to table" — replace the current selection with a Markdown table.
+// ---------------------------------------------------------------------------
+
+function editorSelectionRange(root) {
+  const rich = richEl(root);
+  const sel = window.getSelection();
+  if (!rich || !sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (range.collapsed || !rich.contains(range.commonAncestorContainer)) return null;
+  return range;
+}
+
+function buildTableNode(markdown) {
+  const rows = parseMarkdownTable(markdown);
+  if (rows.length < 2) return null;
+  const table = document.createElement('table');
+  table.className = 'blog-table';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  rows[0].forEach((cell) => {
+    const th = document.createElement('th');
+    th.textContent = cell;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  const tbody = document.createElement('tbody');
+  rows.slice(1).forEach((cells) => {
+    const tr = document.createElement('tr');
+    cells.forEach((cell) => {
+      const td = document.createElement('td');
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.append(thead, tbody);
+  return table;
+}
+
+async function convertSelectionToTable(root, state, button) {
+  const range = editorSelectionRange(root);
+  if (!range) { setStatus(root, 'Hãy bôi đen đoạn văn bản muốn chuyển thành bảng.', 'error'); return; }
+  const text = range.toString().trim();
+  if (!text) { setStatus(root, 'Đoạn bôi đen đang trống.', 'error'); return; }
+
+  const settings = getSettings();
+  const label = button?.textContent;
+  if (button) { button.disabled = true; button.textContent = '⏳ Đang tạo…'; }
+  setStatus(root, settings.aiKey ? 'AI đang phân tích đoạn văn bản…' : 'Đang chuyển cục bộ…');
+  try {
+    let markdown;
+    if (settings.aiKey) {
+      markdown = await convertToTableViaAI(text, { provider: settings.aiProvider, model: settings.aiModel, key: settings.aiKey });
+    } else {
+      markdown = toMarkdownTable(text);
+      setStatus(root, 'Chưa có API key AI — dùng bộ chuyển cục bộ, kết quả có thể kém chính xác hơn.');
+    }
+    markdown = extractTableMarkdown(markdown) || markdown;
+    const node = buildTableNode(markdown);
+    if (!node) throw new Error('Không nhận diện được cấu trúc bảng từ đoạn văn bản này.');
+
+    range.deleteContents();
+    range.insertNode(node);
+    const sel = window.getSelection();
+    if (sel) {
+      const after = document.createRange();
+      after.setStartAfter(node);
+      after.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(after);
+    }
+    syncEmptyState(root);
+    updateWordCount(root);
+    persistDraft(root);
+    setStatus(root, 'Đã tạo bảng. Bấm “Lưu & đồng bộ GitHub” để cập nhật bài.', 'ok');
+  } catch (error) {
+    setStatus(root, error.message || 'Không chuyển được thành bảng.', 'error');
+  } finally {
+    if (button) { button.disabled = false; button.textContent = label; }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1132,6 +1245,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       const tool = event.target.closest('[data-blog-tool]');
       if (tool) {
         if (tool.dataset.blogTool === 'wipe') { wipeEditor(root, state); return; }
+        if (tool.dataset.blogTool === 'table') { void convertSelectionToTable(root, state, tool); return; }
         applyTool(root, tool.dataset.blogTool); hideBubble(root); return;
       }
 
@@ -1281,12 +1395,15 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       }
       if (target.matches?.('[data-blog-file]')) { acceptFile(root, target.files?.[0], state); return; }
       if (target.matches?.('[data-blog-image-input]')) { acceptToolbarImages(root, target.files, state); return; }
-      if (target.matches?.('[data-blog-token], [data-blog-repo], [data-blog-branch], [data-blog-author]')) {
+      if (target.matches?.('[data-blog-token], [data-blog-repo], [data-blog-branch], [data-blog-author], [data-blog-ai-provider], [data-blog-ai-model], [data-blog-ai-key]')) {
         saveSettings({
           token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
           repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
           branch: root.querySelector('[data-blog-branch]')?.value?.trim() || '',
           author: root.querySelector('[data-blog-author]')?.value?.trim() || '',
+          aiProvider: root.querySelector('[data-blog-ai-provider]')?.value || 'gemini',
+          aiModel: root.querySelector('[data-blog-ai-model]')?.value?.trim() || '',
+          aiKey: root.querySelector('[data-blog-ai-key]')?.value?.trim() || '',
         });
       }
     });

@@ -545,3 +545,31 @@ body.blog-drawer-open { overflow: hidden; }
 /* Cho khung soạn thảo vượt qua giới hạn --max-wide 1200px của .main --------- */
 body.blog-route .main { width: min(1400px, calc(100% - 48px)); max-width: 1400px; }
 .blog-screen { width: 100%; max-width: 1400px; }
+
+/* Bảng trong editor + preview + bài đã đăng --------------------------------- */
+.blog-rich table, .blog-table, .blog-preview-drawer__content table, .post-content table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .95rem;
+}
+.blog-rich table th, .blog-rich table td,
+.blog-table th, .blog-table td,
+.blog-preview-drawer__content table th, .blog-preview-drawer__content table td,
+.post-content table th, .post-content table td {
+  border: 1px solid var(--blog-border, var(--border, #d5e3f0));
+  padding: .5rem .65rem; text-align: left; vertical-align: top;
+}
+.blog-rich table thead th, .blog-table thead th,
+.blog-preview-drawer__content table thead th, .post-content table thead th,
+.post-content table th {
+  background: var(--blog-soft, #eaf3fe); font-weight: 800; color: var(--blog-primary, inherit);
+}
+.post-content table { background: transparent; }
+.post-content table tbody tr:nth-child(even) { background: rgba(0, 130, 240, .04); }
+.post-content table { overflow: hidden; }
+
+/* Panel AI tạo bảng ---------------------------------------------------------- */
+.blog-side select {
+  width: 100%; padding: .5rem .6rem; border: 1px solid var(--blog-border);
+  border-radius: 8px; background: #fff; color: var(--blog-text); font: inherit;
+}
+.blog-ai__hint { margin: .35rem 0 0; color: var(--blog-muted); font-size: .8rem; line-height: 1.4; }
+.blog-tool.is-loading { opacity: .7; cursor: progress; }
