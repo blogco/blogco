@@ -121,7 +121,7 @@ function figurebarHtml() {
     <button type="button" class="blog-figurebar__btn blog-figurebar__btn--danger" data-blog-fig-delete title="Xoá ảnh khỏi bài viết">🗑️ <span>Xoá</span></button>`;
 }
 
-function renderEditor(root) {
+function renderEditor(root, state) {
   const settings = getSettings();
   const draft = getDraft();
   const isUpload = settings.imageMode === 'upload';
@@ -188,9 +188,10 @@ function renderEditor(root) {
           <legend class="blog-media__legend">Ảnh đại diện &amp; ảnh đầu bài</legend>
 
           <div class="blog-modes" role="radiogroup" aria-label="Nguồn ảnh">
-            <label class="blog-mode"><input type="radio" name="blog-image-mode" value="upload" data-blog-mode ${isUpload ? 'checked' : ''}> <span>📤 Upload từ máy</span></label>
-            <label class="blog-mode"><input type="radio" name="blog-image-mode" value="auto" data-blog-mode ${isUpload ? '' : 'checked'}> <span>✨ Tự động (Unsplash/Pexels)</span></label>
+            <label class="blog-mode"><input type="radio" name="blog-image-mode" value="upload" data-blog-mode ${isUpload ? 'checked' : ''}> <span>📤 Dùng ảnh tải lên (Local)</span></label>
+            <label class="blog-mode"><input type="radio" name="blog-image-mode" value="auto" data-blog-mode ${isUpload ? '' : 'checked'}> <span>✨ Dùng ảnh Unsplash</span></label>
           </div>
+          <p class="blog-mode-hint" data-blog-mode-hint hidden></p>
 
           <div class="blog-dropzone" data-blog-dropzone role="button" tabindex="0" aria-label="Tải ảnh lên" ${isUpload ? '' : 'hidden'}>
             <input type="file" accept="image/*" data-blog-file hidden>
@@ -208,9 +209,8 @@ function renderEditor(root) {
         </fieldset>
       </aside>
 
-      <!-- Preview lives inside the layout so on wide screens it becomes a
-           side-by-side split pane instead of a full-screen overlay. On narrow
-           screens it falls back to a right slide-over drawer. -->
+      <!-- Preview is a right slide-over drawer over a dimmed backdrop; it never
+           reflows the editor layout behind it. -->
       <div class="blog-preview-overlay" data-blog-preview-overlay hidden>
         <div class="blog-preview-drawer" role="dialog" aria-modal="true" aria-labelledby="blog-preview-label">
           <div class="blog-preview-drawer__head">
@@ -250,10 +250,9 @@ function renderEditor(root) {
     </aside>
   </section>`;
   const rich = richEl(root);
-  if (rich) {
-    rich.innerHTML = initialBody;
-    enhanceFigures(root);
-  }
+  if (rich) rich.innerHTML = initialBody;
+  restoreBody(root, state);
+  syncImageMode(root, state);
   syncEmptyState(root);
   root.querySelector('#blog-title')?.focus({ preventScroll: true });
 }
@@ -328,6 +327,7 @@ function resetEditor(root, state, { tags = false } = {}) {
   closeScore(root);
   resetDropzone(root);
   showThumb(root, null);
+  syncImageMode(root, state);
   syncEmptyState(root);
 }
 
@@ -337,6 +337,66 @@ function wipeEditor(root, state) {
   resetEditor(root, state);
   setStatus(root, 'Đã xoá trắng khung soạn thảo. Sẵn sàng cho bài mới.');
   root.querySelector('#blog-title')?.focus({ preventScroll: true });
+}
+
+// True when the author has supplied at least one image from their own device:
+// a chosen cover file, a staged inline image, or a locally-uploaded thumbnail.
+function hasLocalUpload(state) {
+  return Boolean(state.file) || state.images.size > 0 || state.thumb?.provider === 'upload';
+}
+
+// Local uploads always win: while any exist we force the "upload" mode and lock
+// the Unsplash option. Unsplash can only be used when there is no local image.
+function syncImageMode(root, state) {
+  const upload = root.querySelector('input[name="blog-image-mode"][value="upload"]');
+  const auto = root.querySelector('input[name="blog-image-mode"][value="auto"]');
+  const locked = hasLocalUpload(state);
+  if (locked && upload) upload.checked = true;
+  if (auto) {
+    auto.disabled = locked;
+    auto.closest('.blog-mode')?.classList.toggle('is-locked', locked);
+  }
+  const usingUpload = Boolean(upload?.checked);
+  setUploadZone(root, usingUpload);
+  const hint = root.querySelector('[data-blog-mode-hint]');
+  if (hint) {
+    hint.textContent = locked
+      ? 'Bài viết đang dùng ảnh bạn tải lên. Xoá hết ảnh đã upload nếu muốn chuyển sang Unsplash.'
+      : '';
+    hint.hidden = !locked;
+  }
+  if (locked) saveSettings({ imageMode: 'upload' });
+  return usingUpload;
+}
+
+// Restore the draft body, dropping any images whose blob URL is no longer alive
+// (a blob: URL dies on reload) so the editor never shows a broken-image icon.
+function restoreBody(root, state) {
+  const rich = richEl(root);
+  if (!rich) return;
+  let dropped = 0;
+  rich.querySelectorAll('img[src^="blob:"]').forEach((img) => {
+    const src = img.getAttribute('src') || '';
+    if (state.blobs.has(src)) return;
+    (img.closest('.blog-figure') || img).remove();
+    dropped += 1;
+  });
+  enhanceFigures(root);
+  if (dropped) {
+    setStatus(root, `${dropped} ảnh chưa kịp upload đã bị xoá khi tải lại trang — vui lòng chèn lại.`, 'error');
+  }
+}
+
+// First inline image that already points at a real URL (after uploads resolve),
+// used as a fallback cover when the author only inserted images mid-post.
+function firstInlineImageUrl(root) {
+  const rich = richEl(root);
+  if (!rich) return '';
+  for (const img of rich.querySelectorAll('img')) {
+    const src = img.getAttribute('src') || '';
+    if (src && !src.startsWith('blob:')) return src;
+  }
+  return '';
 }
 
 // Wrap legacy/plain images (e.g. from an older draft) in the managed <figure>
@@ -480,6 +540,7 @@ function deleteFigure(root, state, figure) {
   figure.remove();
   clearFigureSelection(root, state);
   hideFigurebar(root, state);
+  syncImageMode(root, state);
   syncEmptyState(root);
   persistDraft(root);
   setStatus(root, 'Đã xoá ảnh khỏi bài viết.');
@@ -527,8 +588,8 @@ function showThumb(root, image) {
   const empty = root.querySelector('[data-blog-thumb-empty]');
   const credit = root.querySelector('[data-blog-credit]');
   if (img) {
-    img.src = image?.url || '';
-    img.hidden = !image?.url;
+    if (image?.url) { img.src = image.url; img.hidden = false; }
+    else { img.removeAttribute('src'); img.hidden = true; }
   }
   if (empty) empty.hidden = Boolean(image?.url);
   if (credit) {
@@ -580,6 +641,7 @@ function acceptFile(root, file, state) {
 
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
   state.file = file;
+  state.thumb = null;
   state.previewUrl = URL.createObjectURL(file);
 
   showThumb(root, { url: state.previewUrl, provider: 'upload', credit: file.name });
@@ -587,6 +649,7 @@ function acceptFile(root, file, state) {
   zone?.classList.add('has-file');
   const name = root.querySelector('[data-blog-filename]');
   if (name) name.textContent = `${file.name} · ${formatBytes(file.size)}`;
+  syncImageMode(root, state);
   setStatus(root, 'Ảnh sẵn sàng — sẽ được upload lên GitHub khi bạn bấm Lưu.');
 }
 
@@ -629,6 +692,7 @@ function acceptToolbarImages(root, fileList, state) {
   } else {
     setStatus(root, 'Không có ảnh hợp lệ nào được chọn.', 'error');
   }
+  syncImageMode(root, state);
 }
 
 // Upload every staged inline image and swap its blob URL for the GitHub URL.
@@ -762,8 +826,11 @@ async function onSave(root, state) {
     // Re-read after inline uploads so the Markdown holds the final image URLs.
     const finalBody = markdownFromHtml(richEl(root)?.innerHTML || '');
     let cover = null;
+    // Local images win outright: never fall back to Unsplash while the author
+    // has an uploaded cover or any uploaded inline image in the post.
+    const useLocal = hasLocalUpload(state) || form.imageMode === 'upload';
 
-    if (form.imageMode === 'upload') {
+    if (lockLocal) {
       if (state.file) {
         const media = mediaConfig();
         const filename = uploadFilename(slug, state.file.name);
@@ -776,8 +843,12 @@ async function onSave(root, state) {
       } else if (state.thumb?.provider === 'upload') {
         cover = state.thumb;
       } else {
-        setStatus(root, 'Hãy chọn ảnh để upload, hoặc chuyển sang chế độ “Tự động”.', 'error');
-        return;
+        const inline = firstInlineImageUrl(root);
+        if (!inline) {
+          setStatus(root, 'Hãy chọn ảnh đại diện hoặc chèn ảnh vào bài, hoặc chuyển sang “Dùng ảnh Unsplash”.', 'error');
+          return;
+        }
+        cover = { url: inline, provider: 'upload', credit: form.title };
       }
     } else {
       cover = state.thumb?.provider && state.thumb.provider !== 'upload'
@@ -818,13 +889,13 @@ async function onSave(root, state) {
 
 export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
   if (!root) return;
+  const state = {
+    thumb: null, file: null, previewUrl: '',
+    images: new Map(), blobs: new Set(), imageSeq: 0,
+    activeFigure: null, selectedFigure: null,
+  };
   if (!root.dataset.mounted) {
     root.dataset.mounted = 'true';
-    const state = {
-      thumb: null, file: null, previewUrl: '',
-      images: new Map(), blobs: new Set(), imageSeq: 0,
-      activeFigure: null, selectedFigure: null,
-    };
     const dropzone = () => root.querySelector('[data-blog-dropzone]');
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch { /* ignore */ }
 
@@ -851,6 +922,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         state.thumb = null;
         resetDropzone(root);
         showThumb(root, null);
+        syncImageMode(root, state);
         setStatus(root, 'Đã xoá ảnh.');
         return;
       }
@@ -957,18 +1029,24 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
     root.addEventListener('change', (event) => {
       const target = event.target;
       if (target.matches?.('[data-blog-mode]')) {
-        const upload = readForm(root).imageMode === 'upload';
-        setUploadZone(root, upload);
-        if (!upload) {
+        const wantsAuto = target.value === 'auto';
+        if (wantsAuto && hasLocalUpload(state)) {
+          syncImageMode(root, state);
+          setStatus(root, 'Bài viết đang dùng ảnh bạn tải lên nên Unsplash bị khoá. Xoá ảnh đã upload để dùng Unsplash.', 'error');
+          return;
+        }
+        if (wantsAuto) {
           if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
           state.file = null;
-          state.thumb = null;
           resetDropzone(root);
-          showThumb(root, null);
+          showThumb(root, state.thumb?.provider === 'upload' ? null : state.thumb);
+          setStatus(root, 'Chế độ Unsplash: bấm “Lấy ảnh khác” để lấy ảnh minh hoạ.');
+        } else {
+          if (state.thumb?.provider !== 'upload') { state.thumb = null; }
+          showThumb(root, state.previewUrl ? { url: state.previewUrl, provider: 'upload', credit: state.file?.name || '' } : null);
+          setStatus(root, 'Chế độ tải lên: chọn ảnh từ máy để làm ảnh đại diện.');
         }
-        setStatus(root, upload
-          ? 'Chế độ upload: chọn ảnh từ máy để dùng làm ảnh đại diện.'
-          : 'Chế độ tự động: bấm “Lấy ảnh khác” để tìm ảnh minh hoạ.');
+        syncImageMode(root, state);
         return;
       }
       if (target.matches?.('[data-blog-file]')) { acceptFile(root, target.files?.[0], state); return; }
@@ -991,5 +1069,5 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       acceptFile(root, event.dataTransfer?.files?.[0], state);
     });
   }
-  renderEditor(root);
+  renderEditor(root, state);
 }

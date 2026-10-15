@@ -245,6 +245,10 @@ body.blog-drawer-open { overflow: hidden; }
 .blog-mode { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .6rem; border: 1px solid var(--blog-border); border-radius: 8px; background: #fff; color: var(--blog-text); font-size: .84rem; font-weight: 700; cursor: pointer; }
 .blog-mode:has(input:checked) { border-color: var(--blog-sky); color: var(--blog-primary); box-shadow: inset 0 0 0 1px var(--blog-sky); }
 .blog-mode input { accent-color: var(--blog-sky); }
+.blog-mode.is-locked { opacity: .5; cursor: not-allowed; }
+.blog-mode.is-locked input { cursor: not-allowed; }
+.blog-mode-hint { margin: 0 !important; color: var(--blog-sky) !important; font-size: .76rem; font-weight: 700; line-height: 1.45; }
+.blog-mode-hint[hidden] { display: none; }
 
 .blog-dropzone { display: grid; gap: .25rem; place-items: center; padding: 1.1rem .8rem; border: 2px dashed var(--blog-border); border-radius: 10px; background: #fff; color: var(--blog-muted); text-align: center; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
 .blog-dropzone:hover,
