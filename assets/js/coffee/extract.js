@@ -32,13 +32,32 @@ export function moneyTokens(line) {
 }
 
 const PAYMENT_RE = /payoo|master\s*card|mastercard|visa|jcb|momo|zalo\s*pay|zalopay|vnpay|shopeepay|shopee\s*pay|napas|qr\s*pay|qr\s*code|chuyen khoan|ngan hang|\bbank\b|transfer|tien mat|\bcash\b|\bthe\b|credit|debit|\bcard\b/;
-const METADATA_RE = /^(check\b|creck\b|pos\d*|ngay\b|may\b|thu\s*ngan|pager|shop\s*id|sdt\b|dien thoai|dia chi|address|receipt|in store|hoa don|so hd|so hoa don|ma don|hoadon|#)/;
-const SUBTOTAL_RE = /tong tien hang|thanh tien|tien hang|tien truoc thue|sub\s*total|subtotal/;
-const TOTAL_RE = /tong thanh toan|phai thanh toan|grand total|\btotal\b|^tong\b|^cong\b/;
+const METADATA_RE = /^(check\b|creck\b|pos\d*|ngay\b|may\b|thu\s*ngan|thu\s*rean|pager|shop\s*id|sdt\b|dien thoai|dia chi|address|receipt|in store|hoa don|so hd|so hoa don|ma don|hoadon|quay\b|branch|chi nhanh|#)/;
+const SUBTOTAL_RE = /tong tien hang|thanh tien|tien hang|tien truoc thue|sub\s*total|subtotal|tam tinh/;
+const TOTAL_RE = /tong thanh toan|phai thanh toan|grand total|\btotal\b|^tong\b|^cong\b|can thanh toan/;
 const TAX_RE = /(\bvat\b|\bthue\b|gtgt|\btax\b)/;
 const FEE_RE = /(\bphi\b|service|phuc vu|dong goi|\btip\b|phi dich vu)/;
-const DISCOUNT_RE = /giam gia|discount|chiet khau|coupon|voucher|ecode|khuyen mai|khuyen mai/;
+const DISCOUNT_RE = /giam gia|discount|chiet khau|coupon|voucher|ecode|khuyen mai/;
+// "Tùy chọn / topping": dòng bắt đầu bằng "+" hoặc chứa từ khoá topping/extra…
+// KHÔNG bắt các chữ xuất hiện trong tên món (ví dụ "Latte Da L").
+const MODIFIER_RE = /(^|\s)(topping|extra|thêm|them|add|shot|size\s*[a-z]?|nong|lanh|ít đá|it da|đá riêng|da rieng|ít đường|it duong|ít sữa|it sua|mang đi|mang di|take away|to go)(\s|$)/;
 const MERCHANT_RE = /highlands|starbucks|phuc long|phúc long|coffee house|cộng cà phê|cong ca phe|milano|passio|trung nguyen|trung nguyên|the coffee|katinat|cheese coffee/i;
+
+// Nhãn loại dòng dùng chung cho UI (dropdown đổi loại) và test.
+export const LINE_TYPES = [
+  ['product', 'Sản phẩm'],
+  ['modifier', 'Tùy chọn / topping'],
+  ['discount', 'Giảm giá / coupon'],
+  ['tax', 'Thuế (VAT)'],
+  ['fee', 'Phí / dịch vụ'],
+  ['subtotal', 'Tổng tiền hàng'],
+  ['total', 'Tổng thanh toán'],
+  ['payment', 'Thanh toán'],
+  ['metadata', 'Thông tin hoá đơn (check/quán/nhân viên)'],
+  ['unknown', 'Không xác định'],
+];
+
+export const LINE_TYPE_LABELS = Object.fromEntries(LINE_TYPES);
 
 // Phân loại một dòng theo đúng tập nhãn của spec.
 export function classifyLine(line) {
@@ -52,6 +71,7 @@ export function classifyLine(line) {
   if (TOTAL_RE.test(norm)) return 'total';
   if (TAX_RE.test(norm)) return 'tax';
   if (FEE_RE.test(norm)) return 'fee';
+  if (/^\s*\+\s*/.test(raw) || MODIFIER_RE.test(norm)) return 'modifier';
   if (moneyTokens(raw).length && /[a-zà-ỹ]/i.test(norm)) return 'product';
   return 'unknown';
 }
@@ -86,7 +106,9 @@ function confidenceFor({ name, unitPrice, quantity, gross }) {
   return Math.min(1, Math.round(score * 100) / 100);
 }
 
-function extractProduct(line) {
+// Một dòng sản phẩm: giữ nguyên đơn giá gốc đọc được, KHÔNG lấy thành tiền thay
+// cho đơn giá. Số lượng / đơn giá không đọc được → null (không mặc định 1).
+export function extractProduct(line) {
   const values = moneyTokens(line);
   if (!values.length) return null;
   const nameOriginal = cleanName(stripDateTimes(line));
@@ -100,6 +122,11 @@ function extractProduct(line) {
   if (values.length >= 2) {
     unitPrice = values[0];
     grossAmount = values[values.length - 1];
+    // "2 x 45.000 90.000": nếu có số lượng + 2 mốc, đơn giá là mốc đầu.
+    if (quantity && quantity > 0 && grossAmount !== null && unitPrice !== null && quantity * unitPrice !== grossAmount && values.length === 2) {
+      // Giữ nguyên cả hai giá trị in trên hoá đơn; chỉ suy ra gross khi thiếu.
+      grossAmount = values[values.length - 1];
+    }
   } else if (quantity === 1) {
     unitPrice = values[0];
     grossAmount = values[0];
@@ -170,6 +197,19 @@ function detectMerchant(lines) {
   return candidate ? candidate.trim().slice(0, 120) : null;
 }
 
+// Phân loại từng dòng OCR gốc (chưa gộp) để UI hiển thị "các dòng chưa chắc chắn".
+export function classifyLines(lines = []) {
+  return lines.map((line, index) => {
+    const values = moneyTokens(line);
+    return {
+      index,
+      text: line,
+      type: classifyLine(line),
+      amount: values.length ? values[values.length - 1] : null,
+    };
+  });
+}
+
 // Trích xuất cấu trúc đầy đủ theo schema bắt buộc.
 export function extractReceipt(rawText) {
   const text = fixVietnamese(String(rawText || ''));
@@ -202,7 +242,18 @@ export function extractReceipt(rawText) {
 
     if (type === 'product') {
       const item = extractProduct(line);
-      if (item) { items.push(item); lastProductIndex = items.length - 1; }
+      if (item) {
+        item.modifiers = [];
+        item.source_text = line;
+        items.push(item);
+        lastProductIndex = items.length - 1;
+      }
+      continue;
+    }
+    if (type === 'modifier') {
+      if (lastProductIndex !== null && items[lastProductIndex]) {
+        items[lastProductIndex].modifiers.push(cleanDiscountDescription(line));
+      }
       continue;
     }
     if (type === 'discount') {
@@ -237,12 +288,10 @@ export function extractReceipt(rawText) {
       continue;
     }
     if (type === 'metadata') {
-      const shopMatch = line.match(/shop\s*id\s*[:：]?\s*(\d+)/i);
       const checkMatch = line.match(/check\s*[:：]?\s*(\d+)/i);
       const receiptMatch = line.match(/(?:so\s*hd|so hoa don|receipt)\s*[:：]?\s*([A-Za-z0-9._\-/]{3,})/i);
       if (checkMatch && receipt.check_number === null) receipt.check_number = checkMatch[1];
       if (receiptMatch && receipt.receipt_number === null) receipt.receipt_number = receiptMatch[1];
-      void shopMatch;
       continue;
     }
   }
@@ -255,6 +304,7 @@ export function extractReceipt(rawText) {
   receipt.discount_total = adjustments.some((adjustment) => adjustment.type === 'discount')
     ? allDiscounts
     : null;
+  receipt.receipt_level_discount = receiptLevelDiscount;
 
   const itemNets = items.map((item) => item.net_amount ?? item.gross_amount ?? 0);
   const itemsSum = itemNets.reduce((sum, value) => sum + value, 0);
@@ -280,6 +330,8 @@ export function extractReceipt(rawText) {
 
   return {
     receipt,
+    lines: classifyLines(lines),
+    scan,
     items,
     adjustments,
     validation: {
