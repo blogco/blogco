@@ -1,34 +1,24 @@
 {
   "brand": "highlands",
   "version": 2,
-  "updatedAt": "2026-10-15T01:03:47.751Z",
+  "updatedAt": "2026-10-15T01:24:20Z",
   "sampleCount": 2,
   "accuracy": 0.64,
   "patterns": {
-    "brand": "^HIGHLANDS\\s+COFFEE$",
-    "address": "126\\s+Hồng\\s+Bàng,\\s+Phường\\s+Chợ\\s+Lớn,\\s+TP\\.\\s+HCM",
+    "brand": "^HIGHLANDS COFFEE$",
+    "address": "126\\s+Hong\\s+Bang,\\s+Phuong\\s+Cho\\s+Lon,\\s+TP\\.HCM",
     "phone": "SĐT[:\\s]+([\\d.]+)",
     "shopId": "ShopID[:\\s]+(\\d+)",
     "checkNo": "Check[:\\s]+(\\d+)",
     "datetime": "Ngay[:\\s]+(\\d{2}[-/]\\d{2}[-/]\\d{4})\\s+(\\d{2}:\\d{2})",
     "cashier": "Thu\\s*ngan[:\\s]+(.+)",
-    "pager": "(.{0,20}Sáng 1.{0,20})",
+    "pager": "(.{0,20}13.{0,20})",
     "pos": "(.{0,20}01.{0,20})",
-    "item": "^(\\d+)\\s+(.+?)\\s+([\\d.,]+)$",
-    "discount": "^-\\s*(.+?)\\s+-([\\d.,]+)$",
     "subtotal": "Thanh\\s*tien[:\\s]+([\\d.,]+)",
     "total": "Tong\\s*tien[:\\s]+([\\d.,]+)",
     "payment": "(Payoo Bank Card|Tien mat|Cash|Visa|Mastercard|MoMo|ZaloPay)"
   },
   "vietnameseFixes": {
-    "Thu rean": "Thu ngan",
-    "Tae tim": "Thanh tien",
-    "Tog tien": "Tong tien",
-    "May": "Ngay",
-    "Creck": "Check",
-    "Payoo Bark Card": "Payoo Bank Card",
-    "Matchadi Latte": "Matcha Latte",
-    "Xoyen Ouy Khang": "Nguyen Duy Khang",
     "Địa chỉ: 126 Hồng Bàng, Phường Chợ Lớn, TP. HCM": "126 Hồng Bàng, Phường Chợ Lớn, TP. HCM",
     "SOT: 028 7301 6378": "028 7301 6378",
     "Shop: 108": "108",
@@ -36,6 +26,10 @@
     "Ngày: 15-10-2026 08:52": "15-10-2026 08:52",
     "POS: 01": "01",
     "Thu ngân: Thu Ngân": "Thu ngân",
-    "Ca: Sáng 1": "Sáng 1"
+    "Ca: Sáng 1": "Sáng 1",
+    "SĐT: 028.7301.6978": "028.7301.6978",
+    "ShopID: 1039": "1039",
+    "May: 15-10-2026 06:52": "15-10-2026 06:52",
+    "Thu rean: Thu Ngan ca sang 1": "Thu Ngan ca sang 1"
   }
 }

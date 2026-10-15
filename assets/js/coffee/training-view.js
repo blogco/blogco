@@ -6,7 +6,7 @@
 // lịch sử ở training-history.js. Ở đây chỉ dựng markup + nối sự kiện.
 
 import { escapeHtml, formatVnd, toNumber } from './store.js';
-import { recognizeImage, isPdf, pdfToPageCanvases } from './ocr.js';
+import { recognizeReceipt, isPdf, pdfToPageCanvases } from './ocr.js';
 import { LINE_TYPES, LINE_TYPE_LABELS } from './extract.js';
 import {
   BRANDS, brandLabel, brandSlug, loadPatterns, learnFromSample, nextSampleId,
@@ -21,7 +21,7 @@ import {
   listTrainingRecords, getTrainingRecord, saveTrainingRecord, removeTrainingRecord,
   sessionFromRecord, filterTrainingRecords, TRAINING_STATUS,
 } from './training-store.js';
-import { VERIFY_STATUS } from './verify.js';
+import { VERIFY_STATUS, verifyLine } from './verify.js';
 import { renderItemsTable, formatMoneyInput, parseMoneyInput } from './training-table.js';
 import { renderTrainingHistory } from './training-history.js';
 
@@ -29,6 +29,58 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const OCR_MAX_PDF_PAGES = 5;
 const PREVIEW_MAX_PDF_PAGES = 8;
 const ACCEPTED = /(image\/(png|jpe?g|webp|bmp|gif)|application\/pdf)/i;
+const DATASET_IMAGE_MAX_DIM = 1000;
+const DATASET_IMAGE_QUALITY = 0.72;
+
+// Băm rẻ, tất định — đủ để định danh ảnh trong dataset (không dùng cho bảo mật).
+function hashString(value = '') {
+  let hash = 2166136261;
+  const text = String(value);
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function readFileDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Không đọc được file ảnh.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageElement(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Không đọc được ảnh hoá đơn.'));
+    image.src = url;
+  });
+}
+
+// Đóng gói cặp (Ảnh hoá đơn + dữ liệu chuẩn) thành dataset: ảnh được nén thành
+// data URL JPEG gọn nhẹ để nhét vừa file JSON commit lên GitHub.
+async function buildDatasetImage({ file, previewPages = [] } = {}) {
+  if (typeof document === 'undefined') return '';
+  const renderedPage = previewPages.find((page) => String(page.url).startsWith('data:'));
+  if (renderedPage) return renderedPage.url;
+  if (!file || !/^image\//i.test(file.type || '')) return '';
+  try {
+    const source = await readFileDataUrl(file);
+    const image = await loadImageElement(source);
+    const scale = Math.min(1, DATASET_IMAGE_MAX_DIM / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', DATASET_IMAGE_QUALITY);
+  } catch {
+    return '';
+  }
+}
 
 function verifyChip(status) {
   const meta = VERIFY_STATUS[status] || VERIFY_STATUS.insufficient;
@@ -112,6 +164,12 @@ export function renderTrainingPage() {
             <div class="coffee-card-heading"><h2 class="coffee-section-title">3 · Các dòng AI chưa phân loại chắc chắn</h2></div>
             <p class="coffee-muted">Đổi loại cho từng dòng nếu AI hiểu sai. Dòng không phải sản phẩm sẽ không bị tính vào số món.</p>
             <div data-lines-panel></div>
+          </section>
+
+          <section class="coffee-card coffee-training-panel" aria-label="Dữ liệu gốc để kiểm tra">
+            <div class="coffee-card-heading"><h2 class="coffee-section-title">Kiểm tra dữ liệu gốc</h2></div>
+            <p class="coffee-muted">Ba lớp dữ liệu để truy vết lỗi: <strong>Raw OCR</strong> → <strong>JSON trích xuất ban đầu</strong> → <strong>dữ liệu cuối trên bảng</strong>.</p>
+            <div data-debug-panel></div>
           </section>
 
           <section class="coffee-card coffee-training-panel" aria-label="Đối chiếu hoá đơn">
@@ -283,13 +341,17 @@ export async function mountTraining(root) {
     const types = state.session.lines;
     const uncertain = types.filter((line) => ['unknown', 'modifier'].includes(line.type));
     const others = types.filter((line) => !['unknown', 'modifier'].includes(line.type));
-    const lineRow = (line) => `<li class="coffee-line" data-line-index="${line.index}">
+    const lineRow = (line) => {
+      const status = verifyLine(line);
+      return `<li class="coffee-line" data-line-index="${line.index}">
       <span class="coffee-line__text" title="${escapeHtml(line.text)}">${escapeHtml(line.text || '(dòng trống)')}</span>
+      <span class="coffee-chip is-${escapeHtml(status.tone)}" data-line-verify>${escapeHtml(status.label)}</span>
       ${line.amount !== null ? `<span class="coffee-line__amount">${line.amount.toLocaleString('vi-VN')} đ</span>` : ''}
       <select data-line-type="${line.index}" aria-label="Loại của dòng ${line.index + 1}">
         ${LINE_TYPES.map(([key, label]) => `<option value="${key}"${line.type === key ? ' selected' : ''}>${escapeHtml(label)}</option>`).join('')}
       </select>
     </li>`;
+    };
     host.innerHTML = `
       ${uncertain.length
         ? `<ul class="coffee-line-list">${uncertain.map(lineRow).join('')}</ul>`
@@ -392,6 +454,36 @@ export async function mountTraining(root) {
     host.innerHTML = renderTrainingHistory(records, state.filters);
   }
 
+  // --- Debug: raw OCR → raw extraction → final UI data ---------------------
+  function renderDebug() {
+    const host = $('[data-debug-panel]');
+    if (!host) return;
+    if (!state.session) { host.innerHTML = '<p class="coffee-empty">Chưa có dữ liệu.</p>'; return; }
+    const original = state.session.original || {};
+    const extraction = original.extraction || {};
+    const rawOcr = original.rawOcrText || state.session.rawText || '';
+    const rawExtraction = {
+      receipt: original.receipt || {},
+      items: original.items || [],
+      validation: extraction.validation || {},
+      adjustments: extraction.adjustments || [],
+    };
+    const finalUi = state.session.items.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discountAmount: item.discountAmount,
+      netAmount: item.netAmount,
+    }));
+    const block = (title, value) => `<h3 class="coffee-section-title">${escapeHtml(title)}</h3><pre class="coffee-debug__pre">${escapeHtml(value)}</pre>`;
+    host.innerHTML = `<details class="coffee-debug">
+      <summary>🔎 Xem Raw OCR · JSON trích xuất · Dữ liệu cuối</summary>
+      ${block('1 · Raw OCR (trước khi trích xuất)', rawOcr.slice(0, 6000))}
+      ${block('2 · JSON trích xuất ban đầu', JSON.stringify(rawExtraction, null, 2).slice(0, 8000))}
+      ${block('3 · Dữ liệu cuối trên bảng', JSON.stringify(finalUi, null, 2))}
+    </details>`;
+  }
+
   function renderWorkspaceVisibility() {
     const workspace = $('[data-workspace]');
     const trainset = $('[data-trainset-card]');
@@ -410,6 +502,7 @@ export async function mountTraining(root) {
       renderReconcile();
       renderConfirm();
       renderTrainset();
+      renderDebug();
     }
     renderHeaderCounts();
     renderHistory();
@@ -431,6 +524,17 @@ export async function mountTraining(root) {
     state.session.items.forEach((item) => {
       const cell = container.querySelector(`[data-net-for="${CSS.escape(item.id)}"]`);
       if (cell) cell.textContent = item.netAmount === null ? '—' : item.netAmount.toLocaleString('vi-VN');
+      const row = container.querySelector(`[data-item-row][data-item-id="${CSS.escape(item.id)}"]`);
+      if (row) {
+        const v = item.verification || {};
+        const expr = row.querySelector('[data-verify-expr]');
+        const statusChip = row.querySelector('[data-verify-status]');
+        if (expr) expr.textContent = v.expression || 'Chưa đủ dữ liệu để đối chiếu';
+        if (statusChip) {
+          statusChip.className = `coffee-chip is-${v.tone || 'muted'}`;
+          statusChip.textContent = v.label || 'Cần kiểm tra';
+        }
+      }
     });
     const summary = $('[data-items-summary]');
     if (summary) {
@@ -512,7 +616,7 @@ export async function mountTraining(root) {
     state.progressPercent = 8;
     renderUpload();
     try {
-      const text = await recognizeImage(state.file, {
+      const { text, pages } = await recognizeReceipt(state.file, {
         maxPdfPages: OCR_MAX_PDF_PAGES,
         onProgress: (message) => {
           if (message?.status) {
@@ -544,7 +648,14 @@ export async function mountTraining(root) {
         pageWarning: state.totalPages > OCR_MAX_PDF_PAGES ? `Chỉ OCR ${OCR_MAX_PDF_PAGES}/${state.totalPages} trang` : '',
         brand: currentBrand(),
       });
-      state.session.original.rawOcrText = ocrText;
+      // Giữ raw OCR (mỗi trang + phương thức đọc + bbox dòng) để truy vết lỗi.
+      state.session.original.rawOcrText = text;
+      state.session.original.pages = pages.map((page) => ({
+        pageNumber: page.pageNumber,
+        method: page.method,
+        text: page.text,
+        lines: page.lines,
+      }));
       state.undoStack = [];
       state.status = 'ready';
       state.progress = '';
@@ -596,9 +707,12 @@ export async function mountTraining(root) {
       const rawText = state.session.editedText || state.session.rawText;
       const { data: patterns } = await loadPatterns(brand);
       const labeledFields = buildLabeledFields(state.session, { brandLabel: brandLabel(brand) });
+      // Dataset mẫu = cặp (Ảnh hoá đơn + dữ liệu chuẩn đã chỉnh sửa).
+      const image = await buildDatasetImage({ file: state.file, previewPages: state.previewPages });
       const sample = {
         id: '', brand: slug, createdAt: new Date().toISOString(), source: 'training',
         rawText, labeledFields,
+        ...(image ? { image, imageHash: `sha256:${hashString(image)}` } : {}),
       };
       const learned = learnFromSample(brand, sample, patterns || {});
       sample.id = nextSampleId(brand, sample.createdAt.slice(0, 10), patterns?.sampleCount || 0);

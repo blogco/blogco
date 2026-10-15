@@ -1,6 +1,24 @@
 {
   "brand": "highlands",
   "log": [
-    { "at": "2026-10-15T07:00:00Z", "samples": 1, "accuracy": 0.56 }
+    {
+      "at": "2026-10-15T07:00:00Z",
+      "samples": 1,
+      "accuracy": 0.56
+    },
+    {
+      "at": "2026-10-15T01:17:31Z",
+      "brand": "highlands",
+      "samples": 1,
+      "accuracy": 0.56,
+      "version": 1
+    },
+    {
+      "at": "2026-10-15T01:24:20Z",
+      "brand": "highlands",
+      "samples": 2,
+      "accuracy": 0.64,
+      "version": 2
+    }
   ]
 }

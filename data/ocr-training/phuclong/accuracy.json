@@ -1,4 +1,12 @@
 {
   "brand": "phuclong",
-  "log": []
+  "log": [
+    {
+      "at": "2026-10-15T01:17:31Z",
+      "brand": "phuclong",
+      "samples": 0,
+      "accuracy": 0.45,
+      "version": 0
+    }
+  ]
 }

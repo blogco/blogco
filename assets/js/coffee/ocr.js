@@ -6,6 +6,7 @@
 // guesses a price that is not printed on the receipt.
 
 import { classifyItem, normalizeName } from './menu.js';
+import { normalizeMoney } from './verify.js';
 
 const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
@@ -69,6 +70,8 @@ async function loadPdfJs() {
 }
 
 // Render (up to `maxPages`) PDF pages to canvases at `scale`x resolution.
+// Also returns the pdf.js page proxies so callers can read the PDF text layer
+// (with bounding boxes) before falling back to OCR.
 export async function pdfToPageCanvases(file, { maxPages = 5, scale = 2 } = {}) {
   if (typeof document === 'undefined') throw new Error('Không có môi trường canvas để đọc PDF.');
   const pdfjsLib = await loadPdfJs();
@@ -77,6 +80,7 @@ export async function pdfToPageCanvases(file, { maxPages = 5, scale = 2 } = {}) 
   const total = pdf.numPages;
   const count = Math.min(total, maxPages);
   const canvases = [];
+  const pages = [];
   for (let pageNumber = 1; pageNumber <= count; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const viewport = page.getViewport({ scale });
@@ -88,8 +92,9 @@ export async function pdfToPageCanvases(file, { maxPages = 5, scale = 2 } = {}) 
     context.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvasContext: context, viewport }).promise;
     canvases.push(canvas);
+    pages.push(page);
   }
-  return { canvases, total, used: count };
+  return { canvases, total, used: count, pages };
 }
 
 // Data-URL of the first PDF page, for the dropzone preview.
@@ -106,41 +111,120 @@ export async function pdfToPreviewDataUrl(file, { maxDim = 1400, quality = 0.8 }
   return scaled.toDataURL('image/jpeg', quality);
 }
 
-export async function recognizeImage(file, { lang = 'vie+eng', onProgress, preprocess = true, maxPdfPages = 5 } = {}) {
-  const Tesseract = await loadTesseract();
-  const recognize = async (input) => {
-    const { data } = await Tesseract.recognize(input, lang, {
-      logger: (message) => {
-        if (typeof onProgress === 'function') onProgress(message);
-      },
+// ---------------------------------------------------------------------------
+// Reading order — ghép các mảnh text của pdf.js thành DÒNG, giữ toạ độ bbox.
+// ---------------------------------------------------------------------------
+//
+// Không ghép số chỉ vì chúng gần nhau trong văn bản phẳng: các mảnh được gom theo
+// trục Y (cùng dòng), rồi sắp theo trục X (trái→phải), nhờ đó tên món và các cột
+// số lượng/đơn giá/thành tiền giữ đúng quan hệ như trên hoá đơn.
+export function groupTextItems(items = []) {
+  const entries = items
+    .filter((item) => item && typeof item.str === 'string' && item.str.trim())
+    .map((item) => {
+      const t = Array.isArray(item.transform) ? item.transform : [1, 0, 0, 1, 0, 0];
+      const height = Math.abs(Number(t[3]) || Number(item.height) || 10) || 10;
+      const width = Number(item.width) || item.str.length * height * 0.5;
+      return { text: item.str, x: Number(t[4]) || 0, y: Number(t[5]) || 0, width, height };
     });
-    return (data?.text || '').trim();
+  if (!entries.length) return [];
+
+  entries.sort((a, b) => (Math.abs(b.y - a.y) > 1 ? b.y - a.y : a.x - b.x));
+  const rows = [];
+  for (const entry of entries) {
+    const tolerance = Math.max(2, entry.height * 0.6);
+    const row = rows.find((candidate) => Math.abs(candidate.y - entry.y) <= tolerance);
+    if (row) {
+      row.items.push(entry);
+      row.y = (row.y * (row.items.length - 1) + entry.y) / row.items.length;
+    } else {
+      rows.push({ y: entry.y, items: [entry] });
+    }
+  }
+
+  return rows
+    .sort((a, b) => b.y - a.y)
+    .map((row) => {
+      const sorted = row.items.slice().sort((a, b) => a.x - b.x);
+      const text = sorted.map((entry) => entry.text).join(' ').replace(/\s+/g, ' ').trim();
+      const x0 = Math.min(...sorted.map((entry) => entry.x));
+      const x1 = Math.max(...sorted.map((entry) => entry.x + entry.width));
+      const height = Math.max(...sorted.map((entry) => entry.height));
+      return { text, bbox: { x0, y0: row.y - height, x1, y1: row.y + height } };
+    })
+    .filter((row) => row.text);
+}
+
+// Lớp văn bản của PDF chỉ đáng tin khi có đủ chữ thật (không phải vài mảnh rác).
+export function isReliableText(text = '') {
+  const clean = String(text).replace(/[^A-Za-zÀ-ỹ0-9]/g, '');
+  return clean.length >= 20 && /[A-Za-zÀ-ỹ]{2,}/.test(text);
+}
+
+// Đọc hoá đơn và trả về cấu trúc theo từng trang, kèm phương thức đã dùng
+// ("text" = trích lớp văn bản PDF, "ocr" = OCR ảnh trang) và bbox của mỗi dòng.
+export async function recognizeReceipt(file, {
+  lang = 'vie+eng',
+  onProgress,
+  preprocess = true,
+  maxPdfPages = 5,
+  preferTextLayer = true,
+} = {}) {
+  const recognizeCanvas = async (input) => {
+    const Tesseract = await loadTesseract();
+    const { data } = await Tesseract.recognize(input, lang, {
+      logger: (message) => { if (typeof onProgress === 'function') onProgress(message); },
+    });
+    const lines = Array.isArray(data?.lines)
+      ? data.lines.map((line) => ({ text: line.text, bbox: line.bbox })).filter((line) => line.text?.trim())
+      : [];
+    return { text: (data?.text || '').trim(), lines };
   };
 
+  const pages = [];
+
   if (isPdf(file)) {
-    const { canvases, total, used } = await pdfToPageCanvases(file, { maxPages: maxPdfPages });
-    const texts = [];
+    const { canvases, total, used, pages: pdfPages } = await pdfToPageCanvases(file, { maxPages: maxPdfPages });
     for (let index = 0; index < canvases.length; index += 1) {
       if (typeof onProgress === 'function') {
         onProgress({ status: `PDF trang ${index + 1}/${used}${total > used ? ` (còn ${total - used} trang, tăng maxPdfPages để đọc thêm)` : ''}` });
       }
-      let page = canvases[index];
-      if (preprocess) page = await preprocessImage(page).catch(() => canvases[index]);
-      texts.push(await recognize(page));
+      let page = null;
+      if (preferTextLayer && pdfPages[index]?.getTextContent) {
+        try {
+          const content = await pdfPages[index].getTextContent();
+          const lines = groupTextItems(content.items);
+          const text = lines.map((line) => line.text).join('\n');
+          if (isReliableText(text)) page = { method: 'text', text, lines };
+        } catch { /* lớp văn bản lỗi → OCR trang render */ }
+      }
+      if (!page) {
+        let input = canvases[index];
+        if (preprocess) input = await preprocessImage(input).catch(() => canvases[index]);
+        page = { method: 'ocr', ...(await recognizeCanvas(input)) };
+      }
+      pages.push({ pageNumber: index + 1, ...page });
     }
-    return texts.filter(Boolean).join('\n\n---\n\n');
+  } else {
+    let input = file;
+    if (preprocess) {
+      try {
+        input = await preprocessImage(file);
+      } catch {
+        // Preprocessing is best-effort: fall back to the raw image so OCR still runs.
+        input = file;
+      }
+    }
+    pages.push({ pageNumber: 1, method: 'ocr', ...(await recognizeCanvas(input)) });
   }
 
-  let input = file;
-  if (preprocess) {
-    try {
-      input = await preprocessImage(file);
-    } catch {
-      // Preprocessing is best-effort: fall back to the raw image so OCR still runs.
-      input = file;
-    }
-  }
-  return recognize(input);
+  const text = pages.map((page) => page.text).filter(Boolean).join('\n\n---\n\n');
+  return { text, pages, totalPages: pages.length };
+}
+
+export async function recognizeImage(file, options = {}) {
+  const { text } = await recognizeReceipt(file, options);
+  return text;
 }
 
 // ---------------------------------------------------------------------------
@@ -399,6 +483,7 @@ const VI_FIXES = {
   '1B Hg tag': '126 Hong Bang',
   'Lon, TP.HN': 'Lon, TP.HCM',
   'Matchadi Latte': 'Matcha Latte',
+  'MatchaDi Latte': 'Matcha Latte',
   'Latte 0': 'Latte Da',
   'Ecoce Coupon giae': 'Ecode Coupon giam',
   'Y tt': 'Banh Dua',
@@ -443,28 +528,10 @@ function moneyRegex() {
 
 // Turn a money-ish string into a number. Handles Vietnamese grouping ('.'),
 // English grouping (',') and mixed forms like 1.200.000,50.
-export function parseMoney(raw) {
-  if (raw === null || raw === undefined) return null;
-  let value = String(raw).replace(/[^\d.,]/g, '');
-  if (!value) return null;
-  const hasDot = value.includes('.');
-  const hasComma = value.includes(',');
-  if (hasDot && hasComma) {
-    const lastDot = value.lastIndexOf('.');
-    const lastComma = value.lastIndexOf(',');
-    if (lastDot > lastComma) value = value.replace(/,/g, '');
-    else value = value.replace(/\./g, '').replace(',', '.');
-  } else if (hasDot || hasComma) {
-    const sep = hasDot ? '.' : ',';
-    const parts = value.split(sep);
-    const looksGrouped = parts.length > 1 && parts.slice(1).every((part) => part.length === 3);
-    if (looksGrouped) value = parts.join('');
-    else if (parts.length === 2 && parts[1].length > 2) value = parts.join('');
-    else value = `${parts[0]}.${parts.slice(1).join('')}`;
-  }
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
+//
+// Định dạng số được suy ra theo ngữ cảnh trong `normalizeMoney` (verify.js) để
+// toàn bộ pipeline dùng chung một cách hiểu tiền tệ, không lệch nhau.
+export const parseMoney = normalizeMoney;
 
 function toIsoDate(day, month, year) {
   let y = Number(year);
@@ -512,12 +579,15 @@ function cleanLabelValue(value = '') {
 
 // Line prefixes that mark a summary/metadata row rather than a purchasable item.
 // (check/pos/ngay/thu ngan… come from the vùng D metadata block.)
-const LABEL_LINE = /^(?:tong\b|sub ?total|subtotal|vat\b|thue\b|gtgt|giam gia|discount|chiet khau|voucher|khuyen mai|tien\b|thanh toan|thanh tien|total\b|grand\b|cong\b|phi\b|tip\b|service\b|payment\b|cash\b|card\b|khach dua|tien thua|tra lai|change\b|net\b|gross\b|amount\b|so hd|so hoa don|ma don|hoadon|hoa don|check\b|pos\d*|\bpos\b|ngay\b|thu ngan|pager|shopid|sdt|dia chi|dien thoai|address|receipt)/;
+const LABEL_LINE = /^(?:tong\b|sub ?total|subtotal|vat\b|thue\b|gtgt|giam gia|discount|chiet khau|voucher|khuyen mai|tien\b|thanh toan|thanh tien|total\b|grand\b|cong\b|phi\b|tip\b|service\b|payment\b|cash\b|card\b|khach dua|tien thua|tra lai|change\b|net\b|gross\b|amount\b|so hd|so hoa don|ma don|hoadon|hoa don|check[s]?\b|cheque|pos\d*|\bpos\b|ngay\b|may\b|thu ngan|pager|shopid|sdt|sot\b|dien thoai|address|receipt|tel\b|phone\b)/;
+// A bare phone number is never an item.
+const PHONE_NUMBER_RE = /^(?:\+?84|0)\d{1,3}(?:[.\s-]?\d{3,4}){2,}$/;
 
 function isLabelLine(line) {
   const norm = normalizeName(stripDateTimes(line));
   if (!norm) return true;
   if (LABEL_LINE.test(norm)) return true;
+  if (PHONE_NUMBER_RE.test(norm.replace(/[.\s-]+/g, '')) || PHONE_NUMBER_RE.test(norm)) return true;
   // A line of digits/punctuation only is never an item name.
   return !/[a-zà-ỹ]/i.test(norm);
 }
@@ -607,27 +677,32 @@ function attachDiscount(items, line) {
 function extractQty(text) {
   // "Name  1 x 55.000" — count right before the "x" marker + price.
   let match = text.match(new RegExp(String.raw`(?:^|\s)(\d{1,3})\s*[x×*]\s*(?=\d{1,3}(?:[.,]\d{3})+|\d{4,})`, 'i'));
-  if (match) return { qty: Number(match[1]), rest: text.replace(match[0], ' ') };
+  if (match) return { qty: Number(match[1]), rest: text.replace(match[0], ' '), explicit: true };
   // "2 x Name" — leading count.
   match = text.match(/^\s*(\d{1,3})\s*[x×*]\s*/i);
-  if (match) return { qty: Number(match[1]), rest: text.slice(match[0].length) };
+  if (match) return { qty: Number(match[1]), rest: text.slice(match[0].length), explicit: true };
   // "Name x2" — "x" before the count, not followed by price digits.
   match = text.match(/[x×*]\s*(\d{1,3})(?![\d.,])/i);
-  if (match) return { qty: Number(match[1]), rest: text.replace(match[0], ' ') };
+  if (match) return { qty: Number(match[1]), rest: text.replace(match[0], ' '), explicit: true };
   // "2 Name" — a leading count.
   match = text.match(/^\s*(\d{1,3})\s+(?=\S)/);
-  if (match) return { qty: Number(match[1]), rest: text.slice(match[0].length) };
+  if (match) return { qty: Number(match[1]), rest: text.slice(match[0].length), explicit: true };
   // "Name  2  90.000" — a small count squeezed between the name and the price.
   match = text.match(/(?:^|\s)(\d{1,3})\s+(\d{1,3}(?:[.,]\d{3})+|\d{4,})\s*$/);
-  if (match) return { qty: Number(match[1]), rest: text.slice(0, match.index) + ' ' + match[2] };
-  return { qty: 1, rest: text };
+  if (match) return { qty: Number(match[1]), rest: text.slice(0, match.index) + ' ' + match[2], explicit: true };
+  return { qty: 1, rest: text, explicit: false };
 }
+
+// Cụm từ cho thấy dòng là tổng hợp/ghi chú tiền tệ chứ không phải tên món. Dùng để
+// KHÔNG biến các dòng như "Co Tham tien 100.200" thành sản phẩm khi dòng đó không
+// có số lượng rõ ràng và tên không khớp nhóm món nào đã biết.
+const SUMMARY_WORD_RE = /\b(tien|tong|thanh|cong|giam|chiet|khuyen\s*mai|voucher|coupon|phi|thue|\bvat\b|thua|tra\s*lai|khach\s*dua|check|sot|pager|quay)\b/;
 
 // Parse a single receipt line into an item, or null when it is a summary row.
 export function parseItemLine(line) {
   const base = stripDateTimes(line);
   if (isLabelLine(base)) return null;
-  const { qty, rest } = extractQty(base);
+  const { qty, rest, explicit } = extractQty(base);
   const values = [...rest.matchAll(moneyRegex())].map((match) => parseMoney(match[0])).filter((value) => value !== null);
   if (!values.length) return null;
   const name = rest
@@ -638,17 +713,29 @@ export function parseItemLine(line) {
     .replace(/[\s:–-]+$/, '')
     .trim();
   if (name.length < 2) return null;
+  // Không có số lượng rõ ràng, chỉ một mức giá, tên không thuộc nhóm món nào và
+  // lại giống cụm từ tổng hợp tiền tệ → KHÔNG coi là món (tránh sản phẩm ma).
+  if (!explicit && values.length < 2 && classifyItem(name) === 'other' && SUMMARY_WORD_RE.test(normalizeName(name))) {
+    return null;
+  }
   const amount = values[values.length - 1];
   const unitPrice = values.length >= 2 ? values[0] : (qty > 1 ? Math.round(amount / qty) : amount);
   return applyTrailingQty(name, qty, values, unitPrice, amount);
 }
 
-// "Cà Phê Sữa 2 29.000 58.000": a leftover count sits between name and prices.
+// "Cà Phê Sữa 2 29.000 58.000" / "Matcha Latte Da L 1 | 69.000": a leftover count
+// sits between the name and the price(s). Chỉ cắt khi phần tên còn chữ để không
+// biến tên món kết thúc bằng số (hiếm gặp) thành số lượng.
 function applyTrailingQty(name, qty, values, unitPrice, amount) {
   const trailing = name.match(/^(.*\S)\s+(\d{1,3})$/);
-  const resolvedQty = trailing && values.length >= 2 && qty === 1 ? Number(trailing[2]) : qty;
-  const resolvedName = trailing && values.length >= 2 && qty === 1 ? trailing[1].trim() : name;
-  return { name: resolvedName.slice(0, 160), qty: resolvedQty, unitPrice, amount, category: classifyItem(resolvedName), discount: 0, discountLabel: null };
+  const strip = Boolean(trailing && qty === 1 && /[a-zà-ỹ]/i.test(trailing[1]));
+  const resolvedQty = strip ? Number(trailing[2]) : qty;
+  const resolvedName = strip ? trailing[1].trim() : name;
+  // Một mức giá nhưng có số lượng > 1: giá in trên dòng là thành tiền.
+  const resolvedUnit = strip && values.length < 2 && resolvedQty > 1 && amount
+    ? Math.round(amount / resolvedQty)
+    : unitPrice;
+  return { name: resolvedName.slice(0, 160), qty: resolvedQty, unitPrice: resolvedUnit, amount, category: classifyItem(resolvedName), discount: 0, discountLabel: null };
 }
 
 export function parseHighlandsItems(lines) {
@@ -730,8 +817,13 @@ function isFooterLine(line) {
 const NAME_LINE_RE = /^[A-Z][\p{L}]+(?:\s+[A-Z][\p{L}]+){1,3}$/u;
 
 function extractCustomer(lines) {
+  // Ưu tiên nhãn in rõ ràng ("Khách hàng: Nguyễn Duy Khang").
+  // `\bcustomer\b` + chặn giá trị chứa '@' để không bắt nhầm dòng footer
+  // "customerservice@highlandscoffee.com.vn" thành tên khách.
+  const labelled = firstMatch(lines, /(?:khách\s*hàng|khach\s*hang|\bcustomer\b|tên\s*khách|ten\s*khach)\s*[:：]?\s*([^\n|]{2,})/i);
+  if (labelled && !/[@]|https?:|www\./i.test(labelled)) return cleanLabelValue(labelled);
   const isName = (line) => NAME_LINE_RE.test(line)
-    && !/hoa don|thanh toan|highlands|cam on|\bxin\b|coffee|cafe|chia se|san qua/i.test(line);
+    && !/hoa don|thanh toan|highlands|cam on|\bxin\b|coffee|cafe|chia se|san qua|in store|take away|to go|mang di/i.test(line);
   const paymentIndex = lines.findIndex((line) => isPaymentLine(line));
   const start = paymentIndex >= 0 ? paymentIndex + 1 : 0;
   for (let index = start; index < lines.length; index += 1) {

@@ -1,0 +1,97 @@
+{
+  "schema": "blogco.ocr-training.prompt-context.v1",
+  "brand": "highlands",
+  "generatedAt": "2026-10-15T01:24:20Z",
+  "version": 2,
+  "sampleCount": 2,
+  "accuracy": 0.64,
+  "system": "Bạn là bộ trích xuất hoá đơn Highlands Coffee. Đọc ảnh/text OCR, trả về JSON đúng schema blogco.coffee.receipt.v1. Tuyệt đối không bịa số: nếu không chắc thì để null và đánh dấu needs_review. Áp dụng các regex pattern và bảng sửa lỗi tiếng Việt đã học dưới đây trước khi suy luận. Tách rõ sản phẩm khỏi mã check / giảm giá / thuế / phí / tổng tiền.",
+  "patterns": {
+    "brand": "^HIGHLANDS COFFEE$",
+    "address": "126\\s+Hong\\s+Bang,\\s+Phuong\\s+Cho\\s+Lon,\\s+TP\\.HCM",
+    "phone": "SĐT[:\\s]+([\\d.]+)",
+    "shopId": "ShopID[:\\s]+(\\d+)",
+    "checkNo": "Check[:\\s]+(\\d+)",
+    "datetime": "Ngay[:\\s]+(\\d{2}[-/]\\d{2}[-/]\\d{4})\\s+(\\d{2}:\\d{2})",
+    "cashier": "Thu\\s*ngan[:\\s]+(.+)",
+    "pager": "(.{0,20}13.{0,20})",
+    "pos": "(.{0,20}01.{0,20})",
+    "subtotal": "Thanh\\s*tien[:\\s]+([\\d.,]+)",
+    "total": "Tong\\s*tien[:\\s]+([\\d.,]+)",
+    "payment": "(Payoo Bank Card|Tien mat|Cash|Visa|Mastercard|MoMo|ZaloPay)"
+  },
+  "vietnameseFixes": {
+    "Địa chỉ: 126 Hồng Bàng, Phường Chợ Lớn, TP. HCM": "126 Hồng Bàng, Phường Chợ Lớn, TP. HCM",
+    "SOT: 028 7301 6378": "028 7301 6378",
+    "Shop: 108": "108",
+    "Check: 174294": "174294",
+    "Ngày: 15-10-2026 08:52": "15-10-2026 08:52",
+    "POS: 01": "01",
+    "Thu ngân: Thu Ngân": "Thu ngân",
+    "Ca: Sáng 1": "Sáng 1",
+    "SĐT: 028.7301.6978": "028.7301.6978",
+    "ShopID: 1039": "1039",
+    "May: 15-10-2026 06:52": "15-10-2026 06:52",
+    "Thu rean: Thu Ngan ca sang 1": "Thu Ngan ca sang 1"
+  },
+  "fewShot": [
+    {
+      "rawText": "HIGHLANDS COFFEE\n\nĐịa chỉ: 126 Hồng Bàng, Phường Chợ Lớn, TP. HCM\n\nSOT: 028 7301 6378\nShop: 108\n\nIn Store\n\nCheck: 174294\nNgày: 15-10-2026 08:52\nPOS: 01\n\nThu ngân: Thu Ngân\nCa: Sáng 1\n\nMÓN HÀNG\n\n1. MatchaDi Latte Đá L\n   Đơn giá: 69.000đ\n\n   Ecode Coupon giảm: -13.800đ\n   Thành tiền sau giảm giá: 55.200đ\n\n2. Bánh Dứa\n   Đơn giá: 45.000đ\n   Thành tiền: 45.000đ\n\nTỔNG THANH TOÁN\n\nTổng tiền: 100.200đ\n\nPhương thức thanh toán: Payoo Bank Card\nSố tiền thanh toán: 100.200đ\n\nKhách hàng: Nguyễn Duy Khang\n\nChia sẻ ý kiến của bạn với chúng tôi.\nCustomer Service: highlandscoffee.com.vn\n\nSản phẩm 100% Trung Thượng [cần xác minh nội dung gốc]\nTải app HighlandsDI ngay! [cần xác minh nội dung gốc]\n\nXuất hóa đơn: Quét QR và nhập thông tin trong 3 giờ sau khi mua.\nĐơn sau 20h, vui lòng gửi trước 23h cùng ngày.\n\nXin cảm ơn quý khách!",
+      "labeledFields": {
+        "brand": "HIGHLANDS COFFEE",
+        "address": "126 Hồng Bàng, Phường Chợ Lớn, TP. HCM",
+        "phone": "028 7301 6378",
+        "shopId": "108",
+        "checkNo": "174294",
+        "datetime": "15-10-2026 08:52",
+        "cashier": "Thu ngân",
+        "pager": "Sáng 1",
+        "pos": "01",
+        "subtotal": "114000",
+        "total": "114000",
+        "payment": "100.200",
+        "items": {
+          "items": [
+            {
+              "name": "MatchaDi Latte Đá L"
+            },
+            {
+              "name": "Bánh Dứa"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "rawText": "HIGHLANDS COFFEE\ngGHựi 1B Hg tag, Phuong Cho Lon, TP.HN\nSĐT: 028.7301.6978\nShopID: 1039\nHoa Don Thanh Toan Pager: 13\nIn Store\nCreck: 174294 POS01\nMay: 15-10-2026 06:52\nThu rean: Thu Ngan ca sang 1\n1 Matchadi Latte 0 L 69.000\n-Ecoce Coupon giae -13.800\n1 Y tt 45.000\nTae tim: 100.200\nTog tien: 100.200\nPayoo Bark Card 100.200\nXoyen Ouy Khang\n* Chia sey kien cua bun vôi chưng *\ncustonerseryicethighlandscof fee.com.vn",
+      "labeledFields": {
+        "brand": "HIGHLANDS COFFEE",
+        "address": "126 Hong Bang, Phuong Cho Lon, TP.HCM",
+        "phone": "028.7301.6978",
+        "shopId": "1039",
+        "checkNo": "174294",
+        "datetime": "15-10-2026 06:52",
+        "cashier": "Thu Ngan ca sang 1",
+        "pager": "13",
+        "pos": "01",
+        "items": [
+          {
+            "qty": 1,
+            "name": "Matcha Latte Da L",
+            "price": 69000,
+            "discount": -13800
+          },
+          {
+            "qty": 1,
+            "name": "Banh Dua",
+            "price": 45000,
+            "discount": 0
+          }
+        ],
+        "subtotal": 100200,
+        "total": 100200,
+        "payment": "Payoo Bank Card"
+      }
+    }
+  ]
+}

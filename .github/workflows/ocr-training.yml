@@ -1,0 +1,56 @@
+name: Daily OCR training consolidation
+
+# Vòng lặp tự cải thiện OCR: mỗi ngày (và mỗi khi có mẫu ground truth mới được
+# commit) hợp nhất toàn bộ mẫu trong data/ocr-training/ thành patterns.json +
+# prompt-context.json cho từng thương hiệu, rồi cập nhật index.json.
+# Lần quét hoá đơn sau của quán đó dùng context mới nên đọc chính xác hơn.
+
+on:
+  schedule:
+    # 19:00 UTC = 02:00 giờ Việt Nam, mỗi ngày.
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'data/ocr-training/**'
+      - 'assets/js/coffee/training-batch.js'
+      - 'scripts/ocr-training/**'
+      - '.github/workflows/ocr-training.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ocr-training
+  cancel-in-progress: false
+
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Consolidate training samples into patterns + prompt context
+        id: improve
+        run: node scripts/ocr-training/improve.mjs
+
+      - name: Commit and push updated training context
+        run: |
+          if [ -z "$(git status --porcelain -- data/ocr-training)" ]; then
+            echo "Không có thay đổi training; bỏ qua commit."
+            exit 0
+          fi
+          git config user.name "blogco-bot"
+          git config user.email "blogco-bot@users.noreply.github.com"
+          git add data/ocr-training
+          git commit -m "ai(training): hợp nhất mẫu OCR hàng ngày [skip ci]"
+          git push origin HEAD:main

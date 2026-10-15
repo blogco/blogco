@@ -112,19 +112,23 @@ data/ocr-training/
 ├── index.json                      # tổng hợp mọi brand (samples, accuracy, version)
 ├── highlands/
 │   ├── samples/
-│   │   └── sample-2026-10-15-highlands-001.json   # ground truth
+│   │   └── sample-2026-10-15-highlands-001.json   # ground truth + ảnh hoá đơn
 │   ├── patterns.json               # regex patterns + vietnameseFixes học được
+│   ├── prompt-context.json         # system prompt + few-shot nạp cho AI OCR
 │   └── accuracy.json               # log độ chính xác theo thời gian
 ├── starbucks/…
 └── phuclong/…
 ```
 
-`sample-*.json` (ground truth) — do `buildLabeledFields()` sinh ra:
+`sample-*.json` (ground truth) — do `buildLabeledFields()` sinh ra, kèm **cặp ảnh
+hoá đơn** (`image`: data URL JPEG nén, `imageHash`) để tái hiện/đối chiếu:
 
 ```json
 {
   "id": "sample-2026-10-15-highlands-001", "brand": "highlands",
   "rawText": "HIGHLANDS COFFEE\n…",
+  "image": "data:image/jpeg;base64,…",
+  "imageHash": "sha256:1a2b3c4d",
   "labeledFields": {
     "brand": "Highlands Coffee", "checkNo": "174294", "datetime": "2026-10-15",
     "subtotal": "100200", "total": "100200",
@@ -154,9 +158,29 @@ data/ocr-training/
         ↓
 9. Push lên GitHub (CMS local → GitHub API → tải file thủ công)
         ↓
-10. OCR lần sau dùng patterns/fixes mới → chính xác hơn
-        (retrain mô hình: ngoài phạm vi frontend, chờ pipeline backend)
+10. ⏰ GitHub Action `ocr-training.yml` (cron 02:00 VN mỗi ngày + mỗi lần push mẫu)
+        ↓
+11. Hợp nhất TOÀN BỘ mẫu → patterns.json + prompt-context.json (system prompt +
+    few-shot + bảng sửa lỗi) cho từng thương hiệu; cập nhật index/accuracy
+        ↓
+12. OCR lần sau nạp context mới (`loadPatterns` → `applyLearnedFixes`) → đọc đúng
+    hơn cho chính quán đó (retrain mô hình: ngoài phạm vi frontend)
 ```
+
+### Vòng lặp định kỳ (Cron/Action)
+
+`.github/workflows/ocr-training.yml` chạy `scripts/ocr-training/improve.mjs`, gọi
+module thuần `assets/js/coffee/training-batch.js`:
+
+- `rebuildPatterns(slug, samples)` — tái sinh pattern một cách **tất định** từ mọi
+  mẫu (không phụ thuộc thứ tự thao tác UI).
+- `buildPromptContext(slug, samples, patterns)` — sinh `prompt-context.json`
+  (system prompt tiếng Việt + few-shot + patterns + vietnameseFixes) để nạp vào
+  context của AI OCR.
+- `appendAccuracyLog` / `buildIndex` — ghi log độ chính xác và tổng hợp index; chỉ
+  ghi file khi nội dung **thực sự đổi** (không tạo commit rỗng mỗi ngày).
+
+Chạy thủ công tại máy: `npm run train:ocr`.
 
 ## 7. Kiến trúc module
 
@@ -170,6 +194,9 @@ data/ocr-training/
 | `training-history.js` | Danh sách lịch sử + bộ lọc |
 | `training-view.js` | Orchestrator workbench (markup + nối sự kiện) |
 | `training.js` | Học patterns + lưu mẫu (CMS/GitHub/tải file) |
+| `training-batch.js` | Hợp nhất theo lô: patterns + prompt-context + index (hàm thuần) |
+| `scripts/ocr-training/improve.mjs` | Runner đọc/ghi file cho vòng lặp Cron/Action |
+| `.github/workflows/ocr-training.yml` | Lịch chạy hàng ngày + commit context đã hợp nhất |
 
 ## 8. 3 cách push lên GitHub
 
@@ -194,13 +221,16 @@ Trên trang "Thêm/Sửa hoá đơn" cũng có khối **"🧪 Kết quả trích
 - `training-store.test.js` — lưu/đọc/cập nhật/xoá, phiên bản, bộ lọc.
 - `training.test.js` — `escapeRegex`, `generatePattern`, `similarity`/`findClosest`,
   `accuracyFromCount`, `nextSampleId`, `learnFromSample`, `applyLearnedFixes`.
+- `training-batch.test.js` — `rebuildPatterns`, `buildPromptContext`,
+  `appendAccuracyLog`, `buildIndex`, `consolidate`, `fixWithContext`.
 
 Chạy `npm test` (toàn bộ) và `npm run build:assets` (kiểm tra bundle Vite).
 
 ## 10. Phần phụ thuộc backend / ngoài phạm vi frontend
 
-- **Huấn luyện lại mô hình OCR:** chưa có pipeline fine-tune; UI chỉ lưu ground
-  truth + patterns và nói rõ điều này.
+- **Huấn luyện lại mô hình OCR:** chưa fine-tune trọng số mô hình; vòng lặp tự cải
+  thiện hiện dùng **prompt context** (regex patterns + bảng sửa lỗi + few-shot) sinh
+  tự động bởi Action hàng ngày và nạp lại trước mỗi lần OCR.
 - **Đồng bộ phiên training giữa nhiều thiết bị:** hiện lưu cục bộ (`localStorage`);
   chưa có API phiên phía server.
 - **Ghi vào DB:** cần CMS local đang chạy hoặc GitHub PAT hoặc commit file thủ công.
