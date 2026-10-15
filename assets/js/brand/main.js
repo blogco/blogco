@@ -12,28 +12,34 @@ const mountedRoots = new WeakSet();
 
 const COLOR_TOKENS = [
   {
-    name: 'Primary — Sembcorp Deep Teal',
+    name: 'Primary — Delivery Hero Red',
     token: '--blogco-primary',
-    hex: '#008375',
-    usage: 'Logo BlogCo, thanh tiêu đề chính, nút CTA chính, cột biểu đồ chính.',
+    hex: '#D82128',
+    usage: 'Logo BlogCo, nút CTA chính, highlight tiêu đề, cột/phân đoạn biểu đồ chủ đạo.',
   },
   {
-    name: 'Primary Hover — Deep Teal Dark',
+    name: 'Primary Hover — Deep Red',
     token: '--blogco-primary-hover',
-    hex: '#00685B',
-    usage: 'Trạng thái hover/active của nút chính, liên kết đang focus.',
+    hex: '#B51B21',
+    usage: 'Trạng thái hover/pressed của nút chính, liên kết đang focus.',
   },
   {
-    name: 'Secondary Accent — Bright Mint',
-    token: '--blogco-accent',
-    hex: '#00BFA5',
-    usage: 'Highlight từ khoá, đường viền active, chỉ số nổi bật, phân đoạn biểu đồ phụ.',
+    name: 'Dark Neutral — Charcoal',
+    token: '--blogco-dark-neutral',
+    hex: '#121212',
+    usage: 'Header/Navbar, tiêu đề H1/H2 và văn bản có độ tương phản cao.',
   },
   {
-    name: 'Neutral Background — Clean Light Gray',
+    name: 'Accent Background — Soft Red',
+    token: '--blogco-accent-bg',
+    hex: '#FFF0F1',
+    usage: 'Nền card thông báo, badge/tag nổi bật, trạng thái hover của bảng.',
+  },
+  {
+    name: 'Background — Off White',
     token: '--blogco-bg',
-    hex: '#F4F6F8',
-    usage: 'Nền trang, khoảng đệm giữa các khối nội dung.',
+    hex: '#FAFAFA',
+    usage: 'Nền trang giao diện sáng (Light Mode).',
   },
   {
     name: 'Surface — Card Background',
@@ -42,34 +48,42 @@ const COLOR_TOKENS = [
     usage: 'Nền card hiển thị nội dung, nền bảng biểu dữ liệu.',
   },
   {
-    name: 'Text — Charcoal Dark',
+    name: 'Text — Title / High Contrast',
     token: '--blogco-text-main',
-    hex: '#1A202C',
+    hex: '#121212',
     usage: 'Tiêu đề H1, H2, H3 và các nhãn quan trọng.',
   },
   {
-    name: 'Text — Dark Slate',
+    name: 'Text — Body',
     token: '--blogco-text-body',
-    hex: '#2D3748',
+    hex: '#333333',
     usage: 'Nội dung bài viết, đoạn văn bản chính.',
   },
   {
     name: 'Text — Muted / Secondary',
     token: '--blogco-text-muted',
-    hex: '#718096',
+    hex: '#6B7280',
     usage: 'Ngày tháng, tác giả, ghi chú phụ, chú thích.',
+  },
+  {
+    name: 'Border — Hairline',
+    token: '--blogco-border',
+    hex: '#E5E7EB',
+    usage: 'Viền mảnh phân tách card, bảng và các khối nội dung.',
   },
 ];
 
 const CSS_TOKENS = `:root {
-  --blogco-primary: #008375;
-  --blogco-primary-hover: #00685B;
-  --blogco-accent: #00BFA5;
-  --blogco-bg: #F4F6F8;
+  --blogco-primary: #D82128;
+  --blogco-primary-hover: #B51B21;
+  --blogco-accent-bg: #FFF0F1;
+  --blogco-dark-neutral: #121212;
+  --blogco-bg: #FAFAFA;
   --blogco-card-bg: #FFFFFF;
-  --blogco-text-main: #1A202C;
-  --blogco-text-body: #2D3748;
-  --blogco-text-muted: #718096;
+  --blogco-text-main: #121212;
+  --blogco-text-body: #333333;
+  --blogco-text-muted: #6B7280;
+  --blogco-border: #E5E7EB;
   --blogco-font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }`;
 
@@ -100,13 +114,13 @@ function renderHeader() {
   return `<header class="brand-hero">
     <p class="brand-eyebrow">BLOGCO · DESIGN SYSTEM</p>
     <h1 class="brand-hero__title" tabindex="-1">BlogCo Corporate Identity &amp; Brand Guidelines</h1>
-    <p class="brand-lead">Hệ thống nhận diện thương hiệu lấy cảm hứng từ ngôn ngữ thiết kế <em>Năng lượng sạch &amp; Hạ tầng bền vững</em>: tối giản, chuyên nghiệp, tin cậy. Trang này là nguồn tham chiếu duy nhất cho màu sắc, typography và các UI component dùng trên toàn bộ BlogCo.</p>
+    <p class="brand-lead">Hệ thống nhận diện thương hiệu lấy cảm hứng từ ngôn ngữ thiết kế của <em>Delivery Hero</em>: động lực, hiện đại, độ tương phản cao, tối ưu cho ứng dụng Tech/Food Delivery &amp; IR. Trang này là nguồn tham chiếu duy nhất cho màu sắc, typography và các UI component dùng trên toàn bộ BlogCo.</p>
     <div class="brand-lockups" aria-label="Mẫu logo BlogCo">
       <div class="brand-lockup brand-lockup--light">
         <span class="brand-lockup__mark" aria-hidden="true">◆</span>
         <span class="brand-lockup__word">BlogCo</span>
       </div>
-      <div class="brand-lockup brand-lockup--teal">
+      <div class="brand-lockup brand-lockup--red">
         <span class="brand-lockup__mark" aria-hidden="true">◆</span>
         <span class="brand-lockup__word">BlogCo</span>
       </div>
@@ -134,7 +148,7 @@ function renderColors() {
   return `<section class="brand-section" aria-labelledby="brand-colors">
     <p class="brand-section__index">01 · Color Palette</p>
     <h2 id="brand-colors">Bảng màu thương hiệu</h2>
-    <p class="brand-section__intro">Bảng màu lấy cảm hứng từ hệ màu Năng lượng sạch &amp; Hạ tầng bền vững của Sembcorp. Mỗi màu đi kèm mã HEX, RGB và phạm vi áp dụng.</p>
+    <p class="brand-section__intro">Bảng màu lấy cảm hứng từ nhận diện chuẩn của Delivery Hero (Đỏ · Đen · Trắng). Mỗi màu đi kèm mã HEX, RGB và phạm vi áp dụng.</p>
     <div class="brand-swatches">${COLOR_TOKENS.map(renderColorCard).join('')}</div>
   </section>`;
 }
@@ -159,13 +173,13 @@ function renderTypography() {
       <code>Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif</code>
     </div>
     <div class="brand-type-list">
-      ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #008375', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
-      ${typeRow('H2', '1.75rem (28px) · 600 · lh 1.3 · #1A202C', '<h2 class="brand-demo-h2">Hạ tầng bền vững cho tương lai</h2>')}
-      ${typeRow('H3', '1.25rem (20px) · 600 · lh 1.4 · #008375', '<h3 class="brand-demo-h3">Năng lượng sạch, vận hành thông minh</h3>')}
-      ${typeRow('Body', '1.0rem (16px) · 400 · lh 1.6 · #2D3748', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
-      ${typeRow('Link', 'Inherit body · #008375 · gạch chân 1px', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
-      ${typeRow('Blockquote', 'Body · viền trái 4px #00BFA5 · nền #F4F6F8', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
-      ${typeRow('Small', '0.875rem (14px) · 400 · #718096', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
+      ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #D82128', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
+      ${typeRow('H2', '1.75rem (28px) · 600 · lh 1.3 · #121212', '<h2 class="brand-demo-h2">Giao hàng nhanh, vận hành thông minh</h2>')}
+      ${typeRow('H3', '1.25rem (20px) · 600 · lh 1.4 · #D82128', '<h3 class="brand-demo-h3">Kết nối người dùng với mọi món ngon</h3>')}
+      ${typeRow('Body', '1.0rem (16px) · 400 · lh 1.6 · #333333', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
+      ${typeRow('Link', 'Inherit body · #D82128 · gạch chân 1px', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
+      ${typeRow('Blockquote', 'Body · viền trái 4px #D82128 · nền #FFF0F1', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
+      ${typeRow('Small', '0.875rem (14px) · 400 · #6B7280', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
     </div>
   </section>`;
 }
@@ -174,7 +188,7 @@ function renderComponents() {
   return `<section class="brand-section" aria-labelledby="brand-components">
     <p class="brand-section__index">03 · UI Components</p>
     <h2 id="brand-components">Thư viện thành phần giao diện</h2>
-    <p class="brand-section__intro">Các mẫu component tái sử dụng: nút bấm, card nội dung / thống kê và bảng dữ liệu.</p>
+    <p class="brand-section__intro">Các mẫu component tái sử dụng theo gam Đỏ · Đen · Trắng: nút bấm, card nội dung / thống kê và bảng dữ liệu.</p>
 
     <h3 class="brand-subtitle">Buttons</h3>
     <div class="brand-buttons">
@@ -189,9 +203,9 @@ function renderComponents() {
       <article class="brand-card brand-card--article">
         <div class="brand-card__thumb" aria-hidden="true"></div>
         <div class="brand-card__body">
-          <p class="brand-card__meta">KIẾN THỨC · 15/10/2026</p>
-          <h4 class="brand-card__title">Tối ưu năng lượng cho doanh nghiệp xây dựng</h4>
-          <p class="brand-card__text">Ứng dụng dữ liệu vận hành để cắt giảm chi phí và phát thải trong các dự án hạ tầng.</p>
+          <p class="brand-card__meta">TIN TỨC · 15/10/2026</p>
+          <h4 class="brand-card__title">Tối ưu vận hành giao hàng cho doanh nghiệp</h4>
+          <p class="brand-card__text">Ứng dụng dữ liệu vận hành để cắt giảm chi phí và tăng tốc độ giao hàng trên mọi khu vực.</p>
           <span class="brand-card__more">Đọc tiếp →</span>
         </div>
       </article>
