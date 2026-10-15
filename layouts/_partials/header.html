@@ -31,11 +31,9 @@
       <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>
         <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-coffee-menu" data-nav-key="coffee" data-nav-path="{{ $homeURL }}">☕ Cà phê <span aria-hidden="true">▾</span></button>
         <ul class="navbar__submenu" id="navbar-coffee-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/add">📄 Trích xuất hoá đơn PDF</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/manual-add">✍️ Nhập chi phí thủ công</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee">🧾 Danh sách hoá đơn</a></li>
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee">🧾 Danh sách chi phí</a></li>
+          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/add">✍️ Nhập chi phí thủ công</a></li>
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/stats">📊 Thống kê chi phí</a></li>
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/training">🧠 AI Training</a></li>
         </ul>
       </li>
       <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>

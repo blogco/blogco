@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import json
 import time
 from pathlib import Path
 
-from fastapi import Body, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -17,7 +16,6 @@ from cms.auth import (
 from cms.config import ROOT
 from cms.services.file_service import ALLOWED_SECTIONS, load_article, save_article, save_uploaded_image
 from cms.services.git_service import publish_article
-from cms.services.training_service import save_training_sample
 
 app = FastAPI(title="BlogCo CMS", docs_url=None, redoc_url=None)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
@@ -184,30 +182,3 @@ async def upload_image(
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     return JSONResponse({"url": url, "filename": path.name})
-
-
-# --- AI Training cho OCR -----------------------------------------------------
-# Trang #/coffee/training gọi các endpoint này khi chạy CMS local. Chúng ghi mẫu
-# ground truth vào data/ocr-training/<brand>/ rồi commit + push lên GitHub.
-
-
-@app.get("/training/index")
-def training_index() -> dict:
-    index_path = ROOT / "data" / "ocr-training" / "index.json"
-    try:
-        return json.loads(index_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {"brands": {}}
-
-
-@app.post("/training/save")
-def training_save(payload: dict = Body(...), session: dict = Depends(require_session)) -> dict:
-    brand = str(payload.get("brand", "")).strip()
-    sample = payload.get("sample") or {}
-    patterns = payload.get("patterns") or {}
-    message = str(payload.get("message", "")).strip()
-    try:
-        result = save_training_sample(brand, sample, patterns, message)
-    except (ValueError, RuntimeError, OSError) as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    return {"ok": True, **result}

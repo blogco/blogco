@@ -1,5 +1,5 @@
-// Renders the "Thêm / sửa hoá đơn cà phê" form and reads it back. Kept separate
-// from the router so the markup can be reused for add, edit and the OCR preview.
+// Renders the "Thêm / sửa giao dịch cà phê" form and reads it back. Kept separate
+// from the router so the markup can be reused for the edit and detail views.
 
 import { escapeHtml, toNumber } from './store.js';
 import { CATEGORY_LABELS, POPULAR_ITEMS } from './menu.js';
@@ -43,57 +43,15 @@ function itemSuggestions() {
   return `<datalist id="coffee-item-suggest">${POPULAR_ITEMS.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('')}</datalist>`;
 }
 
-export function renderOcrBlock(receipt = {}) {
-  const hasImage = Boolean(receipt.invoiceUrl);
-  const previewSrc = hasImage ? escapeHtml(receipt.invoiceUrl) : '';
-  return `<div class="coffee-invoice" data-invoice-block>
-    <div class="coffee-invoice__head">
-      <strong>📄 Hoá đơn PDF</strong>
-      <span class="coffee-badge coffee-badge--muted">PDF → JSON → điền form</span>
-    </div>
-    <label class="coffee-dropzone${hasImage ? ' has-image' : ''}" data-dropzone>
-      <input type="file" accept="application/pdf,.pdf,image/*" data-invoice-input hidden aria-label="Chọn file PDF hoá đơn">
-      ${hasImage ? `<img data-invoice-preview src="${previewSrc}" alt="Xem trước hoá đơn">` : '<img data-invoice-preview alt="Xem trước hoá đơn" hidden>'}
-      <span class="coffee-dropzone__hint"${hasImage ? ' hidden' : ''}>
-        <span aria-hidden="true">📄</span>
-        <span>Kéo file PDF hoá đơn vào đây hoặc bấm để chọn</span>
-        <small>PDF có lớp văn bản (hoá đơn điện tử / POS) · ảnh JPG-PNG vẫn hỗ trợ qua OCR</small>
-      </span>
-      <span class="coffee-invoice__loading" data-invoice-loading hidden>
-        <span class="coffee-spinner" aria-hidden="true"></span>
-        <span data-invoice-loading-text>Đang trích xuất hoá đơn…</span>
-      </span>
-    </label>
-    <div class="coffee-invoice__actions">
-      <button type="button" class="coffee-secondary-button" data-invoice-extract>📄 Trích xuất dữ liệu</button>
-      <button type="button" class="coffee-ghost-button" data-invoice-clear${hasImage ? '' : ' hidden'}>Xoá file</button>
-    </div>
-    <p class="coffee-invoice__status" data-invoice-status role="status" aria-live="polite"></p>
-    <details class="coffee-ocr-json" data-ocr-json hidden>
-      <summary>🧪 JSON chuẩn trích xuất được</summary>
-      <p class="coffee-ocr-json__note" data-ocr-json-note></p>
-      <pre class="coffee-ocr-json__pre" data-ocr-json-pre></pre>
-    </details>
-    <textarea class="coffee-invoice__text" name="ocrText" rows="3" placeholder="Văn bản trích xuất từ PDF sẽ hiện ở đây (bạn có thể sửa hoặc dán tay)">${value(receipt.ocrText)}</textarea>
-    <input type="hidden" name="invoiceUrl" value="${hasImage ? escapeHtml(receipt.invoiceUrl) : ''}" data-invoice-value>
-  </div>`;
-}
-
 export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = {}) {
   const today = new Date().toISOString().slice(0, 10);
   const items = receipt.items?.length ? receipt.items : [{}];
-  const title = mode === 'edit' ? 'Sửa hoá đơn' : 'Thêm hoá đơn';
+  const title = mode === 'edit' ? 'Sửa giao dịch' : 'Thêm giao dịch';
   const paymentOptions = [['', 'Chưa rõ'], ['cash', 'Tiền mặt'], ['card', 'Thẻ'], ['ewallet', 'Ví điện tử'], ['transfer', 'Chuyển khoản'], ['other', 'Khác']];
 
   return `<form id="coffee-receipt-form" class="coffee-card coffee-form" novalidate data-mode="${mode}">
     <input type="hidden" name="id" value="${value(receipt.id)}">
     ${itemSuggestions()}
-
-    <fieldset class="coffee-fieldset">
-      <legend>Hoá đơn</legend>
-      ${renderOcrBlock(receipt)}
-      <p class="coffee-muted">Tải file PDF hoá đơn để trích xuất tự động tên quán, món, số lượng, đơn giá, giảm giá và ngày giao dịch. Tổng tiền được tính lại từ danh sách món sau khi trừ giảm giá. Ảnh (JPG/PNG) vẫn được OCR nếu bạn chưa có PDF.</p>
-    </fieldset>
 
     <fieldset class="coffee-fieldset">
       <legend>Thông tin chung</legend>
@@ -160,7 +118,7 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
-      <button class="coffee-primary-button" type="submit">💾 ${title === 'Sửa hoá đơn' ? 'Cập nhật hoá đơn' : 'Lưu hoá đơn'}</button>
+      <button class="coffee-primary-button" type="submit">💾 ${title === 'Sửa giao dịch' ? 'Cập nhật giao dịch' : 'Lưu giao dịch'}</button>
     </div>
   </form>`;
 }
@@ -193,7 +151,5 @@ export function readReceiptForm(form) {
     vat: scalar('vat'),
     total: scalar('totalValue'),
     items: readItems(form),
-    invoiceUrl: scalar('invoiceUrl'),
-    ocrText: scalar('ocrText'),
   };
 }

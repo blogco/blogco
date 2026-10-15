@@ -1,9 +1,10 @@
-// Router + view layer for the "Chi phí cà phê" (Highlands Coffee spending) feature.
+// Router + view layer for the "Chi phí cà phê" (coffee spending) feature.
 //
 // Routes (hash based, mounted on the home page and dedicated pages):
 //   #/coffee            → danh sách + tìm kiếm + export/import
-//   #/coffee/add        → thêm hoá đơn (OCR Highlands Coffee)
-//   #/coffee/edit/:id   → sửa hoá đơn
+//   #/coffee/add        → nhập chi phí thủ công (Manual expense input)
+//   #/coffee/manual-add → alias của #/coffee/add
+//   #/coffee/edit/:id   → sửa giao dịch
 //   #/coffee/detail/:id → xem chi tiết
 //   #/coffee/stats      → thống kê chi phí đi cà phê
 
@@ -12,13 +13,9 @@ import {
   exportReceipts, importReceipts, readJsonFile, downloadCsv,
   escapeHtml, formatVnd, toNumber, PAYMENT_LABELS,
 } from './store.js';
-import { CATEGORY_LABELS, categoryLabel } from './menu.js';
+import { categoryLabel } from './menu.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats } from './stats.js';
-import { recognizeImage, isPdf, pdfToPreviewDataUrl, extractPdfText } from './ocr.js';
-import { buildReceiptJson, receiptJsonToForm } from './receipt-json.js';
-import { renderTrainingPage, mountTraining } from './training-view.js';
-import { loadPatterns, applyLearnedFixes } from './training.js';
 import {
   renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf, rowToItems,
 } from './manual.js';
@@ -161,7 +158,7 @@ function renderHistoryResults(state) {
 
   let list;
   if (!all.length) {
-    list = '<p class="coffee-empty">Chưa có hoá đơn nào. Bấm “Thêm hoá đơn” để bắt đầu thống kê chi phí đi cà phê.</p>';
+    list = '<p class="coffee-empty">Chưa có giao dịch nào. Bấm “Nhập chi phí thủ công” để bắt đầu thống kê chi phí đi cà phê.</p>';
   } else if (!filtered.length) {
     list = '<p class="coffee-empty">Không tìm thấy hoá đơn phù hợp với bộ lọc.</p>';
   } else {
@@ -193,12 +190,11 @@ function renderHistory(root) {
     <div class="coffee-page-heading coffee-page-heading--hero">
       <p class="coffee-eyebrow">BLOGCO · CHI PHÍ CÀ PHÊ</p>
       <h1 id="coffee-title" tabindex="-1">Chi phí đi cà phê</h1>
-      <p>Tải ảnh hoá đơn Highlands Coffee để OCR và thống kê chi phí. Dữ liệu chỉ lưu trên thiết bị này.</p>
+      <p>Ghi lại chi tiêu cà phê bằng bảng nhập tay nhanh gọn rồi xem thống kê. Dữ liệu chỉ lưu trên thiết bị này.</p>
     </div>
 
     <div class="coffee-toolbar">
-      <a class="coffee-primary-button" href="#/coffee/add">📄 Thêm hoá đơn (PDF)</a>
-      <a class="coffee-secondary-button" href="#/coffee/manual-add">🧾 Nhập chi phí thủ công</a>
+      <a class="coffee-primary-button" href="#/coffee/add">✍️ Nhập chi phí thủ công</a>
       <a class="coffee-secondary-button" href="#/coffee/stats">📊 Thống kê chi phí</a>
       <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
       <button type="button" class="coffee-secondary-button" data-import-trigger>⬆ Import</button>
@@ -236,19 +232,13 @@ function renderHistory(root) {
     <section class="coffee-card" aria-label="Danh sách hoá đơn">
       ${renderHistoryResults({ allReceipts: state.receipts })}
     </section>
-    <p class="coffee-disclaimer">Công cụ ghi chép cá nhân giúp bạn theo dõi chi tiêu cà phê. Số liệu do bạn nhập hoặc OCR từ ảnh — hãy kiểm tra lại trước khi tin dùng.</p>
+    <p class="coffee-disclaimer">Công cụ ghi chép cá nhân giúp bạn theo dõi chi tiêu cà phê. Số liệu do bạn nhập tay — hãy kiểm tra lại trước khi tin dùng.</p>
   </section>${toastMarkup()}`;
 }
 
 // ---------------------------------------------------------------------------
 // Detail view
 // ---------------------------------------------------------------------------
-
-function renderInvoiceView(url) {
-  const value = String(url || '').trim();
-  if (!/^(https?:|data:image\/|\/[^/]|\.\/)/i.test(value)) return '<p class="coffee-muted">Chưa có ảnh hoá đơn.</p>';
-  return `<a href="${escapeHtml(value)}" target="_blank" rel="noopener"><img src="${escapeHtml(value)}" alt="Ảnh hoá đơn" loading="lazy"></a>`;
-}
 
 function renderDetail(root, id) {
   const receipt = getReceiptById(id);
@@ -297,17 +287,12 @@ function renderDetail(root, id) {
       </dl>
 
       ${receipt.note ? `<h2 class="coffee-section-title">Ghi chú</h2><p>${escapeHtml(receipt.note)}</p>` : ''}
-
-      <h2 class="coffee-section-title">Ảnh hoá đơn</h2>
-      <div class="coffee-invoice-view">${renderInvoiceView(receipt.invoiceUrl)}</div>
-
-      ${receipt.ocrText ? `<details class="coffee-ocr-details"><summary>Nội dung OCR gốc</summary><pre>${escapeHtml(receipt.ocrText)}</pre></details>` : ''}
     </section>
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">← Danh sách</a>
       <a class="coffee-primary-button" href="#/coffee/edit/${escapeHtml(receipt.id)}">Sửa</a>
-      <button type="button" class="coffee-secondary-button" data-print>⬇ PDF / In</button>
+      <button type="button" class="coffee-secondary-button" data-print>🖨 In</button>
       <button type="button" class="coffee-ghost-button coffee-ghost-button--danger" data-delete-receipt="${escapeHtml(receipt.id)}">Xoá</button>
     </div>
   </section>${toastMarkup()}`;
@@ -326,7 +311,7 @@ function renderStats(root) {
 
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
     ${pageHeader('Thống kê chi phí & phân tích tài chính', 'Tổng hợp chi phí theo mùa, thương hiệu và nhóm đồ uống, kèm phân tích thói quen & sức khỏe bằng AI.')}
-    ${stats.count === 0 ? '<p class="coffee-empty">Chưa có dữ liệu để thống kê. Thêm một hoá đơn hoặc nhập chi phí thủ công để bắt đầu.</p>' : `
+    ${stats.count === 0 ? '<p class="coffee-empty">Chưa có dữ liệu để thống kê. Hãy nhập chi phí thủ công để bắt đầu.</p>' : `
     <div class="coffee-summary-grid">
       <div class="coffee-summary-card"><span>Tổng chi phí</span><strong>${escapeHtml(formatVnd(stats.totalSpend))}</strong></div>
       <div class="coffee-summary-card"><span>Số hoá đơn</span><strong>${stats.count}</strong></div>
@@ -361,13 +346,13 @@ function renderStats(root) {
 function renderFormPage(root, receiptId = '') {
   const receipt = receiptId ? getReceiptById(receiptId) : null;
   if (receiptId && !receipt) {
-    root.innerHTML = `<section class="coffee-screen">${pageHeader('Không tìm thấy', 'Hoá đơn cần sửa không tồn tại.')}</section>${toastMarkup()}`;
+    root.innerHTML = `<section class="coffee-screen">${pageHeader('Không tìm thấy', 'Giao dịch cần sửa không tồn tại.')}</section>${toastMarkup()}`;
     return;
   }
   const mode = receiptId ? 'edit' : 'add';
   const nextId = mode === 'edit' ? receiptId : 'cf-...';
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
-    ${pageHeader(mode === 'edit' ? 'Sửa hoá đơn cà phê' : 'Thêm hoá đơn cà phê', mode === 'edit' ? `Cập nhật thông tin cho ${nextId}.` : 'Tải file PDF hoá đơn để trích xuất tự động thành JSON và điền vào form.')}
+    ${pageHeader(mode === 'edit' ? 'Sửa giao dịch cà phê' : 'Thêm giao dịch cà phê', mode === 'edit' ? `Cập nhật thông tin cho ${nextId}.` : 'Nhập thông tin giao dịch cà phê.')}
     ${renderReceiptForm(receipt || {}, { mode })}
   </section>${toastMarkup()}`;
   const form = root.querySelector('#coffee-receipt-form');
@@ -424,217 +409,8 @@ function appendItem(form, item = {}) {
   updateCostDisplays(form);
 }
 
-function fillFieldIfEmpty(form, name, value) {
-  if (value === null || value === undefined || value === '') return false;
-  const field = form.querySelector(`[name="${name}"]`);
-  if (!field || String(field.value || '').trim()) return false;
-  field.value = value;
-  return true;
-}
-
-function setSelectIfEmpty(form, name, value) {
-  if (!value) return false;
-  const field = form.querySelector(`[name="${name}"]`);
-  if (!field || field.value) return false;
-  if (![...field.options].some((option) => option.value === value)) return false;
-  field.value = value;
-  return true;
-}
-
-function applyOcrResult(form, mapped) {
-  const filled = [];
-  const mark = (label, changed) => { if (changed) filled.push(label); };
-  mark('quán', fillFieldIfEmpty(form, 'store', mapped.store));
-  mark('địa chỉ', fillFieldIfEmpty(form, 'address', mapped.address));
-  mark('ngày', fillFieldIfEmpty(form, 'date', mapped.date));
-  mark('giờ', fillFieldIfEmpty(form, 'time', mapped.time));
-  mark('mã hoá đơn', fillFieldIfEmpty(form, 'orderCode', mapped.orderCode));
-  mark('khách hàng', fillFieldIfEmpty(form, 'customer', mapped.customer));
-  mark('thanh toán', setSelectIfEmpty(form, 'paymentMethod', mapped.paymentMethod));
-  if (mapped.discount) { const field = form.querySelector('[name="discount"]'); if (field && !field.value) { field.value = mapped.discount; mark('giảm giá', true); } }
-  if (mapped.vat) { const field = form.querySelector('[name="vat"]'); if (field && !field.value) { field.value = mapped.vat; mark('VAT', true); } }
-
-  if (Array.isArray(mapped.items) && mapped.items.length) {
-    const list = form.querySelector('[data-item-list]');
-    if (list) {
-      list.innerHTML = mapped.items.map((item, index) => renderItemRow(item, index)).join('');
-      filled.push(`${mapped.items.length} món`);
-    }
-  }
-
-  updateItemEmpty(form);
-  updateCostDisplays(form);
-
-  // Yêu cầu: tổng tiền LUÔN tính lại từ danh sách món sau khi trừ giảm giá.
-  // Nếu hoá đơn có in tổng khác, ghi lại để đối chiếu (không ghi đè tổng).
-  if (mapped.printedTotal !== null && mapped.printedTotal !== undefined) {
-    const totalInput = form.querySelector('[name="totalValue"]');
-    if (totalInput) totalInput.dataset.printedTotal = String(mapped.printedTotal);
-  }
-  return filled;
-}
-
 // ---------------------------------------------------------------------------
-// OCR wiring (image handling mirrors the health module)
-// ---------------------------------------------------------------------------
-
-function compressImage(file, maxDim = 1200, quality = 0.72) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const image = new Image();
-      image.onload = () => {
-        const scale = Math.min(1, maxDim / Math.max(image.width, image.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(image.width * scale);
-        canvas.height = Math.round(image.height * scale);
-        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      image.onerror = () => reject(new Error('Không đọc được ảnh.'));
-      image.src = String(reader.result);
-    };
-    reader.onerror = () => reject(new Error('Không đọc được file ảnh.'));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function handleInvoiceFile(block, file) {
-  const preview = block.querySelector('[data-invoice-preview]');
-  const hint = block.querySelector('.coffee-dropzone__hint');
-  const clear = block.querySelector('[data-invoice-clear]');
-  const valueInput = block.querySelector('[data-invoice-value]');
-  const status = block.querySelector('[data-invoice-status]');
-  block._pendingFile = file;
-  let dataUrl = '';
-  try {
-    dataUrl = isPdf(file) ? await pdfToPreviewDataUrl(file) : await compressImage(file);
-  } catch (error) {
-    if (status) status.textContent = `${error.message} Bạn vẫn có thể bấm “📄 Trích xuất dữ liệu”.`;
-  }
-  if (dataUrl && preview) { preview.src = dataUrl; preview.hidden = false; }
-  if (hint) hint.hidden = Boolean(dataUrl) || isPdf(file);
-  if (clear) clear.hidden = false;
-  block.querySelector('[data-dropzone]')?.classList.add('has-image');
-  if (valueInput) valueInput.value = dataUrl;
-  if (status) {
-    status.textContent = isPdf(file)
-      ? 'Đã nạp PDF. Bấm “📄 Trích xuất dữ liệu” để đọc hoá đơn.'
-      : 'Đã nạp ảnh. Bấm “📄 Trích xuất dữ liệu” để OCR.';
-  }
-}
-
-async function applyClearInvoice(block) {
-  const preview = block.querySelector('[data-invoice-preview]');
-  const hint = block.querySelector('.coffee-dropzone__hint');
-  const clear = block.querySelector('[data-invoice-clear]');
-  const valueInput = block.querySelector('[data-invoice-value]');
-  const status = block.querySelector('[data-invoice-status]');
-  block._pendingFile = null;
-  if (preview) { preview.src = ''; preview.hidden = true; }
-  if (hint) hint.hidden = false;
-  if (clear) clear.hidden = true;
-  block.querySelector('[data-dropzone]')?.classList.remove('has-image');
-  if (valueInput) valueInput.value = '';
-  if (status) status.textContent = 'Đã xoá file hoá đơn.';
-}
-
-// Trích xuất hoá đơn: PDF → text → JSON chuẩn → điền form. Ảnh vẫn dùng OCR để
-// lấy text rồi đi qua CÙNG một bộ parser JSON (một đường ống, một kết quả).
-async function runExtract(root, form, block) {
-  const input = block.querySelector('[data-invoice-input]');
-  const status = block.querySelector('[data-invoice-status]');
-  const textArea = block.querySelector('[name="ocrText"]');
-  const file = input?.files?.[0] || block._pendingFile;
-  if (!file) {
-    if (status) status.textContent = 'Hãy chọn file PDF hoá đơn trước khi trích xuất.';
-    return;
-  }
-  try {
-    let rawText = '';
-    if (isPdf(file)) {
-      if (status) status.textContent = 'Đang đọc văn bản từ PDF…';
-      const { text, totalPages } = await extractPdfText(file, {
-        onProgress: (message) => { if (status && message?.status) status.textContent = message.status; },
-      });
-      rawText = text;
-      if (!rawText.trim()) {
-        if (status) status.textContent = 'PDF này không có lớp văn bản (có thể là bản scan ảnh). Hãy dùng file PDF gốc hoặc tải ảnh để OCR.';
-        return;
-      }
-      if (status) status.textContent = `Đã đọc ${totalPages} trang PDF. Đang cấu trúc JSON…`;
-    } else {
-      // Ảnh: OCR lấy text rồi đi tiếp qua bộ parser JSON.
-      rawText = await recognizeImage(file, {
-        onProgress: (message) => {
-          if (status && message?.status) {
-            const percent = message.progress ? ` ${Math.round(message.progress * 100)}%` : '';
-            status.textContent = `OCR: ${message.status}${percent}`;
-          }
-        },
-      });
-      if (!rawText.trim()) {
-        if (textArea) textArea.value = rawText;
-        if (status) status.textContent = 'Không đọc được chữ nào từ ảnh. Hãy thử ảnh rõ hơn hoặc nhập tay.';
-        return;
-      }
-      // Áp bảng sửa lỗi tiếng Việt đã học (AI Training) trước khi parse.
-      try {
-        const { data: patterns } = await loadPatterns('highlands');
-        rawText = applyLearnedFixes(rawText, patterns?.vietnameseFixes || {});
-      } catch {
-        // best-effort: nếu không tải được patterns thì dùng text gốc.
-      }
-    }
-
-    if (textArea) textArea.value = rawText;
-    const json = buildReceiptJson(rawText);
-    const mapped = receiptJsonToForm(json);
-    const filled = applyOcrResult(form, mapped);
-    updateCostDisplays(form);
-    renderExtractPanel(block, json);
-
-    const totalEl = form.querySelector('[data-total-display]');
-    const totalLabel = totalEl ? totalEl.value : '';
-    let message = filled.length
-      ? `Đã điền: ${filled.join(', ')}. Tổng tính lại: ${totalLabel}.`
-      : 'Trích xuất xong nhưng chưa tìm thấy trường mới — bạn kiểm tra JSON bên dưới.';
-    if (json.printed_total !== null && json.printed_total !== json.total_amount) {
-      message += ` ⚠️ Tổng in trên hoá đơn lệch ${Math.abs(json.printed_total - json.total_amount).toLocaleString('vi-VN')} đ — đã tính lại theo danh sách món.`;
-    } else if (!json.items.length) {
-      message += ' ⚠️ Không nhận diện được món nào — kiểm tra lại văn bản.';
-    }
-    if (status) status.textContent = message;
-  } catch (error) {
-    if (status) status.textContent = `${error.message} Bạn có thể nhập tay.`;
-  }
-}
-
-function renderExtractPanel(block, json) {
-  const panel = block.querySelector('[data-ocr-json]');
-  const pre = block.querySelector('[data-ocr-json-pre]');
-  const note = block.querySelector('[data-ocr-json-note]');
-  if (!panel || !pre || !json) {
-    if (panel) panel.hidden = true;
-    return;
-  }
-  pre.textContent = JSON.stringify(json, null, 2);
-  if (note) {
-    const parts = [
-      `${json.items.length} món`,
-      `${formatVnd(json.total_amount)}`,
-      json.date ? formatDate(json.date) : 'chưa rõ ngày',
-    ];
-    if (json.discount_total) parts.push(`giảm ${formatVnd(json.discount_total)}`);
-    const confidence = { high: '✅ độ tin cậy cao', medium: '⚠️ cần kiểm tra', low: '❌ độ tin cậy thấp' }[json.confidence] || json.confidence;
-    parts.push(confidence);
-    note.textContent = parts.join(' · ');
-  }
-  panel.hidden = false;
-}
-
-// ---------------------------------------------------------------------------
-// Manual expense input (#/coffee/manual-add)
+// Manual expense input (#/coffee/add, #/coffee/manual-add)
 // ---------------------------------------------------------------------------
 
 function reindexManualRows(form) {
@@ -685,27 +461,20 @@ function appendManualRow(root, form) {
 function routeName(root) {
   if (location.hash.startsWith('#/coffee')) return location.hash.slice(1).replace(/\/$/, '') || '/coffee';
   const initial = root.dataset.initialRoute;
-  const map = { list: '/coffee', dashboard: '/coffee', history: '/coffee', add: '/coffee/add', stats: '/coffee/stats', training: '/coffee/training', 'manual-add': '/coffee/manual-add' };
+  const map = { list: '/coffee', dashboard: '/coffee', history: '/coffee', add: '/coffee/add', stats: '/coffee/stats', 'manual-add': '/coffee/manual-add' };
   return map[initial] || '/coffee';
-}
-
-function renderTraining(root) {
-  root.innerHTML = renderTrainingPage();
-  void mountTraining(root);
 }
 
 function showRoute(root) {
   const route = routeName(root);
   const [, , action = '', param = ''] = route.split('/');
-  const titles = { '': 'Chi phí đi cà phê', add: 'Thêm hoá đơn cà phê', edit: 'Sửa hoá đơn cà phê', detail: 'Chi tiết hoá đơn', stats: 'Thống kê chi phí cà phê', training: 'AI Training — dạy OCR hoá đơn', 'manual-add': 'Nhập chi phí thủ công' };
+  const titles = { '': 'Chi phí đi cà phê', add: 'Nhập chi phí thủ công', edit: 'Sửa giao dịch cà phê', detail: 'Chi tiết giao dịch', stats: 'Thống kê chi phí cà phê', 'manual-add': 'Nhập chi phí thủ công' };
   document.title = `${titles[action] || titles['']} | BlogCo`;
 
-  if (action === 'add') renderFormPage(root, '');
+  if (action === 'add' || action === 'manual-add') renderManualPage(root);
   else if (action === 'edit') renderFormPage(root, decodeURIComponent(param));
   else if (action === 'detail') renderDetail(root, decodeURIComponent(param));
   else if (action === 'stats') renderStats(root);
-  else if (action === 'training') renderTraining(root);
-  else if (action === 'manual-add') renderManualPage(root);
   else renderHistory(root);
 
   if (pendingToast) {
@@ -764,12 +533,6 @@ export function mountCoffeeApp(root) {
     }
     if (target.matches('[data-filter-month]')) { searchState.month = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-filter-store]')) { searchState.store = target.value; searchState.page = 1; refreshHistoryResults(root); }
-    if (target.matches('[data-invoice-input]')) {
-      const block = target.closest('[data-invoice-block]');
-      const file = target.files?.[0];
-      if (block && file) await handleInvoiceFile(block, file);
-      target.value = '';
-    }
     if (target.matches('[data-import-input]')) {
       const file = target.files?.[0];
       if (!file) return;
@@ -785,23 +548,6 @@ export function mountCoffeeApp(root) {
         target.value = '';
       }
     }
-  });
-
-  root.addEventListener('dragover', (event) => {
-    const zone = event.target.closest('[data-dropzone]');
-    if (zone) { event.preventDefault(); zone.classList.add('is-dragover'); }
-  });
-  root.addEventListener('dragleave', (event) => {
-    event.target.closest('[data-dropzone]')?.classList.remove('is-dragover');
-  });
-  root.addEventListener('drop', async (event) => {
-    const zone = event.target.closest('[data-dropzone]');
-    if (!zone) return;
-    event.preventDefault();
-    zone.classList.remove('is-dragover');
-    const file = event.dataTransfer?.files?.[0];
-    const block = zone.closest('[data-invoice-block]');
-    if (file && block) await handleInvoiceFile(block, file);
   });
 
   root.addEventListener('click', async (event) => {
@@ -856,18 +602,6 @@ export function mountCoffeeApp(root) {
       return;
     }
 
-    const extractButton = target.closest('[data-invoice-extract]');
-    if (extractButton) {
-      const block = extractButton.closest('[data-invoice-block]');
-      const form = target.closest('#coffee-receipt-form');
-      if (block && form) await runExtract(root, form, block);
-      return;
-    }
-    if (target.closest('[data-invoice-clear]')) {
-      await applyClearInvoice(target.closest('[data-invoice-block]'));
-      return;
-    }
-
     if (target.closest('[data-export]')) { exportReceipts(); return; }
     if (target.closest('[data-export-csv]')) { downloadCsv(); return; }
     if (target.closest('[data-import-trigger]')) { root.querySelector('[data-import-input]')?.click(); return; }
@@ -884,7 +618,7 @@ export function mountCoffeeApp(root) {
     const deleteButton = target.closest('[data-delete-receipt]');
     if (deleteButton) {
       const id = deleteButton.dataset.deleteReceipt;
-      if (window.confirm(`Xoá hoá đơn ${id} khỏi thiết bị này?`)) {
+      if (window.confirm(`Xoá giao dịch ${id} khỏi thiết bị này?`)) {
         removeReceipt(id);
         if (routeName(root).includes('/detail/')) location.hash = '#/coffee';
         else showRoute(root);
@@ -932,7 +666,7 @@ export function mountCoffeeApp(root) {
         if (!form.reportValidity()) return;
         const input = readReceiptForm(form);
         const record = saveReceipt(input, input.id);
-        pendingToast = `Đã lưu hoá đơn ${record.id} · ${record.store || 'cà phê'} · ${formatVnd(record.total)}.`;
+        pendingToast = `Đã lưu giao dịch ${record.id} · ${record.store || 'cà phê'} · ${formatVnd(record.total)}.`;
         searchState = { query: '', month: '', store: '', page: 1 };
         location.hash = '#/coffee';
         if (routeName(root) === '/coffee') showRoute(root);
@@ -960,4 +694,4 @@ export function mountCoffeeApp(root) {
   showRoute(root);
 }
 
-export { renderHistory, renderDetail, renderStats, renderFormPage, applyOcrResult };
+export { renderHistory, renderDetail, renderStats, renderFormPage };

@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "build:assets": "vite build",
-    "test": "node --test assets/js/**/*.test.js",
-    "train:ocr": "node scripts/ocr-training/improve.mjs"
+    "test": "node --test assets/js/**/*.test.js"
   },
   "dependencies": {
     "fuse.js": "7.5.0",

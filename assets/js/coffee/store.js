@@ -115,8 +115,6 @@ function normalizeReceipt(input = {}, existing = {}) {
     total: totals.total,
     paymentMethod: Object.prototype.hasOwnProperty.call(PAYMENT_LABELS, input.paymentMethod) ? input.paymentMethod : '',
     note: multiline(input.note, 600),
-    invoiceUrl: String(input.invoiceUrl ?? existing.invoiceUrl ?? ''),
-    ocrText: multiline(input.ocrText, 8000),
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -155,7 +153,7 @@ function writeState(state) {
     localStorage.setItem(BACKUP_KEY, serialized);
     localStorage.setItem(STORAGE_KEY, serialized);
   } catch {
-    throw new Error('Không thể lưu trên thiết bị này (có thể do dung lượng ảnh hoá đơn). Hãy export JSON và thử lại.');
+    throw new Error('Không thể lưu trên thiết bị này (có thể do dung lượng lưu trữ đã đầy). Hãy export JSON và thử lại.');
   }
   memoryCache = structuredClone(state);
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('coffee:data-changed'));

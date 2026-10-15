@@ -2,10 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyItem, normalizeName } from './menu.js';
 import {
-  parseMoney, parseDate, parseItemLine, parseHighlandsInvoice, parseHighlandsReceipt, fixVietnamese,
-  toGrayscale, stretchContrast, medianFilter, adaptiveThreshold, estimateSkewAngle,
-} from './ocr.js';
-import {
   computeReceiptTotals, toNumber, formatVnd,
   saveReceipt, getReceipts, getReceiptById, removeReceipt, importReceipts, validateReceipt,
 } from './store.js';
@@ -23,7 +19,7 @@ globalThis.localStorage = (() => {
   };
 })();
 
-test('classifyItem buckets Highlands drinks by keyword, ignoring accents', () => {
+test('classifyItem buckets drinks by keyword, ignoring accents', () => {
   assert.equal(classifyItem('Phin Sữa Đá'), 'coffee');
   assert.equal(classifyItem('bac xiu'), 'coffee');
   assert.equal(classifyItem('Trà Thạch Đào'), 'tea');
@@ -31,77 +27,6 @@ test('classifyItem buckets Highlands drinks by keyword, ignoring accents', () =>
   assert.equal(classifyItem('Bánh Croissant'), 'bakery');
   assert.equal(classifyItem('Nước suối'), 'other');
   assert.equal(normalizeName('Cà Phê Sữa'), 'ca phe sua');
-});
-
-test('parseMoney and parseDate understand Vietnamese formats', () => {
-  assert.equal(parseMoney('45.000 đ'), 45000);
-  assert.equal(parseMoney('1,200,000'), 1200000);
-  assert.equal(parseMoney(''), null);
-  assert.equal(parseDate('Ngày: 15/10/2026'), '2026-10-15');
-  assert.equal(parseDate('2026-09-02'), '2026-09-02');
-  assert.equal(parseDate('không có ngày'), '');
-});
-
-test('parseItemLine handles qty-first, qty-last and two-price lines', () => {
-  const a = parseItemLine('1  Phin Sữa Đá        45.000');
-  assert.equal(a.name, 'Phin Sữa Đá');
-  assert.equal(a.qty, 1);
-  assert.equal(a.amount, 45000);
-  assert.equal(a.category, 'coffee');
-
-  const b = parseItemLine('2  Trà Thạch Đào      50.000   100.000');
-  assert.equal(b.name, 'Trà Thạch Đào');
-  assert.equal(b.qty, 2);
-  assert.equal(b.unitPrice, 50000);
-  assert.equal(b.amount, 100000);
-
-  // Summary rows are never items.
-  assert.equal(parseItemLine('Tổng thanh toán    194.400'), null);
-  assert.equal(parseItemLine('Tiền mặt           200.000'), null);
-});
-
-test('parseHighlandsInvoice extracts store, date, items, amounts and payment', () => {
-  const text = `HIGHLANDS COFFEE
-Chi nhánh: Landmark 81
-Tầng 1, Vincom Landmark 81, P.22, Q. Bình Thạnh, TP.HCM
-Số HĐ: HD0000123
-Ngày: 15/10/2026   Giờ: 09:30
-Thu ngân: Ngọc
---------------------------------
-1  Phin Sữa Đá        45.000
-2  Trà Thạch Đào      50.000   100.000
-1  Bánh Croissant     39.000
---------------------------------
-Tổng tiền hàng        184.000
-Giảm giá              4.000
-VAT                   14.400
-Tổng thanh toán       194.400
-Tiền mặt              200.000
-Tiền thừa             5.600`;
-
-  const result = parseHighlandsInvoice(text);
-  assert.match(result.store, /Landmark/);
-  assert.match(result.address, /Vincom/);
-  assert.equal(result.orderCode, 'HD0000123');
-  assert.equal(result.date, '2026-10-15');
-  assert.equal(result.time, '09:30');
-  assert.equal(result.items.length, 3);
-  assert.equal(result.items.find((item) => item.name === 'Trà Thạch Đào').amount, 100000);
-  assert.equal(result.subtotal, 184000);
-  assert.equal(result.discount, 4000);
-  assert.equal(result.vat, 14400);
-  assert.equal(result.total, 194400);
-  assert.equal(result.paymentMethod, 'cash');
-});
-
-test('parseHighlandsInvoice derives the total when only items are printed', () => {
-  const text = `Highlands Coffee - Nguyễn Huệ
-1  Bạc Xỉu   35.000
-1  Americano 40.000`;
-  const result = parseHighlandsInvoice(text);
-  assert.equal(result.items.length, 2);
-  assert.equal(result.subtotal, 75000);
-  assert.equal(result.total, 75000);
 });
 
 test('computeReceiptTotals derives subtotal and grand total', () => {
@@ -160,127 +85,6 @@ test('computeCoffeeStats aggregates totals per month, store and category', () =>
   assert.equal(stats.byCategory.find((category) => category.category === 'coffee').total, 90000);
   assert.equal(stats.topItems[0].name, 'Phin sữa đá');
   assert.equal(stats.budget, 200000);
-});
-
-test('preprocess helpers clean a receipt image for OCR', () => {
-  // Grayscale: white stays bright, black stays dark.
-  const rgba = new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255]);
-  const gray = toGrayscale(rgba);
-  assert.equal(gray[0], 255);
-  assert.equal(gray[1], 0);
-
-  // Contrast stretch expands a narrow band towards the full range.
-  const flat = new Uint8ClampedArray([100, 110, 120, 130]);
-  const stretched = stretchContrast(flat);
-  assert.ok(stretched[3] > stretched[0]);
-  assert.equal(stretched[0], 0);
-  assert.equal(stretched[3], 255);
-
-  // Adaptive threshold keeps a small dark dot dark and background white.
-  const width = 30;
-  const height = 30;
-  const canvasGray = new Uint8ClampedArray(width * height).fill(200);
-  for (let y = 13; y <= 16; y += 1) for (let x = 13; x <= 16; x += 1) canvasGray[y * width + x] = 0;
-  const binary = adaptiveThreshold(canvasGray, width, height, { radius: 8, constant: 10 });
-  assert.equal(binary[15 * width + 15], 0);
-  assert.equal(binary[0], 255);
-
-  // Median filter removes an isolated speckle.
-  const noisy = new Uint8ClampedArray(width * height).fill(200);
-  noisy[15 * width + 15] = 0;
-  const denoised = medianFilter(noisy, width, height);
-  assert.equal(denoised[15 * width + 15], 200);
-});
-
-test('estimateSkewAngle reports horizontal text as 0 and tilts back into line', () => {
-  const width = 160;
-  const height = 160;
-  const horizontal = new Uint8ClampedArray(width * height).fill(255);
-  for (let y = 20; y < height; y += 12) for (let x = 10; x < width - 10; x += 1) horizontal[y * width + x] = 0;
-  assert.equal(estimateSkewAngle(horizontal, width, height), 0);
-
-  // Draw the same lines sloping down to the right by ~5 degrees.
-  const slope = Math.tan((5 * Math.PI) / 180);
-  const tilted = new Uint8ClampedArray(width * height).fill(255);
-  for (let base = 20; base < height; base += 12) {
-    for (let x = 10; x < width - 10; x += 1) {
-      const y = Math.round(base + (x - width / 2) * slope);
-      if (y >= 0 && y < height) tilted[y * width + x] = 0;
-    }
-  }
-  const angle = estimateSkewAngle(tilted, width, height);
-  // Rotating by this angle should undo the tilt.
-  assert.ok(Math.abs(angle - -5) <= 1, `expected ~-5°, got ${angle}`);
-});
-
-test('fixVietnamese repairs the common Tesseract misreads', () => {
-  assert.equal(fixVietnamese('Creck: 174294'), 'Check: 174294');
-  assert.equal(fixVietnamese('May: 15-10-2026'), 'Ngay: 15-10-2026');
-  assert.equal(fixVietnamese('Tae tim: 100.200'), 'Thanh tien: 100.200');
-  assert.equal(fixVietnamese('Tog tien: 100.200'), 'Tong tien: 100.200');
-  assert.equal(fixVietnamese('Thu rean: A'), 'Thu ngan: A');
-  assert.equal(fixVietnamese('Payoo Bark Card 100.200'), 'Payoo Bank Card 100.200');
-  assert.equal(fixVietnamese('Xoyen Ouy Khang'), 'Nguyen Duy Khang');
-});
-
-test('parseHighlandsReceipt handles the real garbled Highlands invoice by region', () => {
-  // Reconstructed OCR output for the 15-10-2026 Highlands invoice (vùng A–I).
-  const raw = `HIGHLANDS COFFEE
-gGHựi 1B Hg tag, Phuong Cho Lon, TP.HN
-SĐT: 028.7301.6978
-ShopID: 1039
-Hoa Don Thanh Toan Pager: 13
-In Store
-Creck: 174294 POS01
-May: 15-10-2026 06:52
-Thu rean: Thu Ngan ca sang 1
-1 Matchadi Latte 0 L 69.000
--Ecoce Coupon giae -13.800
-1 Y tt 45.000
-Tae tim: 100.200
-Tog tien: 100.200
-Payoo Bark Card 100.200
-Xoyen Ouy Khang
-* Chia sey kien cua bun vôi chưng *
-custonerseryicethighlandscof fee.com.vn`;
-
-  const receipt = parseHighlandsReceipt(raw);
-  assert.equal(receipt.checkNo, '174294');
-  assert.equal(receipt.datetime, '15-10-2026 06:52');
-  assert.equal(receipt.cashier, 'Thu Ngan ca sang 1');
-  assert.equal(receipt.items.length, 2);
-  assert.equal(receipt.items[0].name, 'Matcha Latte Da L');
-  assert.equal(receipt.items[0].price, 69000);
-  assert.equal(receipt.items[0].discount, -13800);
-  assert.equal(receipt.items[1].name, 'Banh Dua');
-  assert.equal(receipt.items[1].price, 45000);
-  assert.equal(receipt.subtotal, 100200);
-  assert.equal(receipt.total, 100200);
-  assert.equal(receipt.payment, 'Payoo Bank Card');
-  assert.equal(receipt.paymentAmount, 100200);
-  assert.equal(receipt.customer, 'Nguyen Duy Khang');
-
-  // The payment row and the discount row must NOT be items.
-  assert.equal(receipt.items.some((item) => /payoo/i.test(item.name)), false);
-  assert.equal(receipt.items.some((item) => /coupon|ecode/i.test(item.name)), false);
-});
-
-test('parseHighlandsInvoice maps the same invoice into the legacy app shape', () => {
-  const raw = `HIGHLANDS COFFEE
-1 Matchadi Latte 0 L 69.000
--Ecoce Coupon giae -13.800
-1 Y tt 45.000
-Tae tim: 100.200
-Tog tien: 100.200
-Payoo Bark Card 100.200`;
-  const result = parseHighlandsInvoice(raw);
-  assert.equal(result.items.length, 2);
-  assert.equal(result.items[0].name, 'Matcha Latte Da L');
-  assert.equal(result.items[0].amount, 55200); // 69.000 − 13.800
-  assert.equal(result.items[1].amount, 45000);
-  assert.equal(result.subtotal, 100200);
-  assert.equal(result.total, 100200);
-  assert.equal(result.paymentMethod, 'card'); // Payoo Bank Card
 });
 
 test('filterReceipts searches by store, order code and item name', () => {
