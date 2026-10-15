@@ -42,6 +42,8 @@ function syncActiveNavigation() {
 }
 
 if (header && menu && toggle) {
+  const desktopNav = window.matchMedia('(min-width: 1025px)');
+
   const closeDropdowns = () => {
     header.querySelectorAll('[data-nav-dropdown].is-open').forEach((item) => {
       item.classList.remove('is-open');
@@ -54,6 +56,9 @@ if (header && menu && toggle) {
     const dropdownToggle = event.target.closest('.navbar__link--dropdown');
     if (dropdownToggle) {
       event.preventDefault();
+      // Desktop: mở/đóng bằng hover (CSS), không giữ trạng thái .is-open.
+      if (desktopNav.matches) return;
+      // Mobile: bấm để mở/đóng accordion, chỉ 1 cái mở tại một thời điểm.
       const item = dropdownToggle.closest('[data-nav-dropdown]');
       const willOpen = !item.classList.contains('is-open');
       closeDropdowns();
@@ -67,6 +72,30 @@ if (header && menu && toggle) {
       setMenuOpen(false);
       closeDropdowns();
     }
+  });
+
+  // Desktop: giữ aria-expanded đồng bộ khi hover/focus (mở/đóng do CSS quyết định).
+  header.querySelectorAll('[data-nav-dropdown]').forEach((item) => {
+    const btn = item.querySelector('.navbar__link--dropdown');
+    if (!btn) return;
+    const setExpanded = (value) => btn.setAttribute('aria-expanded', String(value));
+    item.addEventListener('mouseenter', () => {
+      if (!desktopNav.matches) return;
+      // Đảm bảo chỉ 1 dropdown mở: bỏ focus của các dropdown khác (nếu có).
+      header.querySelectorAll('[data-nav-dropdown]').forEach((other) => {
+        if (other !== item) other.querySelector('.navbar__link--dropdown')?.blur();
+      });
+      setExpanded(true);
+    });
+    item.addEventListener('mouseleave', () => {
+      if (!desktopNav.matches) return;
+      setExpanded(false);
+      if (document.activeElement === btn) btn.blur();
+    });
+    item.addEventListener('focusin', () => { if (desktopNav.matches) setExpanded(true); });
+    item.addEventListener('focusout', () => {
+      if (desktopNav.matches && !item.contains(document.activeElement)) setExpanded(false);
+    });
   });
   document.addEventListener('pointerdown', (event) => {
     if (!header.contains(event.target)) {

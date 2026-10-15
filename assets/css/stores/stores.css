@@ -412,6 +412,26 @@ body.stores-route .main {
   color: #0082f0 !important;
 }
 
+/* Desktop: rê chuột vào là mở, rời chuột là tự đóng (không dùng click nên
+   không bao giờ có 2 dropdown mở cùng lúc). :focus-within giữ cho bàn phím. */
+@media (min-width: 1025px) {
+  .navbar__dropdown:hover .navbar__submenu,
+  .navbar__dropdown:focus-within .navbar__submenu {
+    display: block;
+  }
+
+  /* Cầu nối trong suốt phủ khe 8px + phần canh giữa, để khi rê chuột từ nút
+     xuống panel menu không bị tắt giữa đường. */
+  .navbar__dropdown::after {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: calc(8px + (var(--nav-height, 64px) - 40px) / 2);
+    content: "";
+  }
+}
+
 @media (max-width: 1024px) {
   .navbar__dropdown {
     width: 100%;
