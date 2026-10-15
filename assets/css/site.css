@@ -1,13 +1,10 @@
 @import "tailwindcss";
 @import "./water/water.css";
 @import "./health/health.css";
-@import "./stores/stores.css";
 @import "./coffee/coffee.css";
 @import "./brand.css";
 @import "./brand/brand-guidelines.css";
 @import "./github-actions.css";
-@import "./lessons/lessons.css";
-@import "./lessons/pdf-slides.css";
 @import "./table.css";
 
 @theme {

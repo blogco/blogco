@@ -2,11 +2,7 @@
   <nav class="header-nav" aria-label="Điều hướng chính">
     {{- $page := . -}}
     {{- $homeURL := site.Home.RelPermalink -}}
-    {{- $storesURL := "cua-hang/" | relURL -}}
-    {{- $lessonsURL := "giao-an/" | relURL -}}
     {{- $coffeeURL := "ca-phe/" | relURL -}}
-    {{- $isStores := hasPrefix $page.RelPermalink $storesURL -}}
-    {{- $isLessons := hasPrefix $page.RelPermalink $lessonsURL -}}
     {{- $isCoffee := hasPrefix $page.RelPermalink $coffeeURL -}}
     <a class="logo blogco-brand navbar__logo" href="{{ $homeURL }}" aria-label="BlogCo — trang chủ"><span class="navbar__logo-mark" aria-hidden="true">◆</span>Blog<span class="navbar__logo-accent">Co</span></a>
     <button class="navbar__toggle" type="button" aria-label="Mở menu điều hướng" aria-controls="blogco-primary-menu" aria-expanded="false">
@@ -28,18 +24,6 @@
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee">🧾 Danh sách chi phí</a></li>
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/add">✍️ Nhập chi phí thủ công</a></li>
           <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/coffee/stats">📊 Thống kê chi phí</a></li>
-        </ul>
-      </li>
-      <li class="navbar__dropdown{{ if $isStores }} is-active{{ end }}" data-nav-dropdown>
-        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-stores-menu" data-nav-key="stores" data-nav-path="{{ $storesURL }}">🏪 Cửa hàng <span aria-hidden="true">▾</span></button>
-        <ul class="navbar__submenu" id="navbar-stores-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/stores/add">＋ Nhập dữ liệu cửa hàng</a></li>
-        </ul>
-      </li>
-      <li class="navbar__dropdown{{ if $isLessons }} is-active{{ end }}" data-nav-dropdown>
-        <button class="navbar__link navbar__link--dropdown" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="navbar-lessons-menu" data-nav-key="lessons" data-nav-path="{{ $lessonsURL }}">📚 Giáo án <span aria-hidden="true">▾</span></button>
-        <ul class="navbar__submenu" id="navbar-lessons-menu" role="menu">
-          <li><a class="navbar__submenu-link" role="menuitem" href="{{ $homeURL }}#/lessons/typing">⌨️ Tin học tiếng Hàn</a></li>
         </ul>
       </li>
       <li><a class="navbar__link" href="{{ $homeURL }}#/brand-guidelines" data-nav-key="brand" data-nav-path="{{ $homeURL }}">🎨 Brand</a></li>

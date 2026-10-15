@@ -8,8 +8,6 @@ import './github-actions.js';
 
 let waterAppPromise;
 let healthAppPromise;
-let storesAppPromise;
-let lessonsAppPromise;
 let coffeeAppPromise;
 let brandAppPromise;
 
@@ -37,32 +35,6 @@ function syncHealthRoute() {
   if (!active) return;
   healthAppPromise ??= import('./health/main.js');
   void healthAppPromise.then(({ mountHealthApp }) => mountHealthApp(root));
-}
-
-function syncStoresRoute() {
-  const root = document.querySelector('[data-stores-app]');
-  if (!root) return;
-  const hashRoute = location.hash.startsWith('#/stores');
-  const directRoute = Boolean(root.dataset.initialRoute);
-  const active = hashRoute || directRoute;
-  root.hidden = !active;
-  document.body.classList.toggle('stores-route', active);
-  if (!active) return;
-  storesAppPromise ??= import('./stores/main.js');
-  void storesAppPromise.then(({ mountStoresApp }) => mountStoresApp(root));
-}
-
-function syncLessonsRoute() {
-  const root = document.querySelector('[data-lessons-app]');
-  if (!root) return;
-  const hashRoute = location.hash.startsWith('#/lessons');
-  const directRoute = Boolean(root.dataset.initialRoute);
-  const active = hashRoute || directRoute;
-  root.hidden = !active;
-  document.body.classList.toggle('lessons-route', active);
-  if (!active) return;
-  lessonsAppPromise ??= import('./lessons/main.js');
-  void lessonsAppPromise.then(({ mountLessonsApp }) => mountLessonsApp(root));
 }
 
 function syncCoffeeRoute() {
@@ -94,14 +66,10 @@ function syncBrandRoute() {
 
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
-window.addEventListener('hashchange', syncStoresRoute);
-window.addEventListener('hashchange', syncLessonsRoute);
 window.addEventListener('hashchange', syncCoffeeRoute);
 window.addEventListener('hashchange', syncBrandRoute);
 syncWaterRoute();
 syncHealthRoute();
-syncStoresRoute();
-syncLessonsRoute();
 syncCoffeeRoute();
 syncBrandRoute();
 document.querySelectorAll('[data-blog-feature]').forEach((element) => {

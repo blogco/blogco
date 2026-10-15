@@ -54,10 +54,9 @@ body {
   line-height: var(--lh-body);
 }
 
-/* Keep every text weight at or above 500 while leaving the category bar,
-   the lesson/slide app and the coffee expense module intact (they define
-   their own weight/type scale). */
-body *:not(svg):not(svg *):not(:where(.category-bar, .category-bar *, .lessons-app, .lessons-app *, .pdf-export-root, .pdf-export-root *, .coffee-app-container, .coffee-app-container *)) {
+/* Keep every text weight at or above 500 while leaving the category bar
+   and the coffee expense module intact (it defines its own type scale). */
+body *:not(svg):not(svg *):not(:where(.category-bar, .category-bar *, .coffee-app-container, .coffee-app-container *)) {
   font-weight: 500 !important;
 }
 
@@ -94,8 +93,8 @@ body .article-content h3 {
 body strong,
 body b { font-weight: 700 !important; }
 
-body p:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *, .coffee-app-container, .coffee-app-container *)),
-body li:not(:where(.pdf-export-root, .pdf-export-root *, .pdf-slide, .pdf-slide *, .coffee-app-container, .coffee-app-container *)),
+body p:not(:where(.coffee-app-container, .coffee-app-container *)),
+body li:not(:where(.coffee-app-container, .coffee-app-container *)),
 body .main,
 body .article-content,
 body .posts-index__summary {
