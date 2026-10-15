@@ -20,6 +20,7 @@ import {
 } from './store.js';
 import { pickThumbnail } from './thumbnail.js';
 import { escapeHtml, plainTextToHtml, sanitizePastedHtml, cleanMarkdown } from './rich.js';
+import { scoreArticle } from './score.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 
@@ -97,6 +98,7 @@ function renderEditor(root) {
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>💾 Lưu &amp; Sync GitHub</button>
           <button type="button" class="blog-ghost" data-blog-preview-open>👁️ Xem trước</button>
+          <button type="button" class="blog-ghost blog-ghost--ai" data-blog-score-open>🤖 Chấm điểm AI</button>
           <button type="button" class="blog-ghost" data-blog-clear>🗑️ Xoá nháp</button>
         </div>
         <p class="blog-status" data-blog-status role="status" aria-live="polite"></p>
@@ -159,6 +161,27 @@ function renderEditor(root) {
           </figure>
           <div class="blog-preview-modal__content md-content" data-blog-preview-content></div>
         </article>
+      </div>
+    </div>
+
+    <div class="blog-score-overlay" data-blog-score-overlay hidden>
+      <div class="blog-score-modal" role="dialog" aria-modal="true" aria-labelledby="blog-score-label">
+        <div class="blog-score-modal__head">
+          <span id="blog-score-label">🤖 Chấm điểm AI</span>
+          <button type="button" class="blog-ghost blog-ghost--sm" data-blog-score-close>✖️ Đóng</button>
+        </div>
+        <div class="blog-score-modal__body">
+          <div class="blog-score-hero">
+            <span class="blog-score-hero__value" data-blog-score-value>—</span>
+            <span class="blog-score-hero__max">/ 5 điểm</span>
+          </div>
+          <p class="blog-score-hero__verdict" data-blog-score-verdict></p>
+          <div class="blog-score-cats" data-blog-score-cats></div>
+          <div class="blog-score-tips">
+            <h3 class="blog-score-tips__title">Gợi ý để đạt 5/5</h3>
+            <ul class="blog-score-tips__list" data-blog-score-tips></ul>
+          </div>
+        </div>
       </div>
     </div>
   </section>`;
@@ -393,6 +416,50 @@ function closePreview(root) {
   if (overlay) overlay.hidden = true;
 }
 
+// ---------------------------------------------------------------------------
+// AI scoring panel
+// ---------------------------------------------------------------------------
+
+function scoreLevel(score) {
+  if (score >= 4) return 'is-good';
+  if (score >= 3) return 'is-mid';
+  return 'is-low';
+}
+
+function openScore(root) {
+  const overlay = root.querySelector('[data-blog-score-overlay]');
+  if (!overlay) return;
+  const form = readForm(root);
+  const result = scoreArticle({ title: form.title, markdown: markdownFromHtml(form.html) });
+
+  overlay.querySelector('[data-blog-score-value]').textContent = result.score.toFixed(1);
+  const verdict = overlay.querySelector('[data-blog-score-verdict]');
+  verdict.textContent = result.verdict;
+  verdict.dataset.level = scoreLevel(result.score).replace('is-', '');
+
+  overlay.querySelector('[data-blog-score-cats]').innerHTML = result.categories.map((cat) => `
+    <article class="blog-score-cat ${scoreLevel(cat.score)}">
+      <div class="blog-score-cat__head">
+        <span class="blog-score-cat__label">${escapeHtml(cat.label)}</span>
+        <span class="blog-score-cat__score">${cat.score.toFixed(1)}<small>/5</small></span>
+      </div>
+      <div class="blog-score-cat__bar"><span style="width:${(cat.score / 5) * 100}%"></span></div>
+      <ul class="blog-score-cat__notes">${cat.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>
+    </article>`).join('');
+
+  const tips = result.suggestions.length
+    ? result.suggestions
+    : ['Tuyệt vời! Bài viết đã đạt gần như tối đa các tiêu chí.'];
+  overlay.querySelector('[data-blog-score-tips]').innerHTML = tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
+
+  overlay.hidden = false;
+}
+
+function closeScore(root) {
+  const overlay = root.querySelector('[data-blog-score-overlay]');
+  if (overlay) overlay.hidden = true;
+}
+
 async function onSave(root, state) {
   const form = readForm(root);
   const body = markdownFromHtml(form.html);
@@ -497,6 +564,9 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       if (event.target.closest('[data-blog-preview-open]')) { openPreview(root, state); return; }
       if (event.target.closest('[data-blog-preview-close]')) { closePreview(root); return; }
       if (event.target.closest('[data-blog-preview-overlay]') && !event.target.closest('.blog-preview-modal')) { closePreview(root); return; }
+      if (event.target.closest('[data-blog-score-open]')) { openScore(root); return; }
+      if (event.target.closest('[data-blog-score-close]')) { closeScore(root); return; }
+      if (event.target.closest('[data-blog-score-overlay]') && !event.target.closest('.blog-score-modal')) { closeScore(root); return; }
       if (event.target.closest('[data-blog-clear]')) {
         if (window.confirm('Xoá bản nháp đang soạn trên thiết bị này?')) {
           root.querySelector('[data-blog-title]').value = '';
