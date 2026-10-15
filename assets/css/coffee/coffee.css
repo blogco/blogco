@@ -389,7 +389,7 @@ body.coffee-route .category-bar { display: none; }
 .coffee-manual-total strong { color: var(--coffee-brown-dark); font-variant-numeric: tabular-nums; }
 
 .coffee-manual-wrap { overflow-x: auto; border: 1px solid var(--coffee-border); border-radius: 14px; background: #fff; box-shadow: 0 10px 26px rgba(111, 78, 55, .08); }
-.coffee-manual-table { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; }
+.coffee-manual-table { width: 100%; min-width: 920px; border-collapse: separate; border-spacing: 0; }
 .coffee-manual-table th,
 .coffee-manual-table td { padding: .35rem .5rem; text-align: left; }
 
@@ -418,6 +418,7 @@ body.coffee-route .category-bar { display: none; }
 .coffee-manual-cell--index { width: 3rem; color: #166534; font-weight: 800; text-align: center; }
 .coffee-manual-cell--amount { width: 11rem; }
 .coffee-manual-cell--season { width: 8.5rem; white-space: nowrap; }
+.coffee-manual-cell--items { min-width: 13rem; }
 .coffee-manual-cell--action { width: 3.5rem; text-align: right; }
 
 .coffee-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: 9px; color: var(--coffee-ink); background: transparent; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
@@ -432,6 +433,59 @@ body.coffee-route .category-bar { display: none; }
 .coffee-manual-remove { min-height: 36px; min-width: 36px; padding: .25rem .5rem; }
 .coffee-manual-hint { margin: 0 !important; color: var(--coffee-muted) !important; font-size: .86rem; }
 
+/* AI Insights (#/coffee/stats) ---------------------------------------------- */
+.coffee-ai-insights { margin-top: 1.5rem; }
+.coffee-ai-insights__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: 1rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid #bbf7d0;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #f0fdf4, #ecfdf5 60%, #fff);
+  box-shadow: 0 12px 32px rgba(21, 128, 61, .08);
+}
+.coffee-ai-insights__head h2 { margin: 0 0 .25rem; }
+.coffee-ai-insights__head > div > p:last-child { margin: 0; }
+
+.coffee-insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.coffee-insight-card { margin: 1rem 0; }
+.coffee-insight-card__title { margin: 0 0 .6rem; font-size: 1.02rem; }
+.coffee-insight-card__title--sub { margin-top: 1rem; padding-top: .7rem; border-top: 1px dashed var(--coffee-border); font-size: .95rem; }
+
+.coffee-insight-list { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
+.coffee-insight-list li { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; padding-bottom: .4rem; border-bottom: 1px solid #efe4d6; }
+.coffee-insight-list li:last-child { border-bottom: 0; }
+.coffee-insight-list__name { font-weight: 600; }
+.coffee-insight-list strong { color: var(--coffee-brown-dark); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.coffee-insight-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+.coffee-insight-health { border-color: #bbf7d0; }
+.coffee-insight-alerts { display: grid; gap: .6rem; margin: 0; padding: 0; list-style: none; }
+.coffee-insight-alert {
+  display: flex;
+  gap: .6rem;
+  align-items: flex-start;
+  padding: .7rem .85rem;
+  border: 1px solid var(--coffee-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: .92rem;
+  line-height: 1.5;
+}
+.coffee-insight-alert__icon { font-size: 1.15rem; line-height: 1.3; }
+.coffee-insight-alert.is-warning { border-color: #fdba74; background: #fff7ed; color: #7c2d12 !important; }
+.coffee-insight-alert.is-info { border-color: #fde68a; background: #fffbeb; color: #92400e !important; }
+.coffee-insight-alert.is-good { border-color: #bbf7d0; background: #f0fdf4; color: #166534 !important; }
+
+.coffee-insight-alt { display: grid; gap: .4rem; margin: 0; padding-left: 1.2rem; }
+.coffee-insight-alt li { line-height: 1.5; }
+.coffee-insight-note { margin: .9rem 0 0 !important; color: var(--coffee-muted) !important; font-size: .82rem; }
+
 /* Responsive ---------------------------------------------------------------- */
 @media (max-width: 1023px) {
   .coffee-training-grid { grid-template-columns: 1fr; }
@@ -439,6 +493,7 @@ body.coffee-route .category-bar { display: none; }
 }
 @media (max-width: 860px) {
   .coffee-stats-grid { grid-template-columns: 1fr; }
+  .coffee-insight-grid { grid-template-columns: 1fr; }
   .coffee-item-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .coffee-item-row .coffee-field--name { grid-column: 1 / -1; }
   .coffee-item-remove { grid-column: 1 / -1; justify-self: start; }

@@ -2,7 +2,7 @@
 // from the router so the markup can be reused for add, edit and the OCR preview.
 
 import { escapeHtml, toNumber } from './store.js';
-import { CATEGORY_LABELS } from './menu.js';
+import { CATEGORY_LABELS, POPULAR_ITEMS } from './menu.js';
 
 function value(field, fallback = '') {
   return field === null || field === undefined ? fallback : escapeHtml(field);
@@ -40,13 +40,7 @@ export function renderItemRow(item = {}, index = 0) {
 }
 
 function itemSuggestions() {
-  const suggestions = [
-    'Phin sữa đá', 'Phin đen đá', 'Bạc xỉu', 'Cà phê sữa', 'Americano', 'Latte', 'Cappuccino', 'Espresso', 'Mocha', 'Caramel Macchiato', 'Cold Brew',
-    'Trà sen vàng', 'Trà thạch đào', 'Trà xanh', 'Trà đen', 'Trà sữa', 'Oolong',
-    'Freeze trà xanh', 'Freeze sô-cô-la', 'Sinh tố xoài', 'Đá xay cà phê',
-    'Bánh croissant', 'Bánh mì', 'Muffin', 'Cookies', 'Brownie',
-  ];
-  return `<datalist id="coffee-item-suggest">${suggestions.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('')}</datalist>`;
+  return `<datalist id="coffee-item-suggest">${POPULAR_ITEMS.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('')}</datalist>`;
 }
 
 export function renderOcrBlock(receipt = {}) {

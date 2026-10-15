@@ -15,6 +15,15 @@ export const CATEGORY_LABELS = {
 
 export const CATEGORY_ORDER = ['coffee', 'tea', 'freeze', 'bakery', 'other'];
 
+// Tên món phổ biến — dùng cho datalist gợi ý ở form nhập tay và form hoá đơn.
+export const POPULAR_ITEMS = [
+  'Phin sữa đá', 'Phin đen đá', 'Bạc xỉu', 'Cà phê sữa', 'Cà phê đen', 'Americano', 'Latte', 'Cappuccino', 'Espresso', 'Mocha', 'Caramel Macchiato', 'Cold Brew', 'Matcha Latte',
+  'Trà sen vàng', 'Trà thạch đào', 'Trà xanh', 'Trà đen', 'Trà sữa', 'Oolong', 'Trà atiso',
+  'Freeze trà xanh', 'Freeze sô-cô-la', 'Sinh tố xoài', 'Đá xay cà phê', 'Smoothie',
+  'Bánh croissant', 'Bánh mì', 'Muffin', 'Cookies', 'Brownie', 'Bánh dừa', 'Tiramisu',
+  'Nước suối', 'Nước cam', 'Nước ép trái cây', 'Nước dừa',
+];
+
 // Ordered so more specific drinks win over generic words (e.g. "Freeze Trà
 // Xanh" is a blend, not a plain tea).
 const RULES = [

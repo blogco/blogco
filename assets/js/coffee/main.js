@@ -20,8 +20,9 @@ import { buildReceiptJson, receiptJsonToForm } from './receipt-json.js';
 import { renderTrainingPage, mountTraining } from './training-view.js';
 import { loadPatterns, applyLearnedFixes } from './training.js';
 import {
-  renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf,
+  renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf, rowToItems,
 } from './manual.js';
+import { renderAiInsights } from './insights.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -378,6 +379,8 @@ function renderStats(root) {
     <section class="coffee-card"><h2 class="coffee-section-title">Món gọi nhiều nhất</h2>
       <ul class="coffee-stat-simple">${itemRows || '<li class="coffee-muted">Chưa có chi tiết món.</li>'}</ul>
     </section>`}
+
+    ${renderAiInsights(state.receipts)}
     <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">← Danh sách</a></div>
   </section>${toastMarkup()}`;
 }
@@ -862,6 +865,15 @@ export function mountCoffeeApp(root) {
       return;
     }
 
+    if (target.closest('[data-ai-refresh]')) {
+      const host = root.querySelector('[data-ai-insights]');
+      if (host) {
+        host.outerHTML = renderAiInsights(getCoffeeState().receipts);
+        showToast(root, 'Đã làm mới phân tích AI Insights.');
+      }
+      return;
+    }
+
     if (target.closest('[data-add-item]')) {
       const form = target.closest('#coffee-receipt-form');
       if (form) { appendItem(form, {}); form.querySelector('[data-item-row]:last-of-type [name="itemName"]')?.focus(); }
@@ -928,7 +940,13 @@ export function mountCoffeeApp(root) {
         if (problems.length) throw new Error(problems.join(' · '));
         let total = 0;
         rows.forEach((row) => {
-          saveReceipt({ store: row.brand, date: row.date, subtotal: row.amount, total: row.amount, items: [] });
+          saveReceipt({
+            store: row.brand,
+            date: row.date,
+            subtotal: row.amount,
+            total: row.amount,
+            items: rowToItems(row.itemsText, row.amount),
+          });
           total += row.amount;
         });
         pendingToast = `Đã lưu ${rows.length} giao dịch (${formatVnd(total)}). Đang cập nhật trang thống kê…`;

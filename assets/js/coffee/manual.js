@@ -2,12 +2,14 @@
 // form mounted at #/coffee/manual-add. Each row becomes one coffee receipt in
 // local storage, so the data shows up on the statistics page (#/coffee/stats).
 //
-// Columns: Brand · Amount · Date of transaction · Seasons (auto, read-only).
+// Columns: Brand · Amount · Date of transaction · Seasons (auto, read-only) ·
+// Items (nhiều món, phân cách bằng dấu phẩy).
 // The router (main.js) owns the DOM events; everything here is rendering plus a
 // few small pure helpers that are unit-tested.
 
 import { escapeHtml, toNumber } from './store.js';
 import { seasonOf, seasonLabel } from './season.js';
+import { POPULAR_ITEMS, classifyItem } from './menu.js';
 
 export const BRAND_SUGGESTIONS = [
   'Highlands Coffee', 'Starbucks', 'Phúc Long', 'The Coffee House',
@@ -32,12 +34,55 @@ export function brandOptions() {
   return BRAND_SUGGESTIONS.map((brand) => `<option value="${escapeHtml(brand)}"></option>`).join('');
 }
 
+export function itemOptions() {
+  return POPULAR_ITEMS.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('');
+}
+
+// "Matcha Latte, Bánh dừa" → ['Matcha Latte', 'Bánh dừa'] (giữ thứ tự, bỏ rỗng,
+// khử trùng lặp không phân biệt hoa/thường, giới hạn độ dài tên).
+export function parseItemNames(text) {
+  const seen = new Set();
+  return String(text ?? '')
+    .split(/[,;\n]/)
+    .map((name) => name.replace(/\s+/g, ' ').trim().slice(0, 80))
+    .filter((name) => {
+      if (!name) return false;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+// Chia tổng tiền của một dòng cho các món (làm tròn, món cuối nhận phần dư) để
+// tổng theo nhóm/món trên trang thống kê vẫn khớp tổng hoá đơn.
+export function distributeAmount(total, count) {
+  const n = Math.max(0, Math.floor(count));
+  const amount = Math.max(0, Math.round(toNumber(total)));
+  if (!n) return [];
+  const base = Math.floor(amount / n);
+  const parts = Array(n).fill(base);
+  parts[n - 1] += amount - base * n;
+  return parts;
+}
+
+// Build the receipt `items` array from a comma-separated Items cell + row amount.
+export function rowToItems(itemsText, total) {
+  const names = parseItemNames(itemsText);
+  const parts = distributeAmount(total, names.length);
+  return names.map((name, index) => {
+    const amount = parts[index] || 0;
+    return { name, qty: 1, unitPrice: amount, amount, category: classifyItem(name) };
+  });
+}
+
 export function renderManualRow(row = {}, index = 0) {
   const date = row.date || todayKey();
   const amount = row.amount === undefined || row.amount === null || row.amount === ''
     ? ''
     : formatAmountInput(row.amount);
   const season = seasonOf(date);
+  const itemsText = row.itemsText ?? row.items ?? '';
   return `<tr class="coffee-manual-row" data-manual-row>
     <td class="coffee-manual-cell--index"><span data-row-index>${index + 1}</span></td>
     <td>
@@ -52,6 +97,9 @@ export function renderManualRow(row = {}, index = 0) {
     </td>
     <td class="coffee-manual-cell--season">
       <span class="coffee-season-chip${season ? '' : ' is-empty'}" data-season-cell title="Tự động theo ngày giao dịch">${season ? `${season.emoji} ${escapeHtml(season.label)}` : '—'}</span>
+    </td>
+    <td class="coffee-manual-cell--items">
+      <input class="coffee-manual-input" name="items" type="text" list="coffee-manual-item-suggest" maxlength="300" autocomplete="off" value="${escapeHtml(itemsText)}" placeholder="Matcha Latte, Bánh dừa" aria-label="Tên món dòng ${index + 1}, nhiều món phân cách bằng dấu phẩy">
     </td>
     <td class="coffee-manual-cell--action">
       <button type="button" class="coffee-ghost-button coffee-ghost-button--danger coffee-manual-remove" data-manual-remove aria-label="Xoá dòng ${index + 1}">✕</button>
@@ -70,6 +118,7 @@ export function renderManualTable(rows = [{}]) {
           <th class="coffee-manual-cell--amount" scope="col">Amount <span class="coffee-manual-th-sub">Số tiền (đ)</span></th>
           <th scope="col">Date of transaction <span class="coffee-manual-th-sub">Ngày giao dịch</span></th>
           <th class="coffee-manual-cell--season" scope="col">Seasons <span class="coffee-manual-th-sub">Mùa (tự động)</span></th>
+          <th scope="col">Items <span class="coffee-manual-th-sub">Tên món (cách nhau dấu phẩy)</span></th>
           <th class="coffee-manual-cell--action" scope="col"><span class="coffee-visually-hidden">Thao tác</span></th>
         </tr>
       </thead>
@@ -78,7 +127,8 @@ export function renderManualTable(rows = [{}]) {
       </tbody>
     </table>
   </div>
-  <datalist id="coffee-brand-suggest">${brandOptions()}</datalist>`;
+  <datalist id="coffee-brand-suggest">${brandOptions()}</datalist>
+  <datalist id="coffee-manual-item-suggest">${itemOptions()}</datalist>`;
 }
 
 export function renderManualForm() {
@@ -91,7 +141,7 @@ export function renderManualForm() {
 
     ${renderManualTable([{}])}
 
-    <p class="coffee-manual-hint">Cột <strong>Seasons</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12).</p>
+    <p class="coffee-manual-hint">Cột <strong>Seasons</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy (ví dụ: “Matcha Latte, Bánh dừa”).</p>
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
@@ -100,19 +150,21 @@ export function renderManualForm() {
   </form>`;
 }
 
-// Read the table back into an array of { brand, amount, date, season } rows,
-// skipping completely blank lines. `amount` is a number (via toNumber) so the
-// formatted "100.200" input parses correctly.
+// Read the table back into an array of rows, skipping completely blank lines.
+// `amount` is a number (via toNumber) so the formatted "100.200" parses right.
 export function readManualRows(form) {
   return [...form.querySelectorAll('[data-manual-row]')].map((row) => {
     const date = row.querySelector('[name="date"]')?.value || '';
+    const itemsText = (row.querySelector('[name="items"]')?.value || '').trim();
     return {
       brand: (row.querySelector('[name="brand"]')?.value || '').trim(),
       amount: toNumber(row.querySelector('[name="amount"]')?.value),
       date,
       season: seasonOf(date)?.key || '',
+      itemsText,
+      itemNames: parseItemNames(itemsText),
     };
-  }).filter((row) => row.brand || row.amount || row.date !== todayKey());
+  }).filter((row) => row.brand || row.amount || row.itemsText || row.date !== todayKey());
 }
 
-export { seasonOf, seasonLabel };
+export { seasonOf, seasonLabel, classifyItem };
