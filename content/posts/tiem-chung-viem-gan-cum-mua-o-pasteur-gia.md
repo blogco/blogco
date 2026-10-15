@@ -20,45 +20,11 @@ Dưới đây là chi tiết về chi phí tiêm ngừa cúm mùa, đối tượ
 
 Viện Pasteur cung cấp các dòng vắc xin cúm thế hệ mới (tứ giá - bảo vệ khỏi 4 chủng vi rút cúm phổ biến) đến từ các hãng dược phẩm hàng đầu thế giới:
 
-**Tên vắc xin**
-
-**Xuất xứ / Hãng sản xuất**
-
-**Loại vắc xin**
-
-**Đối tượng sử dụng**
-
-**Giá tham khảo (VNĐ/mũi)**
-
-**Vaxigrip Tetra**
-
-Pháp (Sanofi Pasteur)
-
-Cúm Tứ giá (4 chủng)
-
-Trẻ từ 6 tháng tuổi & Người lớn
-
-~ 280.000 – 350.000
-
-**Influvac Tetra**
-
-Hà Lan (Abbott)
-
-Cúm Tứ giá (4 chủng)
-
-Trẻ từ 6 tháng tuổi & Người lớn
-
-~ 300.000 – 360.000
-
-**GC Flu Quadrivalent**
-
-Hàn Quốc (GC Pharma)
-
-Cúm Tứ giá (4 chủng)
-
-Trẻ từ 6 tháng tuổi & Người lớn
-
-~ 250.000 – 310.000
+| Tên vắc xin | Xuất xứ / Hãng sản xuất | Loại vắc xin | Đối tượng sử dụng | Giá tham khảo (VNĐ/mũi) |
+| --- | --- | --- | --- | --- |
+| Vaxigrip Tetra | Pháp (Sanofi Pasteur) | Cúm Tứ giá (4 chủng) | Trẻ từ 6 tháng tuổi & Người lớn | ~ 280.000 – 350.000 |
+| Influvac Tetra | Hà Lan (Abbott) | Cúm Tứ giá (4 chủng) | Trẻ từ 6 tháng tuổi & Người lớn | ~ 300.000 – 360.000 |
+| GC Flu Quadrivalent | Hàn Quốc (GC Pharma) | Cúm Tứ giá (4 chủng) | Trẻ từ 6 tháng tuổi & Người lớn | ~ 250.000 – 310.000 |
 
 > **Lưu ý:**
 > 
