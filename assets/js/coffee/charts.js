@@ -209,6 +209,31 @@ export function progressMeter({
 }
 
 // ---------------------------------------------------------------------------
+// Horizontal bar chart (top items & frequency)
+// ---------------------------------------------------------------------------
+// items: [{ label, value, color?, caption? }]
+export function horizontalBarChart(items = [], {
+  ariaLabel = 'Biểu đồ cột ngang',
+  valueFormatter = (value) => String(value),
+  max = 0,
+  barColor = PALETTE.primary,
+} = {}) {
+  const list = (items || []).filter(Boolean);
+  if (!list.length) return EMPTY;
+  const top = max || Math.max(1, ...list.map((item) => Number(item.value) || 0));
+  return `<div class="coffee-hbar" role="img" aria-label="${escapeHtml(ariaLabel)}">${list.map((item) => {
+    const value = Number(item.value) || 0;
+    const pct = Math.max(3, Math.round((value / top) * 100));
+    const fill = item.color || barColor;
+    return `<div class="coffee-hbar__row">
+      <span class="coffee-hbar__label" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span>
+      <span class="coffee-hbar__track"><span class="coffee-hbar__fill" style="width:${pct}%;background:${fill}"></span></span>
+      <strong class="coffee-hbar__value">${escapeHtml(item.caption ?? valueFormatter(value))}</strong>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ---------------------------------------------------------------------------
 // Legend
 // ---------------------------------------------------------------------------
 // items: [{ name, value, color }]

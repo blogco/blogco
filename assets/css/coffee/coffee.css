@@ -626,3 +626,26 @@ body.coffee-route .category-bar { display: none; }
   .coffee-dash-grid { grid-template-columns: 1fr; }
   .coffee-meter-grid { grid-template-columns: 1fr; }
 }
+
+/* AI Insights dashboard (Part 2) -------------------------------------------- */
+.coffee-insight-section-label { margin: 1.2rem 0 .5rem !important; color: var(--coffee-muted) !important; font-size: .78rem; font-weight: 800; letter-spacing: .08em; }
+.coffee-insight-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.coffee-insight-kpi { display: flex; gap: .8rem; align-items: flex-start; margin: 0; }
+.coffee-insight-kpi__icon { font-size: 1.8rem; line-height: 1; }
+.coffee-insight-kpi__label { display: block; color: var(--coffee-muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.coffee-insight-kpi__value { display: block; margin: .15rem 0 .2rem; font-size: 1.15rem; font-weight: 700; }
+.coffee-insight-kpi small { color: var(--coffee-muted); font-size: .82rem; }
+
+.coffee-hbar { display: grid; gap: .55rem; margin-top: .3rem; }
+.coffee-hbar__row { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) auto; align-items: center; gap: .7rem; }
+.coffee-hbar__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: .9rem; }
+.coffee-hbar__track { height: 14px; border-radius: 99px; background: #EAEFF2; overflow: hidden; }
+.coffee-hbar__fill { display: block; height: 100%; border-radius: inherit; transition: width .3s ease; }
+.coffee-hbar__value { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--coffee-primary-dark); font-weight: 700; }
+
+.coffee-insight-health .coffee-insight-alerts { margin-top: 1rem; }
+.coffee-insight-reco { border-color: var(--coffee-mint); }
+
+@media (max-width: 860px) {
+  .coffee-insight-kpis { grid-template-columns: 1fr; }
+}

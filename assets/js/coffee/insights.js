@@ -10,7 +10,7 @@
 import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { normalizeName, classifyItem, CATEGORY_LABELS } from './menu.js';
 import { seasonOf, SEASON_LABELS } from './season.js';
-import { progressMeter } from './charts.js';
+import { progressMeter, horizontalBarChart, donutChart, legend, colorAt, formatShort } from './charts.js';
 
 // ---------------------------------------------------------------------------
 // Nhận diện thành phần theo tên món (đã bỏ dấu, chữ thường)
@@ -186,6 +186,25 @@ export function buildInsights(receipts = [], { now = new Date(), weekDays = 7 } 
 
   const topItems = [...itemsMap.values()].sort((a, b) => b.count - a.count || b.total - a.total).slice(0, 8);
   const topBrands = [...brandsMap.values()].sort((a, b) => b.count - a.count || b.total - a.total).slice(0, 6);
+
+  // --- Các chỉ số "cốt lõi" tính thời gian thực -----------------------------
+  // Món ưa thích: tần suất xuất hiện nhiều nhất, KHÔNG phân biệt thương hiệu.
+  const favoriteItem = topItems[0] || null;
+  // Brand "cúng" nhiều nhất: gom SUM(total) theo từng thương hiệu.
+  const brandBySpend = [...brandsMap.values()].sort((a, b) => b.total - a.total);
+  const brandTotal = brandBySpend.reduce((sum, brand) => sum + brand.total, 0);
+  const topSpendBrand = brandBySpend.length ? { ...brandBySpend[0] } : null;
+  const brandSegments = (() => {
+    const head = brandBySpend.slice(0, 5);
+    const tail = brandBySpend.slice(5);
+    const segments = head
+      .filter((brand) => brand.total > 0)
+      .map((brand, index) => ({ name: brand.name, value: brand.total, color: colorAt(index) }));
+    const restTotal = tail.reduce((sum, brand) => sum + brand.total, 0);
+    if (restTotal > 0) segments.push({ name: 'Khác', value: restTotal, color: '#E0E0E0' });
+    return segments;
+  })();
+
   const topSeasons = [...seasonsMap.entries()]
     .map(([key, count]) => ({ key, label: SEASON_LABELS[key] || key, count }))
     .sort((a, b) => b.count - a.count);
@@ -238,6 +257,10 @@ export function buildInsights(receipts = [], { now = new Date(), weekDays = 7 } 
     uniqueItems: itemsMap.size,
     topItems,
     topBrands,
+    favoriteItem,
+    topSpendBrand,
+    brandSegments,
+    brandTotal,
     topSeasons,
     peakWeekday: peakWeekday ? { day: peakWeekday[0], label: WEEKDAYS[peakWeekday[0]], count: peakWeekday[1] } : null,
     categoryCounts: [...categoryCounts.entries()]
@@ -266,69 +289,120 @@ function listRows(entries, { empty = '—', format = null } = {}) {
   </li>`).join('');
 }
 
+function frequencyLabel(count, total) {
+  if (!count) return '—';
+  const share = total ? count / total : 0;
+  if (count >= 8 || share >= 0.3) return 'Rất cao';
+  if (count >= 5) return 'Cao';
+  if (count >= 3) return 'Trung bình';
+  return 'Thấp';
+}
+
 export function renderAiInsights(receipts = [], options = {}) {
   const data = buildInsights(receipts, options);
 
-  const body = !data.hasData
-    ? '<p class="coffee-empty">Chưa có dữ liệu để phân tích. Thêm giao dịch (hoặc hoá đơn) rồi bấm “Làm mới Insights”.</p>'
-    : `
-    <section class="coffee-card coffee-insight-nutrition">
-      <p class="coffee-eyebrow">XU HƯỚNG NẠP DINH DƯỠNG</p>
-      <h3 class="coffee-insight-card__title">📈 Đường &amp; Caffeine (tuần này so với tuần trước)</h3>
+  const head = `<div class="coffee-ai-insights__head">
+      <div>
+        <p class="coffee-eyebrow">BLOGCO · AI</p>
+        <h2 id="ai-insights-title">💡 AI Insights &amp; Smart Analytics Dashboard</h2>
+        <p class="coffee-muted">Phân tích chuyên sâu thời gian thực về tài chính và thói quen tiêu dùng.</p>
+      </div>
+      <button type="button" class="coffee-secondary-button" data-ai-refresh>🔄 Làm mới Insights</button>
+    </div>`;
+
+  if (!data.hasData) {
+    return `<section class="coffee-ai-insights" data-ai-insights aria-labelledby="ai-insights-title">
+      ${head}
+      <p class="coffee-empty">Chưa có dữ liệu để phân tích. Thêm giao dịch (hoặc hoá đơn) rồi bấm “Làm mới Insights”.</p>
+    </section>`;
+  }
+
+  const fav = data.favoriteItem;
+  const favFreq = frequencyLabel(fav?.count || 0, data.itemCount);
+  const topBrand = data.topSpendBrand;
+  const brandShare = topBrand && data.brandTotal ? Math.round((topBrand.total / data.brandTotal) * 100) : 0;
+
+  const itemBars = horizontalBarChart(
+    data.topItems.map((item, index) => ({
+      label: item.name,
+      value: item.count,
+      caption: `${item.count} lần`,
+      color: colorAt(index),
+    })),
+    { ariaLabel: 'Biểu đồ tần suất gọi món', valueFormatter: (value) => `${value} lần` },
+  );
+
+  const brandDonut = donutChart(data.brandSegments, {
+    ariaLabel: 'Tỷ trọng chi tiêu theo thương hiệu',
+    centerValue: formatShort(data.brandTotal),
+    centerLabel: 'Tổng “cúng”',
+    size: 240,
+  });
+
+  return `<section class="coffee-ai-insights" data-ai-insights aria-labelledby="ai-insights-title">
+    ${head}
+
+    <p class="coffee-insight-section-label">KẾT QUẢ TỔNG QUAN HÔM NAY</p>
+    <div class="coffee-insight-kpis">
+      <div class="coffee-card coffee-insight-kpi">
+        <span class="coffee-insight-kpi__icon" aria-hidden="true">🌟</span>
+        <div>
+          <span class="coffee-insight-kpi__label">Món ưa thích nhất (Top Item)</span>
+          <strong class="coffee-insight-kpi__value">${fav ? escapeHtml(fav.name) : '—'}</strong>
+          <small>Số lần gọi: ${fav ? fav.count : 0} lần · Tần suất: ${favFreq} (độc lập brand)</small>
+        </div>
+      </div>
+      <div class="coffee-card coffee-insight-kpi">
+        <span class="coffee-insight-kpi__icon" aria-hidden="true">👑</span>
+        <div>
+          <span class="coffee-insight-kpi__label">Brand “cúng” nhiều nhất (Top Spend Brand)</span>
+          <strong class="coffee-insight-kpi__value">${topBrand ? escapeHtml(topBrand.name) : '—'}</strong>
+          <small>Tổng tiền: ${topBrand ? escapeHtml(formatVnd(topBrand.total)) : '0 đ'} · Tỷ trọng: ${brandShare}% tổng chi phí</small>
+        </div>
+      </div>
+    </div>
+
+    <section class="coffee-card coffee-insight-card">
+      <p class="coffee-eyebrow">BIỂU ĐỒ 1 · TẦN SUẤT GỌI MÓN</p>
+      <h3 class="coffee-insight-card__title">📊 Top món uống &amp; tần suất</h3>
+      ${itemBars}
+    </section>
+
+    <section class="coffee-card coffee-insight-card">
+      <p class="coffee-eyebrow">BIỂU ĐỒ 2 · TỶ TRỌNG CHI TIÊU THEO BRAND</p>
+      <h3 class="coffee-insight-card__title">💰 Phân bổ ngân sách thương hiệu &amp; tổng tiền “cúng”</h3>
+      <div class="coffee-donut-wrap">${brandDonut}
+        ${legend(data.brandSegments, { valueFormatter: formatVnd, percentOf: data.brandTotal })}
+      </div>
+      <p class="coffee-dash-foot">Total spend: <strong>${escapeHtml(formatVnd(data.brandTotal))}</strong></p>
+    </section>
+
+    <section class="coffee-card coffee-insight-card coffee-insight-health">
+      <p class="coffee-eyebrow">BIỂU ĐỒ 3 · CHỈ SỐ DINH DƯỠNG &amp; CẢNH BÁO SỨC KHỎE</p>
+      <h3 class="coffee-insight-card__title">🩺 Đường, Caffeine &amp; cảnh báo từ AI</h3>
       <div class="coffee-meter-grid">
         ${progressMeter({
-          label: 'Đường · Tuần này',
+          label: 'Lượng đường tuần này',
           value: data.nutrition.sugarWeek, max: data.nutrition.sugarLimit,
           valueText: `${data.nutrition.sugarWeek} g · ${data.nutrition.sugarPct}%`,
           tone: data.nutrition.sugarTone,
-          hint: `Khuyến nghị ≤ ${data.nutrition.sugarLimit} g/tuần`,
+          hint: `Khuyến nghị ≤ ${data.nutrition.sugarLimit} g/tuần · tuần trước ${data.nutrition.sugarPrevWeek} g`,
         })}
         ${progressMeter({
-          label: 'Đường · Tuần trước',
-          value: data.nutrition.sugarPrevWeek, max: data.nutrition.sugarLimit,
-          valueText: `${data.nutrition.sugarPrevWeek} g · ${data.nutrition.sugarPrevPct}%`,
-          tone: 'primary',
-        })}
-        ${progressMeter({
-          label: 'Caffeine · Tuần này',
+          label: 'Lượng Caffeine nạp vào',
           value: data.nutrition.caffeineWeek, max: data.nutrition.caffeineLimit,
           valueText: `${data.nutrition.caffeineWeek} mg · ${data.nutrition.caffeinePct}%`,
           tone: data.nutrition.caffeineTone,
-          hint: `Khuyến nghị ≤ ${data.nutrition.caffeineLimit} mg/tuần`,
-        })}
-        ${progressMeter({
-          label: 'Caffeine · Tuần trước',
-          value: data.nutrition.caffeinePrevWeek, max: data.nutrition.caffeineLimit,
-          valueText: `${data.nutrition.caffeinePrevWeek} mg · ${data.nutrition.caffeinePrevPct}%`,
-          tone: 'primary',
+          hint: `Khuyến nghị ≤ ${data.nutrition.caffeineLimit} mg/tuần · tuần trước ${data.nutrition.caffeinePrevWeek} mg`,
         })}
       </div>
+      <ul class="coffee-insight-alerts">
+        ${data.alerts.map((alert) => `<li class="coffee-insight-alert is-${alert.tone}">
+          <span class="coffee-insight-alert__icon" aria-hidden="true">${alert.icon}</span>
+          <span><strong>${escapeHtml(alert.title)}</strong> — ${escapeHtml(alert.message)}</span>
+        </li>`).join('')}
+      </ul>
     </section>
-
-    <div class="coffee-insight-grid">
-      <section class="coffee-card coffee-insight-card">
-        <p class="coffee-eyebrow">THÓI QUEN</p>
-        <h3 class="coffee-insight-card__title">🟢 Top món ưa thích</h3>
-        <ul class="coffee-insight-list">${listRows(data.topItems, { empty: 'Chưa có tên món — thêm cột Items khi nhập liệu.' })}</ul>
-        <h3 class="coffee-insight-card__title coffee-insight-card__title--sub">🏬 Thương hiệu &amp; mùa thường ghé</h3>
-        <div class="coffee-insight-tags">
-          ${data.topBrands.slice(0, 4).map((brand) => `<span class="coffee-chip">${escapeHtml(brand.name)} · ${brand.count}</span>`).join('')}
-          ${data.topSeasons.slice(0, 2).map((season) => `<span class="coffee-chip coffee-chip--muted">${escapeHtml(season.label)} · ${season.count}</span>`).join('')}
-          ${data.peakWeekday ? `<span class="coffee-chip coffee-chip--muted">Thường mua: ${escapeHtml(data.peakWeekday.label)}</span>` : ''}
-        </div>
-      </section>
-
-      <section class="coffee-card coffee-insight-card coffee-insight-health">
-        <p class="coffee-eyebrow">CẢNH BÁO SỨC KHỎE</p>
-        <h3 class="coffee-insight-card__title">🟠 Cảnh báo từ AI</h3>
-        <ul class="coffee-insight-alerts">
-          ${data.alerts.map((alert) => `<li class="coffee-insight-alert is-${alert.tone}">
-            <span class="coffee-insight-alert__icon" aria-hidden="true">${alert.icon}</span>
-            <span><strong>${escapeHtml(alert.title)}</strong> — ${escapeHtml(alert.message)}</span>
-          </li>`).join('')}
-        </ul>
-      </section>
-    </div>
 
     <section class="coffee-card coffee-insight-card coffee-insight-reco">
       <p class="coffee-eyebrow">AI RECOMMENDATIONS</p>
@@ -337,17 +411,6 @@ export function renderAiInsights(receipts = [], options = {}) {
         ${data.alternatives.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}
       </ul>
       <p class="coffee-insight-note">Phân tích dựa trên TÊN món đã nhập (ước lượng tham khảo), không phải tư vấn y khoa. Thành phần và khẩu phần thực tế thay đổi theo công thức mỗi quán.</p>
-    </section>`;
-
-  return `<section class="coffee-ai-insights" data-ai-insights aria-labelledby="ai-insights-title">
-    <div class="coffee-ai-insights__head">
-      <div>
-        <p class="coffee-eyebrow">BLOGCO · AI</p>
-        <h2 id="ai-insights-title">💡 AI Health &amp; Financial Insights</h2>
-        <p class="coffee-muted">Phân tích thói quen gọi món và cảnh báo sức khỏe tự động từ danh sách món.</p>
-      </div>
-      <button type="button" class="coffee-secondary-button" data-ai-refresh>🔄 Làm mới Insights</button>
-    </div>
-    ${body}
+    </section>
   </section>`;
 }

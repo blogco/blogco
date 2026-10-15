@@ -72,9 +72,28 @@ test('renderAiInsights outputs title, refresh button and health section', () => 
   assert.match(html, /AI Insights/);
   assert.match(html, /data-ai-refresh/);
   assert.match(html, /Làm mới Insights/);
-  assert.match(html, /Gợi ý thay thế lành mạnh/);
+  assert.match(html, /Đề xuất thay thế thông minh/);
   assert.match(html, /Matcha Latte/);
 });
+
+test('buildInsights exposes favorite item and top spend brand', () => {
+  const receipts = [
+    receipt({ store: 'Highlands Coffee', items: [{ name: 'Matcha Latte', qty: 1, amount: 60000 }] }),
+    receipt({ store: 'Highlands Coffee', date: '2026-10-13', items: [{ name: 'Matcha Latte', qty: 2, amount: 120000 }] }),
+    receipt({ store: 'Starbucks', date: '2026-10-12', total: 500000, items: [{ name: 'Cold Brew', qty: 1, amount: 90000 }] }),
+  ];
+  const data = buildInsights(receipts, { now: NOW });
+  assert.equal(data.favoriteItem.name, 'Matcha Latte');
+  assert.equal(data.favoriteItem.count, 3);
+  assert.equal(data.topSpendBrand.name, 'Starbucks');
+  assert.equal(data.topSpendBrand.total, 500000);
+  assert.ok(data.brandSegments.length >= 1);
+  assert.ok(htmlHas(renderAiInsights(receipts, { now: NOW }), 'Brand')); 
+});
+
+function htmlHas(html, text) {
+  return String(html).includes(text);
+}
 
 test('renderAiInsights handles the empty state', () => {
   const html = renderAiInsights([], { now: NOW });
