@@ -54,36 +54,33 @@ export function renderOcrBlock(receipt = {}) {
   const previewSrc = hasImage ? escapeHtml(receipt.invoiceUrl) : '';
   return `<div class="coffee-invoice" data-invoice-block>
     <div class="coffee-invoice__head">
-      <strong>📷 Ảnh hoá đơn</strong>
-      <span class="coffee-badge coffee-badge--muted">OCR → JSON → điền form</span>
+      <strong>📄 Hoá đơn PDF</strong>
+      <span class="coffee-badge coffee-badge--muted">PDF → JSON → điền form</span>
     </div>
     <label class="coffee-dropzone${hasImage ? ' has-image' : ''}" data-dropzone>
-      <input type="file" accept="image/*,application/pdf,.pdf" data-invoice-input hidden aria-label="Chọn ảnh hoặc PDF hoá đơn Highlands Coffee">
+      <input type="file" accept="application/pdf,.pdf,image/*" data-invoice-input hidden aria-label="Chọn file PDF hoá đơn">
       ${hasImage ? `<img data-invoice-preview src="${previewSrc}" alt="Xem trước hoá đơn">` : '<img data-invoice-preview alt="Xem trước hoá đơn" hidden>'}
       <span class="coffee-dropzone__hint"${hasImage ? ' hidden' : ''}>
-        <span aria-hidden="true">☕</span>
-        <span>Kéo ảnh/PDF hoá đơn vào đây hoặc bấm để chọn</span>
-        <small>JPG · PNG · WEBP · PDF · hoặc chụp trực tiếp bằng camera</small>
+        <span aria-hidden="true">📄</span>
+        <span>Kéo file PDF hoá đơn vào đây hoặc bấm để chọn</span>
+        <small>PDF có lớp văn bản (hoá đơn điện tử / POS) · ảnh JPG-PNG vẫn hỗ trợ qua OCR</small>
       </span>
       <span class="coffee-invoice__loading" data-invoice-loading hidden>
         <span class="coffee-spinner" aria-hidden="true"></span>
-        <span data-invoice-loading-text>Đang phân tích hoá đơn…</span>
+        <span data-invoice-loading-text>Đang trích xuất hoá đơn…</span>
       </span>
     </label>
     <div class="coffee-invoice__actions">
-      <button type="button" class="coffee-secondary-button" data-invoice-ocr>🔍 OCR tự động</button>
-      <button type="button" class="coffee-secondary-button" data-invoice-camera>📷 Chụp ảnh</button>
-      <button type="button" class="coffee-ghost-button" data-invoice-clear${hasImage ? '' : ' hidden'}>Xoá ảnh</button>
-      <input type="file" accept="image/*" capture="environment" data-invoice-camera-input hidden aria-label="Chụp ảnh hoá đơn bằng camera">
+      <button type="button" class="coffee-secondary-button" data-invoice-extract>📄 Trích xuất dữ liệu</button>
+      <button type="button" class="coffee-ghost-button" data-invoice-clear${hasImage ? '' : ' hidden'}>Xoá file</button>
     </div>
     <p class="coffee-invoice__status" data-invoice-status role="status" aria-live="polite"></p>
-    <p class="coffee-ocr-result" data-ocr-result role="status" aria-live="polite" hidden></p>
-    <textarea class="coffee-invoice__text" name="ocrText" rows="3" placeholder="Nội dung OCR sẽ hiện ở đây (bạn có thể sửa hoặc dán tay)">${value(receipt.ocrText)}</textarea>
     <details class="coffee-ocr-json" data-ocr-json hidden>
-      <summary>🧪 Kết quả trích xuất chuẩn (JSON)</summary>
+      <summary>🧪 JSON chuẩn trích xuất được</summary>
       <p class="coffee-ocr-json__note" data-ocr-json-note></p>
       <pre class="coffee-ocr-json__pre" data-ocr-json-pre></pre>
     </details>
+    <textarea class="coffee-invoice__text" name="ocrText" rows="3" placeholder="Văn bản trích xuất từ PDF sẽ hiện ở đây (bạn có thể sửa hoặc dán tay)">${value(receipt.ocrText)}</textarea>
     <input type="hidden" name="invoiceUrl" value="${hasImage ? escapeHtml(receipt.invoiceUrl) : ''}" data-invoice-value>
   </div>`;
 }
@@ -101,7 +98,7 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
     <fieldset class="coffee-fieldset">
       <legend>Hoá đơn</legend>
       ${renderOcrBlock(receipt)}
-      <p class="coffee-muted">Sau khi OCR, thông tin sẽ tự điền vào form — bạn kiểm tra và sửa lại trước khi lưu. Ảnh được nén và lưu ngay trên thiết bị này.</p>
+      <p class="coffee-muted">Tải file PDF hoá đơn để trích xuất tự động tên quán, món, số lượng, đơn giá, giảm giá và ngày giao dịch. Tổng tiền được tính lại từ danh sách món sau khi trừ giảm giá. Ảnh (JPG/PNG) vẫn được OCR nếu bạn chưa có PDF.</p>
     </fieldset>
 
     <fieldset class="coffee-fieldset">

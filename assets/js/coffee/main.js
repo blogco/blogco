@@ -15,7 +15,7 @@ import {
 import { CATEGORY_LABELS, categoryLabel } from './menu.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats } from './stats.js';
-import { recognizeImage, isPdf, pdfToPreviewDataUrl } from './ocr.js';
+import { recognizeImage, isPdf, pdfToPreviewDataUrl, extractPdfText } from './ocr.js';
 import { buildReceiptJson, receiptJsonToForm } from './receipt-json.js';
 import { renderTrainingPage, mountTraining } from './training-view.js';
 import { loadPatterns, applyLearnedFixes } from './training.js';
@@ -195,7 +195,7 @@ function renderHistory(root) {
     </div>
 
     <div class="coffee-toolbar">
-      <a class="coffee-primary-button" href="#/coffee/add">＋ Thêm hoá đơn (OCR)</a>
+      <a class="coffee-primary-button" href="#/coffee/add">📄 Thêm hoá đơn (PDF)</a>
       <a class="coffee-secondary-button" href="#/coffee/manual-add">🧾 Nhập chi phí thủ công</a>
       <a class="coffee-secondary-button" href="#/coffee/stats">📊 Thống kê chi phí</a>
       <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
@@ -395,7 +395,7 @@ function renderFormPage(root, receiptId = '') {
   const mode = receiptId ? 'edit' : 'add';
   const nextId = mode === 'edit' ? receiptId : 'cf-...';
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
-    ${pageHeader(mode === 'edit' ? 'Sửa hoá đơn cà phê' : 'Thêm hoá đơn cà phê', mode === 'edit' ? `Cập nhật thông tin cho ${nextId}.` : 'Tải ảnh hoá đơn Highlands Coffee để OCR hoặc nhập tay.')}
+    ${pageHeader(mode === 'edit' ? 'Sửa hoá đơn cà phê' : 'Thêm hoá đơn cà phê', mode === 'edit' ? `Cập nhật thông tin cho ${nextId}.` : 'Tải file PDF hoá đơn để trích xuất tự động thành JSON và điền vào form.')}
     ${renderReceiptForm(receipt || {}, { mode })}
   </section>${toastMarkup()}`;
   const form = root.querySelector('#coffee-receipt-form');
@@ -493,13 +493,11 @@ function applyOcrResult(form, mapped) {
   updateItemEmpty(form);
   updateCostDisplays(form);
 
-  // When OCR saw a receipt total we prefer it over the derived sum.
-  if (mapped.total) {
+  // Yêu cầu: tổng tiền LUÔN tính lại từ danh sách món sau khi trừ giảm giá.
+  // Nếu hoá đơn có in tổng khác, ghi lại để đối chiếu (không ghi đè tổng).
+  if (mapped.printedTotal !== null && mapped.printedTotal !== undefined) {
     const totalInput = form.querySelector('[name="totalValue"]');
-    const totalDisplay = form.querySelector('[data-total-display]');
-    if (totalInput) totalInput.value = mapped.total;
-    if (totalDisplay) totalDisplay.value = `${Number(mapped.total).toLocaleString('vi-VN')} đ`;
-    filled.push('tổng tiền');
+    if (totalInput) totalInput.dataset.printedTotal = String(mapped.printedTotal);
   }
   return filled;
 }
@@ -540,7 +538,7 @@ async function handleInvoiceFile(block, file) {
   try {
     dataUrl = isPdf(file) ? await pdfToPreviewDataUrl(file) : await compressImage(file);
   } catch (error) {
-    if (status) status.textContent = `${error.message} Bạn vẫn có thể bấm “OCR tự động”.`;
+    if (status) status.textContent = `${error.message} Bạn vẫn có thể bấm “📄 Trích xuất dữ liệu”.`;
   }
   if (dataUrl && preview) { preview.src = dataUrl; preview.hidden = false; }
   if (hint) hint.hidden = Boolean(dataUrl) || isPdf(file);
@@ -549,8 +547,8 @@ async function handleInvoiceFile(block, file) {
   if (valueInput) valueInput.value = dataUrl;
   if (status) {
     status.textContent = isPdf(file)
-      ? 'Đã nạp PDF. Bấm “OCR tự động” để trích xuất từng trang.'
-      : 'Đã nạp ảnh. Bấm “OCR tự động” để trích xuất.';
+      ? 'Đã nạp PDF. Bấm “📄 Trích xuất dữ liệu” để đọc hoá đơn.'
+      : 'Đã nạp ảnh. Bấm “📄 Trích xuất dữ liệu” để OCR.';
   }
 }
 
@@ -566,87 +564,98 @@ async function applyClearInvoice(block) {
   if (clear) clear.hidden = true;
   block.querySelector('[data-dropzone]')?.classList.remove('has-image');
   if (valueInput) valueInput.value = '';
-  if (status) status.textContent = 'Đã xoá ảnh hoá đơn.';
+  if (status) status.textContent = 'Đã xoá file hoá đơn.';
 }
 
-async function runOcr(root, form, block) {
+// Trích xuất hoá đơn: PDF → text → JSON chuẩn → điền form. Ảnh vẫn dùng OCR để
+// lấy text rồi đi qua CÙNG một bộ parser JSON (một đường ống, một kết quả).
+async function runExtract(root, form, block) {
   const input = block.querySelector('[data-invoice-input]');
   const status = block.querySelector('[data-invoice-status]');
+  const textArea = block.querySelector('[name="ocrText"]');
   const file = input?.files?.[0] || block._pendingFile;
   if (!file) {
-    if (status) status.textContent = 'Hãy chọn ảnh hoá đơn trước khi OCR.';
+    if (status) status.textContent = 'Hãy chọn file PDF hoá đơn trước khi trích xuất.';
     return;
   }
-  if (status) status.textContent = 'Đang tải bộ OCR…';
   try {
-    const text = await recognizeImage(file, {
-      onProgress: (message) => {
-        if (status && message?.status) {
-          const percent = message.progress ? ` ${Math.round(message.progress * 100)}%` : '';
-          status.textContent = `OCR: ${message.status}${percent}`;
-        }
-      },
-    });
-    const textArea = block.querySelector('[name="ocrText"]');
-    if (!text.trim()) {
-      if (textArea) textArea.value = text;
-      if (status) status.textContent = 'OCR không đọc được chữ nào. Hãy thử ảnh rõ hơn hoặc nhập tay.';
-      return;
+    let rawText = '';
+    if (isPdf(file)) {
+      if (status) status.textContent = 'Đang đọc văn bản từ PDF…';
+      const { text, totalPages } = await extractPdfText(file, {
+        onProgress: (message) => { if (status && message?.status) status.textContent = message.status; },
+      });
+      rawText = text;
+      if (!rawText.trim()) {
+        if (status) status.textContent = 'PDF này không có lớp văn bản (có thể là bản scan ảnh). Hãy dùng file PDF gốc hoặc tải ảnh để OCR.';
+        return;
+      }
+      if (status) status.textContent = `Đã đọc ${totalPages} trang PDF. Đang cấu trúc JSON…`;
+    } else {
+      // Ảnh: OCR lấy text rồi đi tiếp qua bộ parser JSON.
+      rawText = await recognizeImage(file, {
+        onProgress: (message) => {
+          if (status && message?.status) {
+            const percent = message.progress ? ` ${Math.round(message.progress * 100)}%` : '';
+            status.textContent = `OCR: ${message.status}${percent}`;
+          }
+        },
+      });
+      if (!rawText.trim()) {
+        if (textArea) textArea.value = rawText;
+        if (status) status.textContent = 'Không đọc được chữ nào từ ảnh. Hãy thử ảnh rõ hơn hoặc nhập tay.';
+        return;
+      }
+      // Áp bảng sửa lỗi tiếng Việt đã học (AI Training) trước khi parse.
+      try {
+        const { data: patterns } = await loadPatterns('highlands');
+        rawText = applyLearnedFixes(rawText, patterns?.vietnameseFixes || {});
+      } catch {
+        // best-effort: nếu không tải được patterns thì dùng text gốc.
+      }
     }
-    // Áp bảng sửa lỗi tiếng Việt đã học (AI Training) trước khi parse.
-    let ocrText = text;
-    try {
-      const { data: patterns } = await loadPatterns('highlands');
-      ocrText = applyLearnedFixes(text, patterns?.vietnameseFixes || {});
-    } catch {
-      // best-effort: nếu không tải được patterns thì dùng text gốc.
+
+    if (textArea) textArea.value = rawText;
+    const json = buildReceiptJson(rawText);
+    const mapped = receiptJsonToForm(json);
+    const filled = applyOcrResult(form, mapped);
+    updateCostDisplays(form);
+    renderExtractPanel(block, json);
+
+    const totalEl = form.querySelector('[data-total-display]');
+    const totalLabel = totalEl ? totalEl.value : '';
+    let message = filled.length
+      ? `Đã điền: ${filled.join(', ')}. Tổng tính lại: ${totalLabel}.`
+      : 'Trích xuất xong nhưng chưa tìm thấy trường mới — bạn kiểm tra JSON bên dưới.';
+    if (json.printed_total !== null && json.printed_total !== json.total_amount) {
+      message += ` ⚠️ Tổng in trên hoá đơn lệch ${Math.abs(json.printed_total - json.total_amount).toLocaleString('vi-VN')} đ — đã tính lại theo danh sách món.`;
+    } else if (!json.items.length) {
+      message += ' ⚠️ Không nhận diện được món nào — kiểm tra lại văn bản.';
     }
-    if (textArea) textArea.value = ocrText;
-    const result = parseHighlandsInvoice(ocrText);
-    const filled = applyOcrResult(form, result);
-    renderExtractPanel(block, ocrText);
-    if (status) {
-      const extraction = safeExtract(ocrText);
-      const validation = extraction?.validation;
-      const suffix = validation?.arithmetic_check === 'failed'
-        ? ` ⚠️ Tổng lệch ${Math.abs(validation.discrepancy_amount).toLocaleString('vi-VN')} đ — xem JSON để kiểm tra.`
-        : (validation?.needs_manual_review ? ' Một số dòng cần bạn xác nhận (xem JSON).' : '');
-      status.textContent = (filled.length
-        ? `Đã điền: ${filled.join(', ')}. Kiểm tra lại trước khi lưu.`
-        : 'OCR xong nhưng chưa tìm thấy trường mới để điền — bạn kiểm tra phần nội dung bên dưới.') + suffix;
-    }
+    if (status) status.textContent = message;
   } catch (error) {
     if (status) status.textContent = `${error.message} Bạn có thể nhập tay.`;
   }
 }
 
-// Trích xuất cấu trúc theo "system prompt AI trích xuất hoá đơn chính xác".
-function safeExtract(text) {
-  try {
-    return extractReceipt(text);
-  } catch {
-    return null;
-  }
-}
-
-function renderExtractPanel(block, text) {
+function renderExtractPanel(block, json) {
   const panel = block.querySelector('[data-ocr-json]');
   const pre = block.querySelector('[data-ocr-json-pre]');
   const note = block.querySelector('[data-ocr-json-note]');
-  if (!panel || !pre) return;
-  const extraction = safeExtract(text);
-  if (!extraction) {
-    panel.hidden = true;
+  if (!panel || !pre || !json) {
+    if (panel) panel.hidden = true;
     return;
   }
-  pre.textContent = JSON.stringify(extraction, null, 2);
+  pre.textContent = JSON.stringify(json, null, 2);
   if (note) {
-    const { validation } = extraction;
-    const label = { passed: '✅ Khớp tổng', failed: '⚠️ Lệch tổng', not_verified: '❔ Chưa xác minh' }[validation.arithmetic_check]
-      || validation.arithmetic_check;
-    const parts = [`${extraction.items.length} dòng hàng`, label];
-    if (validation.discrepancy_amount) parts.push(`lệch ${Number(validation.discrepancy_amount).toLocaleString('vi-VN')} đ`);
-    if (validation.warnings.length) parts.push(validation.warnings.length + ' cảnh báo');
+    const parts = [
+      `${json.items.length} món`,
+      `${formatVnd(json.total_amount)}`,
+      json.date ? formatDate(json.date) : 'chưa rõ ngày',
+    ];
+    if (json.discount_total) parts.push(`giảm ${formatVnd(json.discount_total)}`);
+    const confidence = { high: '✅ độ tin cậy cao', medium: '⚠️ cần kiểm tra', low: '❌ độ tin cậy thấp' }[json.confidence] || json.confidence;
+    parts.push(confidence);
     note.textContent = parts.join(' · ');
   }
   panel.hidden = false;
@@ -783,14 +792,10 @@ export function mountCoffeeApp(root) {
     }
     if (target.matches('[data-filter-month]')) { searchState.month = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-filter-store]')) { searchState.store = target.value; searchState.page = 1; refreshHistoryResults(root); }
-    if (target.matches('[data-invoice-input]') || target.matches('[data-invoice-camera-input]')) {
+    if (target.matches('[data-invoice-input]')) {
       const block = target.closest('[data-invoice-block]');
       const file = target.files?.[0];
       if (block && file) await handleInvoiceFile(block, file);
-      if (target.matches('[data-invoice-camera-input]')) {
-        const form = target.closest('#coffee-receipt-form');
-        if (block && form && file) await runOcr(root, form, block);
-      }
       target.value = '';
     }
     if (target.matches('[data-import-input]')) {
@@ -870,11 +875,11 @@ export function mountCoffeeApp(root) {
       return;
     }
 
-    const ocrButton = target.closest('[data-invoice-ocr]');
-    if (ocrButton) {
-      const block = ocrButton.closest('[data-invoice-block]');
+    const extractButton = target.closest('[data-invoice-extract]');
+    if (extractButton) {
+      const block = extractButton.closest('[data-invoice-block]');
       const form = target.closest('#coffee-receipt-form');
-      if (block && form) await runOcr(root, form, block);
+      if (block && form) await runExtract(root, form, block);
       return;
     }
     if (target.closest('[data-invoice-clear]')) {

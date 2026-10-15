@@ -97,6 +97,36 @@ export async function pdfToPageCanvases(file, { maxPages = 5, scale = 2 } = {}) 
   return { canvases, total, used: count, pages };
 }
 
+// ---------------------------------------------------------------------------
+// Trích XUẤT VĂN BẢN trực tiếp từ lớp text của PDF (KHÔNG OCR ảnh).
+// ---------------------------------------------------------------------------
+//
+// Dành cho hoá đơn điện tử / PDF xuất từ POS có text layer thật. Đọc bbox của
+// từng mảnh text, gom thành DÒNG theo trục Y rồi sắp theo trục X, nhờ đó giữ
+// đúng quan hệ tên món ↔ số lượng ↔ đơn giá ↔ thành tiền như trên hoá đơn.
+export async function extractPdfText(file, { maxPages = 30, onProgress } = {}) {
+  if (!isPdf(file)) throw new Error('Tệp đã chọn không phải PDF.');
+  if (typeof document === 'undefined') throw new Error('Không có môi trường để đọc PDF.');
+  const pdfjsLib = await loadPdfJs();
+  const data = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const total = pdf.numPages;
+  const count = Math.min(total, maxPages);
+  const pages = [];
+  for (let pageNumber = 1; pageNumber <= count; pageNumber += 1) {
+    if (typeof onProgress === 'function') {
+      onProgress({ status: `Đọc văn bản PDF trang ${pageNumber}/${count}` });
+    }
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const lines = groupTextItems(content.items || []);
+    const text = lines.map((line) => line.text).join('\n');
+    pages.push({ pageNumber, method: 'text', text, lines });
+  }
+  const text = pages.map((page) => page.text).filter(Boolean).join('\n');
+  return { text, pages, totalPages: count, sourceTotalPages: total };
+}
+
 // Data-URL of the first PDF page, for the dropzone preview.
 export async function pdfToPreviewDataUrl(file, { maxDim = 1400, quality = 0.8 } = {}) {
   const { canvases } = await pdfToPageCanvases(file, { maxPages: 1, scale: 2 });
