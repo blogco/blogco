@@ -1,45 +1,46 @@
 /* ==========================================================================
    "Chi phí cà phê" — Expense Management
-   Rebranded to a Delivery Hero design language: Red (#D82128), black (#121212),
-   crisp enterprise surfaces, tabular data grids and voucher-style records.
+   Rebranded to the Ericsson corporate design language: Blue (#002561 /
+   #0068bf / #0082f0), crisp tech surfaces, tabular grids and voucher records.
    Only the `coffee-*` namespace is touched.
    ========================================================================== */
 
 :root {
-  /* Delivery Hero corporate identity — red / black / neutral */
-  --coffee-primary: #D82128;        /* Delivery Hero Red */
-  --coffee-primary-dark: #B51B21;   /* hover / pressed */
-  --coffee-primary-deep: #121212;   /* deep ink for headings on soft bg */
-  --coffee-primary-alt: #F28086;    /* soft red for gradients */
-  --coffee-primary-soft: #FFF0F1;   /* soft pink surface */
-  --coffee-primary-soft-2: #FDF5F5;
-  --coffee-blue-line: #F7C9CC;      /* soft red hairline (legacy name) */
+  /* Ericsson corporate identity — deep blue / process blue / sky accent */
+  --coffee-primary: #002561;        /* Ericsson Blue — primary CTA */
+  --coffee-primary-dark: #001b46;   /* hover / pressed */
+  --coffee-sky: #0082f0;            /* secondary accent */
+  --coffee-primary-deep: #002561;   /* deep ink for headings on soft bg */
+  --coffee-primary-alt: #4DA3F5;    /* light blue for gradients */
+  --coffee-primary-soft: #EAF3FE;   /* soft blue surface */
+  --coffee-primary-soft-2: #F4F8FC;
+  --coffee-blue-line: #BBD8F5;      /* soft blue hairline */
 
   /* Neutrals */
-  --coffee-ink: #121212;
-  --coffee-text: #333333;
-  --coffee-muted: #6B7280;
-  --coffee-border: #E5E7EB;
-  --coffee-border-strong: #D1D5DB;
-  --coffee-bg: #FAFAFA;
+  --coffee-ink: #002561;
+  --coffee-text: #33475B;
+  --coffee-muted: #5B6B7F;
+  --coffee-border: #D5E3F0;
+  --coffee-border-strong: #BBD8F5;
+  --coffee-bg: #F4F8FC;
   --coffee-surface: #FFFFFF;
-  --coffee-surface-2: #FAFAFA;
+  --coffee-surface-2: #F4F8FC;
 
   /* Semantic */
   --coffee-success: #127A4B;
   --coffee-success-soft: #E7F4EC;
   --coffee-warning: #C2740B;
   --coffee-warning-soft: #FDF2E2;
-  --coffee-danger: #D82128;
-  --coffee-danger-soft: #FFEDEE;
+  --coffee-danger: #C81E1E;
+  --coffee-danger-soft: #FBEAEA;
 
   /* Shape + type */
-  --coffee-radius: 12px;
-  --coffee-radius-sm: 8px;
-  --coffee-radius-xs: 6px;
+  --coffee-radius: 6px;
+  --coffee-radius-sm: 4px;
+  --coffee-radius-xs: 4px;
   --coffee-shadow: 0 4px 12px rgba(0, 0, 0, .05);
   --coffee-shadow-sm: 0 4px 12px rgba(0, 0, 0, .05);
-  --coffee-font: "Inter", "Be Vietnam Pro", system-ui, -apple-system,
+  --coffee-font: "Inter", "Helvetica Neue", system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
 
   /* Legacy aliases kept so older markup keeps inheriting the corporate palette. */
@@ -126,14 +127,14 @@ body.coffee-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .coffee-page-heading > p:last-child { margin: 0; color: var(--coffee-muted); max-width: 70ch; }
-/* Corporate hero band (list + stats landing) — Delivery Hero black/red */
+/* Corporate hero band (list + stats landing) — Ericsson blue */
 .coffee-page-heading--hero {
   border: 0;
-  border-left: 5px solid var(--coffee-primary);
+  border-left: 5px solid var(--coffee-sky);
   padding: 1.4rem 1.5rem;
   color: #fff;
-  background: linear-gradient(135deg, #121212 0%, #1F1F1F 55%, #3A1214 100%);
-  box-shadow: 0 16px 34px rgba(18, 18, 18, .28);
+  background: linear-gradient(135deg, #002561 0%, #0068bf 62%, #0082f0 130%);
+  box-shadow: 0 16px 34px rgba(0, 40, 99, .28);
 }
 .coffee-page-heading--hero::after {
   position: absolute;
@@ -142,11 +143,11 @@ body.coffee-route .category-bar { display: none; }
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(216, 33, 40, .28), rgba(216, 33, 40, 0) 70%);
+  background: radial-gradient(circle, rgba(0, 104, 191, .28), rgba(0, 104, 191, 0) 70%);
   content: "";
   pointer-events: none;
 }
-.coffee-page-heading--hero .coffee-eyebrow { color: #F2A0A5 !important; }
+.coffee-page-heading--hero .coffee-eyebrow { color: #7DBBF7 !important; }
 .coffee-page-heading--hero h1 { color: #fff; }
 .coffee-page-heading--hero > p:last-child { color: rgba(255, 255, 255, .82); max-width: 100%; white-space: normal; }
 
@@ -196,7 +197,7 @@ body.coffee-route .category-bar { display: none; }
   text-decoration: none !important;
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
-.coffee-primary-button { border: 1px solid var(--coffee-primary); color: #fff !important; background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(216, 33, 40, .26); }
+.coffee-primary-button { border: 1px solid var(--coffee-primary); color: #fff !important; background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(0, 104, 191, .26); }
 .coffee-primary-button:hover { background: var(--coffee-primary-dark); border-color: var(--coffee-primary-dark); transform: translateY(-1px); }
 .coffee-secondary-button { border: 1px solid var(--coffee-border-strong); color: var(--coffee-primary) !important; background: #fff; }
 .coffee-secondary-button:hover { border-color: var(--coffee-primary); background: var(--coffee-primary-soft-2); transform: translateY(-1px); }
@@ -359,7 +360,7 @@ body.coffee-route .category-bar { display: none; }
 }
 .coffee-screen input:focus,
 .coffee-screen textarea:focus,
-.coffee-screen select:focus { outline: none; border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(216, 33, 40, .15); }
+.coffee-screen select:focus { outline: none; border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(0, 104, 191, .15); }
 .coffee-screen textarea { resize: vertical; }
 .coffee-screen input[readonly] { background: var(--coffee-surface-2); color: var(--coffee-muted); font-variant-numeric: tabular-nums; }
 
@@ -444,7 +445,7 @@ body.coffee-route .category-bar { display: none; }
 
 .coffee-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: var(--coffee-radius-xs); color: var(--coffee-ink); background: transparent; font-size: .86rem; font-weight: 500; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
 .coffee-manual-input:hover { border-color: var(--coffee-border); background: #fff; }
-.coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(216, 33, 40, .16); }
+.coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(0, 104, 191, .16); }
 .coffee-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-input--qty { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-total-cell { display: inline-block; min-width: 100%; color: var(--coffee-primary-deep); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }

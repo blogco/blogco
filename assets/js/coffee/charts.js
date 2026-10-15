@@ -3,33 +3,33 @@
 // Every builder is a PURE function that returns an HTML/SVG string (no DOM), so
 // the layouts can be unit-tested in Node and dropped straight into innerHTML.
 //
-// Design system palette (Delivery Hero red / black / neutral), matching coffee.css.
+// Design system palette (Ericsson blue / neutral), matching coffee.css.
 
 import { escapeHtml } from './store.js';
 
 export const PALETTE = Object.freeze({
-  primary: '#D82128',
-  primaryAlt: '#B51B21',
-  primaryDark: '#8F1418',
-  mint: '#F28086',
-  mintSoft: '#FBD5D7',
-  gray: '#E5E7EB',
-  grayText: '#6B7280',
-  bg: '#FAFAFA',
-  border: '#E5E7EB',
-  ink: '#121212',
+  primary: '#002561',
+  primaryAlt: '#0068bf',
+  primaryDark: '#001b46',
+  mint: '#0082f0',
+  mintSoft: '#9CCBF9',
+  gray: '#D5E3F0',
+  grayText: '#5B6B7F',
+  bg: '#F4F8FC',
+  border: '#D5E3F0',
+  ink: '#002561',
   warning: '#C2740B',
   warningSoft: '#FBE3C7',
-  danger: '#D82128',
+  danger: '#C81E1E',
   success: '#127A4B',
-  info: '#6B7280',
+  info: '#0068bf',
 });
 
-// Ordered palette for categorical series (brands, categories…). Red-forward with
-// black / soft-red / neutral steps for strong contrast between neighbouring slices.
+// Ordered palette for categorical series (brands, categories…). Blue-forward
+// with deep / mid / sky / soft steps for strong contrast between slices.
 export const SERIES_COLORS = [
-  '#D82128', '#121212', '#F28086', '#6B7280', '#8F1418',
-  '#B51B21', '#9CA3AF', '#F8B4B8', '#374151', '#E5E7EB',
+  '#002561', '#0068bf', '#0082f0', '#4DA3F5', '#9CCBF9',
+  '#001b46', '#5B6B7F', '#7DBBF7', '#BBD8F5', '#374151',
 ];
 
 export function colorAt(index) {

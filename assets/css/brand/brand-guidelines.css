@@ -1,18 +1,19 @@
 /* BlogCo — Corporate Identity & Brand Guidelines (#/brand-guidelines · #/ci)
-   Nhận diện tham chiếu từ Delivery Hero (ir.deliveryhero.com): Đỏ · Đen · Trắng. */
+   Nhận diện tham chiếu từ Ericsson: Xanh dương · Trắng · Xám lạnh. */
 
 :root {
-  --blogco-primary: #D82128;
-  --blogco-primary-hover: #B51B21;
-  --blogco-accent-bg: #FFF0F1;
-  --blogco-dark-neutral: #121212;
-  --blogco-bg: #FAFAFA;
+  --blogco-primary: #002561;
+  --blogco-primary-hover: #001b46;
+  --blogco-accent-sky: #0082f0;
+  --blogco-accent-bg: #EAF3FE;
+  --blogco-dark-neutral: #002561;
+  --blogco-bg: #F4F8FC;
   --blogco-card-bg: #FFFFFF;
-  --blogco-text-main: #121212;
-  --blogco-text-body: #333333;
-  --blogco-text-muted: #6B7280;
-  --blogco-border: #E5E7EB;
-  --blogco-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --blogco-text-main: #002561;
+  --blogco-text-body: #33475B;
+  --blogco-text-muted: #5B6B7F;
+  --blogco-border: #D5E3F0;
+  --blogco-font-family: 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
   --blogco-shadow: 0 4px 12px rgb(0 0 0 / 5%);
 }
 
@@ -90,8 +91,8 @@ body.brand-route .brand-screen .brand-lead {
 
 .brand-lockup__mark { font-size: 1rem; }
 .brand-lockup--light { border: 1px solid var(--blogco-border); color: var(--blogco-primary); background: #fff; }
-.brand-lockup--red { color: #fff; background: var(--blogco-primary); }
-.brand-lockup--red .brand-lockup__mark { color: var(--blogco-accent-bg); }
+.brand-lockup--brand { color: #fff; background: var(--blogco-primary); }
+.brand-lockup--brand .brand-lockup__mark { color: var(--blogco-accent-sky); }
 
 /* Section chung ---------------------------------------------------------- */
 .brand-section { margin-top: 56px; }

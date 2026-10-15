@@ -12,34 +12,34 @@ const mountedRoots = new WeakSet();
 
 const COLOR_TOKENS = [
   {
-    name: 'Primary — Delivery Hero Red',
+    name: 'Primary — Ericsson Blue',
     token: '--blogco-primary',
-    hex: '#D82128',
-    usage: 'Logo BlogCo, nút CTA chính, highlight tiêu đề, cột/phân đoạn biểu đồ chủ đạo.',
+    hex: '#002561',
+    usage: 'Logo BlogCo, nút CTA chính, tiêu đề H1/H2, cột/phân đoạn biểu đồ chủ đạo.',
   },
   {
-    name: 'Primary Hover — Deep Red',
+    name: 'Primary Hover — Deep Navy',
     token: '--blogco-primary-hover',
-    hex: '#B51B21',
+    hex: '#001b46',
     usage: 'Trạng thái hover/pressed của nút chính, liên kết đang focus.',
   },
   {
-    name: 'Dark Neutral — Charcoal',
-    token: '--blogco-dark-neutral',
-    hex: '#121212',
-    usage: 'Header/Navbar, tiêu đề H1/H2 và văn bản có độ tương phản cao.',
+    name: 'Secondary Accent — Sky Blue',
+    token: '--blogco-accent-sky',
+    hex: '#0082f0',
+    usage: 'Active state, border nổi bật, điểm nhấn biểu đồ và thanh tiến trình.',
   },
   {
-    name: 'Accent Background — Soft Red',
+    name: 'Accent Background — Soft Blue',
     token: '--blogco-accent-bg',
-    hex: '#FFF0F1',
+    hex: '#EAF3FE',
     usage: 'Nền card thông báo, badge/tag nổi bật, trạng thái hover của bảng.',
   },
   {
-    name: 'Background — Off White',
+    name: 'Background — Ice Blue',
     token: '--blogco-bg',
-    hex: '#FAFAFA',
-    usage: 'Nền trang giao diện sáng (Light Mode).',
+    hex: '#F4F8FC',
+    usage: 'Nền trang giao diện sáng (Light Mode), mang hơi hướng công nghệ viễn thông.',
   },
   {
     name: 'Surface — Card Background',
@@ -50,41 +50,41 @@ const COLOR_TOKENS = [
   {
     name: 'Text — Title / High Contrast',
     token: '--blogco-text-main',
-    hex: '#121212',
+    hex: '#002561',
     usage: 'Tiêu đề H1, H2, H3 và các nhãn quan trọng.',
   },
   {
     name: 'Text — Body',
     token: '--blogco-text-body',
-    hex: '#333333',
+    hex: '#33475B',
     usage: 'Nội dung bài viết, đoạn văn bản chính.',
   },
   {
     name: 'Text — Muted / Secondary',
     token: '--blogco-text-muted',
-    hex: '#6B7280',
+    hex: '#5B6B7F',
     usage: 'Ngày tháng, tác giả, ghi chú phụ, chú thích.',
   },
   {
     name: 'Border — Hairline',
     token: '--blogco-border',
-    hex: '#E5E7EB',
+    hex: '#D5E3F0',
     usage: 'Viền mảnh phân tách card, bảng và các khối nội dung.',
   },
 ];
 
 const CSS_TOKENS = `:root {
-  --blogco-primary: #D82128;
-  --blogco-primary-hover: #B51B21;
-  --blogco-accent-bg: #FFF0F1;
-  --blogco-dark-neutral: #121212;
-  --blogco-bg: #FAFAFA;
+  --blogco-primary: #002561;
+  --blogco-primary-hover: #001b46;
+  --blogco-accent-sky: #0082f0;
+  --blogco-accent-bg: #EAF3FE;
+  --blogco-bg: #F4F8FC;
   --blogco-card-bg: #FFFFFF;
-  --blogco-text-main: #121212;
-  --blogco-text-body: #333333;
-  --blogco-text-muted: #6B7280;
-  --blogco-border: #E5E7EB;
-  --blogco-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --blogco-text-main: #002561;
+  --blogco-text-body: #33475B;
+  --blogco-text-muted: #5B6B7F;
+  --blogco-border: #D5E3F0;
+  --blogco-font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
 }`;
 
 // ---------------------------------------------------------------------------
@@ -114,13 +114,13 @@ function renderHeader() {
   return `<header class="brand-hero">
     <p class="brand-eyebrow">BLOGCO · DESIGN SYSTEM</p>
     <h1 class="brand-hero__title" tabindex="-1">BlogCo Corporate Identity &amp; Brand Guidelines</h1>
-    <p class="brand-lead">Hệ thống nhận diện thương hiệu lấy cảm hứng từ ngôn ngữ thiết kế của <em>Delivery Hero</em>: động lực, hiện đại, độ tương phản cao, tối ưu cho ứng dụng Tech/Food Delivery &amp; IR. Trang này là nguồn tham chiếu duy nhất cho màu sắc, typography và các UI component dùng trên toàn bộ BlogCo.</p>
+    <p class="brand-lead">Hệ thống nhận diện thương hiệu lấy cảm hứng từ ngôn ngữ thiết kế của <em>Ericsson</em>: kết nối công nghệ, chính xác, minh bạch và chuyên nghiệp. Trang này là nguồn tham chiếu duy nhất cho màu sắc, typography và các UI component dùng trên toàn bộ BlogCo.</p>
     <div class="brand-lockups" aria-label="Mẫu logo BlogCo">
       <div class="brand-lockup brand-lockup--light">
         <span class="brand-lockup__mark" aria-hidden="true">◆</span>
         <span class="brand-lockup__word">BlogCo</span>
       </div>
-      <div class="brand-lockup brand-lockup--red">
+      <div class="brand-lockup brand-lockup--brand">
         <span class="brand-lockup__mark" aria-hidden="true">◆</span>
         <span class="brand-lockup__word">BlogCo</span>
       </div>
@@ -148,7 +148,7 @@ function renderColors() {
   return `<section class="brand-section" aria-labelledby="brand-colors">
     <p class="brand-section__index">01 · Color Palette</p>
     <h2 id="brand-colors">Bảng màu thương hiệu</h2>
-    <p class="brand-section__intro">Bảng màu lấy cảm hứng từ nhận diện chuẩn của Delivery Hero (Đỏ · Đen · Trắng). Mỗi màu đi kèm mã HEX, RGB và phạm vi áp dụng.</p>
+    <p class="brand-section__intro">Bảng màu lấy cảm hứng từ nhận diện chuẩn của Ericsson (Xanh dương · Trắng · Xám lạnh). Mỗi màu đi kèm mã HEX, RGB và phạm vi áp dụng.</p>
     <div class="brand-swatches">${COLOR_TOKENS.map(renderColorCard).join('')}</div>
   </section>`;
 }
@@ -173,13 +173,13 @@ function renderTypography() {
       <code>Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif</code>
     </div>
     <div class="brand-type-list">
-      ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #D82128', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
-      ${typeRow('H2', '1.75rem (28px) · 600 · lh 1.3 · #121212', '<h2 class="brand-demo-h2">Giao hàng nhanh, vận hành thông minh</h2>')}
-      ${typeRow('H3', '1.25rem (20px) · 600 · lh 1.4 · #D82128', '<h3 class="brand-demo-h3">Kết nối người dùng với mọi món ngon</h3>')}
-      ${typeRow('Body', '1.0rem (16px) · 400 · lh 1.6 · #333333', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
-      ${typeRow('Link', 'Inherit body · #D82128 · gạch chân 1px', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
-      ${typeRow('Blockquote', 'Body · viền trái 4px #D82128 · nền #FFF0F1', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
-      ${typeRow('Small', '0.875rem (14px) · 400 · #6B7280', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
+      ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #002561', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
+      ${typeRow('H2', '1.75rem (28px) · 600 · lh 1.3 · #002561', '<h2 class="brand-demo-h2">Kết nối con người, vận hành thông minh</h2>')}
+      ${typeRow('H3', '1.25rem (20px) · 600 · lh 1.4 · #0068bf', '<h3 class="brand-demo-h3">Kết nối người dùng với mọi dịch vụ</h3>')}
+      ${typeRow('Body', '1.0rem (16px) · 400 · lh 1.6 · #33475B', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
+      ${typeRow('Link', 'Inherit body · #0068bf · gạch chân 1px', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
+      ${typeRow('Blockquote', 'Body · viền trái 4px #0082f0 · nền #EAF3FE', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
+      ${typeRow('Small', '0.875rem (14px) · 400 · #5B6B7F', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
     </div>
   </section>`;
 }
@@ -188,7 +188,7 @@ function renderComponents() {
   return `<section class="brand-section" aria-labelledby="brand-components">
     <p class="brand-section__index">03 · UI Components</p>
     <h2 id="brand-components">Thư viện thành phần giao diện</h2>
-    <p class="brand-section__intro">Các mẫu component tái sử dụng theo gam Đỏ · Đen · Trắng: nút bấm, card nội dung / thống kê và bảng dữ liệu.</p>
+    <p class="brand-section__intro">Các mẫu component tái sử dụng theo gam Xanh dương · Trắng · Xám lạnh: nút bấm, card nội dung / thống kê và bảng dữ liệu.</p>
 
     <h3 class="brand-subtitle">Buttons</h3>
     <div class="brand-buttons">

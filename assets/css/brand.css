@@ -1,38 +1,40 @@
 :root {
-  /* Delivery Hero corporate identity */
-  --dh-red: #D82128;
-  --dh-red-dark: #B51B21;
-  --dh-black: #121212;
-  --dh-black-2: #1F1F1F;
-  --dh-soft: #FFF0F1;
-  --dh-bg: #FAFAFA;
-  --dh-surface: #FFFFFF;
-  --dh-border: #E5E7EB;
+  /* Ericsson corporate identity — connectivity, precision, transparency */
+  --er-blue: #0068bf;
+  --er-blue-dark: #002561;
+  --er-sky: #0082f0;
+  --er-navy: #002561;
+  --er-navy-2: #001b46;
+  --er-soft: #EAF3FE;
+  --er-bg: #F4F8FC;
+  --er-surface: #FFFFFF;
+  --er-border: #D5E3F0;
 
-  --bg: #FAFAFA;
-  --text: #121212;
-  --muted: #6B7280;
-  --border: #E5E7EB;
-  --accent: #D82128;
-  --accent-dark: #B51B21;
-  --font-sans: "Inter", "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  --bg: #F4F8FC;
+  --text: #002561;
+  --muted: #5B6B7F;
+  --border: #D5E3F0;
+  --accent: #0068bf;
+  --accent-dark: #002561;
+  --accent-sky: #0082f0;
+  --font-sans: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
   --fw-body: 500;
   --fw-heading: 700;
   --fw-h1: 800;
   --fs-body: 18px;
   --lh-body: 1.75;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --radius: 6px;
+  --radius-sm: 4px;
   --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
   --max-wide: 1200px;
   --max-content: 720px;
   --space-section: 96px;
 
-  --theme: var(--dh-surface);
-  --entry: var(--dh-surface);
+  --theme: var(--er-surface);
+  --entry: var(--er-surface);
   --primary: var(--text);
   --secondary: var(--muted);
-  --content: #333333;
+  --content: #33475B;
   --code-bg: #F3F4F6;
   color-scheme: light;
 }
@@ -243,9 +245,9 @@ body.article-body .main {
 .pagination__link { display: inline-flex; min-width: 40px; height: 40px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; color: var(--text) !important; background: #fff; font-size: 14px; font-weight: 700 !important; text-decoration: none; transition: color .15s ease, background .15s ease, border-color .15s ease; }
 .pagination__link--prev,
 .pagination__link--next { padding-inline: 16px; }
-.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #FFF0F1; }
+.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #EAF3FE; }
 .pagination__link.is-active,
-.pagination__link[aria-current="page"] { border-color: #D82128; color: #fff !important; background: #D82128; }
+.pagination__link[aria-current="page"] { border-color: #002561; color: #fff !important; background: #002561; }
 .pagination__link:focus-visible { outline: 3px solid var(--accent-dark); outline-offset: 3px; }
 
 .home-posts { width: 100%; max-width: 1280px; margin: 64px auto; padding: 0 24px; }
@@ -258,7 +260,7 @@ body.article-body .main {
 .post-card__thumb { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #f3f4f6; }
 .post-card__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
 .post-card:hover .post-card__thumb img { transform: scale(1.04); }
-.post-card__thumb-placeholder { display: block; width: 100%; height: 100%; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); }
+.post-card__thumb-placeholder { display: block; width: 100%; height: 100%; background: linear-gradient(135deg, #f3f4f6, #D5E3F0); }
 .post-card__body { display: flex; min-height: 250px; flex: 1; flex-direction: column; gap: 8px; padding: 20px; }
 .post-card__date { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; letter-spacing: .06em; text-transform: uppercase; }
 .post-card .post-card__title { display: -webkit-box; overflow: hidden; margin: 0; color: var(--text); font-size: 18px !important; font-weight: 700 !important; line-height: 1.35 !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -817,8 +819,8 @@ body .main .post-header .post-description {
 
 :root {
   --nav-height: 64px;
-  --nav-active-bg: #D82128;
-  --nav-font: "Inter", "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  --nav-active-bg: #0082f0;
+  --nav-font: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
   --nav-fw: 700;
   --nav-fs: 14px;
   --nav-ls: 0.06em;
@@ -840,7 +842,7 @@ body.article-body .blogco-header {
   height: var(--nav-height);
   min-height: var(--nav-height);
   border-bottom: 0;
-  background: var(--dh-black);
+  background: var(--er-navy);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.32);
 }
 
@@ -884,8 +886,8 @@ body.article-body .blogco-header .header-nav {
   text-decoration: none;
 }
 
-.blogco-header .navbar__logo-mark { margin-right: 7px; color: var(--accent); font-size: .8em; }
-.blogco-header .navbar__logo-accent { color: var(--accent); }
+.blogco-header .navbar__logo-mark { margin-right: 7px; color: var(--accent-sky); font-size: .8em; }
+.blogco-header .navbar__logo-accent { color: var(--accent-sky); }
 
 .blogco-header .navbar__menu {
   display: flex;
@@ -948,7 +950,7 @@ body.article-body .blogco-header .header-nav {
   left: 10px;
   height: 3px;
   border-radius: 2px;
-  background: var(--accent);
+  background: var(--accent-sky);
   content: "";
   opacity: 0;
   transform: scaleX(0.4);
@@ -1009,9 +1011,9 @@ body.article-body .blogco-header .header-nav {
   z-index: 10000;
   width: min(560px, calc(100vw - 32px));
   padding: 18px;
-  border: 1px solid var(--dh-border);
-  border-radius: 14px;
-  background: var(--dh-surface);
+  border: 1px solid var(--er-border);
+  border-radius: 8px;
+  background: var(--er-surface);
   box-shadow: 0 20px 48px rgba(0, 0, 0, .22), 0 4px 12px rgba(0, 0, 0, .08);
   opacity: 0;
   visibility: hidden;
@@ -1062,15 +1064,15 @@ body.article-body .blogco-header .header-nav {
   padding: 11px 12px;
   border: 1px solid transparent;
   border-radius: 10px;
-  color: var(--dh-black) !important;
+  color: var(--er-navy) !important;
   text-decoration: none;
   transition: background .14s ease, border-color .14s ease, transform .14s ease;
 }
 
 .blogco-header .navbar__mega-item:hover,
 .blogco-header .navbar__mega-item:focus-visible {
-  border-color: #F7C9CC;
-  background: var(--dh-soft);
+  border-color: #BBD8F5;
+  background: var(--er-soft);
   transform: translateY(-1px);
 }
 
@@ -1083,7 +1085,7 @@ body.article-body .blogco-header .header-nav {
 .blogco-header .navbar__mega-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
 .blogco-header .navbar__mega-title {
-  color: var(--dh-black);
+  color: var(--er-navy);
   font-size: 13px;
   font-weight: 700 !important;
   letter-spacing: 0;
@@ -1157,7 +1159,7 @@ body.article-body .blogco-header .header-nav {
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 0 0 8px 8px;
-    background: var(--dh-black);
+    background: var(--er-navy);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
     white-space: normal;
   }
@@ -1217,12 +1219,12 @@ body.article-body .blogco-header .header-nav {
   .blogco-header .navbar__logo { font-size: 19px; }
 }
 
-/* Footer — Delivery Hero black band ---------------------------------------- */
+/* Footer — Ericsson deep-blue band ----------------------------------------- */
 body .footer,
 .footer {
   color: rgba(255, 255, 255, 0.72) !important;
-  background: var(--dh-black);
-  border-top: 1px solid var(--dh-black-2);
+  background: var(--er-navy);
+  border-top: 1px solid var(--er-navy-2);
 }
 
 .footer a,
@@ -1232,9 +1234,9 @@ body .footer,
 }
 
 .footer a:hover,
-.footer a:focus-visible { color: var(--accent) !important; }
+.footer a:focus-visible { color: var(--accent-sky) !important; }
 
 .footer .gh-actions__heading { color: #fff !important; }
 .footer .gh-actions { border-top-color: rgba(255, 255, 255, 0.14); }
-.footer .gh-actions__link { color: var(--accent) !important; }
+.footer .gh-actions__link { color: var(--accent-sky) !important; }
 .footer .gh-actions__link:hover { color: #fff !important; }
