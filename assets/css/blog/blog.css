@@ -541,3 +541,7 @@ body.blog-drawer-open { overflow: hidden; }
   .blog-layout { grid-template-columns: 1fr; }
   .blog-modes { grid-template-columns: 1fr; }
 }
+
+/* Cho khung soạn thảo vượt qua giới hạn --max-wide 1200px của .main --------- */
+body.blog-route .main { width: min(1400px, calc(100% - 48px)); max-width: 1400px; }
+.blog-screen { width: 100%; max-width: 1400px; }
