@@ -1,7 +1,7 @@
 // Local-first settings + draft for the blog editor, and the GitHub contents
 // API calls used to publish a post straight from the browser.
 
-import { contentsApiUrl, buildCommitPayload, commitMessage, postPath, arrayBufferToBase64, uploadPath } from './lib.js';
+import { contentsApiUrl, buildCommitPayload, commitMessage, postPath, arrayBufferToBase64, uploadPath, rawFileUrl, POSTS_DIR } from './lib.js';
 
 const SETTINGS_KEY = 'blogco.blog.settings.v1';
 const DRAFT_KEY = 'blogco.blog.draft.v1';
@@ -98,10 +98,10 @@ export async function getFileSha({ repo, path, branch, token }) {
   return data.sha || null;
 }
 
-export async function commitPost({ repo, branch = 'main', slug, title, content, token, update = true }) {
+export async function commitPost({ repo, branch = 'main', slug, path: targetPath, title, content, token, sha: knownSha, update = true }) {
   if (!token) throw new Error('Chưa nhập GitHub token.');
-  const path = postPath(slug);
-  const sha = update ? await getFileSha({ repo, path, branch, token }) : null;
+  const path = targetPath || postPath(slug);
+  const sha = knownSha || (update ? await getFileSha({ repo, path, branch, token }) : null);
   const response = await fetch(contentsApiUrl(repo, path), {
     method: 'PUT',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
@@ -115,6 +115,55 @@ export async function commitPost({ repo, branch = 'main', slug, title, content, 
     commit: data?.commit?.html_url || '',
     created: !sha,
   };
+}
+
+// --- Blog manager (list / read / delete published posts) --------------------
+
+function readHeaders(token) {
+  return token ? authHeaders(token) : { Accept: 'application/vnd.github+json' };
+}
+
+function decodeBase64(text = '') {
+  const binary = atob(String(text).replace(/\s/g, ''));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+// List the files in content/posts (one API request). Each entry carries its
+// blob sha + a public download_url so the manager can fetch text cheaply.
+export async function listPostFiles({ repo, branch = 'main', token = '', dir = POSTS_DIR } = {}) {
+  const response = await fetch(contentsApiUrl(repo, dir, branch), { headers: readHeaders(token), cache: 'no-store' });
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error(await githubError(response));
+  const data = await response.json();
+  return Array.isArray(data) ? data.filter((entry) => entry.type === 'file') : [];
+}
+
+// Raw text of a post (no API quota when a download_url is available).
+export async function fetchPostText(file, { repo, branch = 'main' } = {}) {
+  const url = file.download_url || rawFileUrl(repo, branch, file.path);
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Không tải được nội dung bài viết (${response.status}).`);
+  return response.text();
+}
+
+// Full text + current sha of a single post, for editing.
+export async function getPostFile({ repo, branch = 'main', token = '', path } = {}) {
+  const response = await fetch(contentsApiUrl(repo, path, branch), { headers: readHeaders(token), cache: 'no-store' });
+  if (!response.ok) throw new Error(await githubError(response));
+  const data = await response.json();
+  return { text: data.content ? decodeBase64(data.content) : '', sha: data.sha };
+}
+
+export async function deletePost({ repo, branch = 'main', token, path, sha }) {
+  if (!token) throw new Error('Nhập GitHub token để xoá bài viết.');
+  const response = await fetch(contentsApiUrl(repo, path), {
+    method: 'DELETE',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `post: xoá ${String(path).split('/').pop()}`, branch, sha }),
+  });
+  if (!response.ok) throw new Error(await githubError(response));
+  return { path };
 }
 
 // Commit an already-base64-encoded binary asset (e.g. an uploaded image).

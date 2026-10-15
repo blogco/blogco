@@ -16,11 +16,11 @@
 import TurndownService from 'turndown';
 import {
   slugify, buildFrontMatter, buildPostMarkdown, isoNow, postPath,
-  uploadFilename, assetPublicUrl,
+  uploadFilename, assetPublicUrl, parsePostMarkdown, slugFromPostPath,
 } from './lib.js';
 import {
   getSettings, saveSettings, getDraft, saveDraft, clearDraft, commitPost,
-  uploadImage, mediaConfig,
+  uploadImage, mediaConfig, listPostFiles, fetchPostText, getPostFile, deletePost,
 } from './store.js';
 import { pickThumbnail } from './thumbnail.js';
 import {
@@ -345,27 +345,15 @@ function hasLocalUpload(state) {
   return Boolean(state.file) || state.images.size > 0 || state.thumb?.provider === 'upload';
 }
 
-// Local uploads always win: while any exist we force the "upload" mode and lock
-// the Unsplash option. Unsplash can only be used when there is no local image.
+// Reflect the chosen source: uploads open the dropzone, Unsplash hides it. Both
+// sources are allowed at once — an Unsplash cover can live alongside uploaded
+// images in the body, so nothing is forced or locked here.
 function syncImageMode(root, state) {
   const upload = root.querySelector('input[name="blog-image-mode"][value="upload"]');
-  const auto = root.querySelector('input[name="blog-image-mode"][value="auto"]');
-  const locked = hasLocalUpload(state);
-  if (locked && upload) upload.checked = true;
-  if (auto) {
-    auto.disabled = locked;
-    auto.closest('.blog-mode')?.classList.toggle('is-locked', locked);
-  }
   const usingUpload = Boolean(upload?.checked);
   setUploadZone(root, usingUpload);
   const hint = root.querySelector('[data-blog-mode-hint]');
-  if (hint) {
-    hint.textContent = locked
-      ? 'Bài viết đang dùng ảnh bạn tải lên. Xoá hết ảnh đã upload nếu muốn chuyển sang Unsplash.'
-      : '';
-    hint.hidden = !locked;
-  }
-  if (locked) saveSettings({ imageMode: 'upload' });
+  if (hint) { hint.textContent = ''; hint.hidden = true; }
   return usingUpload;
 }
 
@@ -818,7 +806,7 @@ async function onSave(root, state) {
   const saveButton = root.querySelector('[data-blog-save]');
   if (saveButton) saveButton.disabled = true;
   try {
-    const slug = slugify(form.title);
+    const slug = state.editSlug || slugify(form.title);
     if (state.images?.size) {
       setStatus(root, 'Đang upload ảnh trong bài lên GitHub…');
       await resolvePendingImages(root, state, { repo: form.repo, branch: form.branch, token: form.token, slug });
@@ -826,34 +814,22 @@ async function onSave(root, state) {
     // Re-read after inline uploads so the Markdown holds the final image URLs.
     const finalBody = markdownFromHtml(richEl(root)?.innerHTML || '');
     let cover = null;
-    // Local images win outright: never fall back to Unsplash while the author
-    // has an uploaded cover or any uploaded inline image in the post.
-    const useLocal = hasLocalUpload(state) || form.imageMode === 'upload';
-
-    if (lockLocal) {
-      if (state.file) {
-        const media = mediaConfig();
-        const filename = uploadFilename(slug, state.file.name);
-        setStatus(root, 'Đang upload ảnh lên GitHub…');
-        const asset = await uploadImage({
-          repo: form.repo, branch: form.branch, dir: media.dir,
-          filename, file: state.file, token: form.token,
-        });
-        cover = { url: assetPublicUrl(media.siteUrl, asset.path), provider: 'upload', credit: state.file.name };
-      } else if (state.thumb?.provider === 'upload') {
-        cover = state.thumb;
-      } else {
-        const inline = firstInlineImageUrl(root);
-        if (!inline) {
-          setStatus(root, 'Hãy chọn ảnh đại diện hoặc chèn ảnh vào bài, hoặc chuyển sang “Dùng ảnh Unsplash”.', 'error');
-          return;
-        }
-        cover = { url: inline, provider: 'upload', credit: form.title };
-      }
+    // Both sources can be used together: an uploaded cover wins the thumbnail
+    // slot, otherwise the chosen Unsplash image, otherwise an auto pick. Inline
+    // local images always stay in the body either way.
+    if (state.file) {
+      const media = mediaConfig();
+      const filename = uploadFilename(slug, state.file.name);
+      setStatus(root, 'Đang upload ảnh lên GitHub…');
+      const asset = await uploadImage({
+        repo: form.repo, branch: form.branch, dir: media.dir,
+        filename, file: state.file, token: form.token,
+      });
+      cover = { url: assetPublicUrl(media.siteUrl, asset.path), provider: 'upload', credit: state.file.name };
+    } else if (state.thumb?.url) {
+      cover = state.thumb;
     } else {
-      cover = state.thumb?.provider && state.thumb.provider !== 'upload'
-        ? state.thumb
-        : await pickThumbnail({ title: form.title, tags: form.tags, slug });
+      cover = await pickThumbnail({ title: form.title, tags: form.tags, slug });
     }
 
     const frontMatter = buildFrontMatter({
@@ -873,10 +849,15 @@ async function onSave(root, state) {
     });
 
     setStatus(root, `Đang commit ${postPath(slug)} …`);
-    const result = await commitPost({ repo: form.repo, branch: form.branch, slug, title: form.title, content, token: form.token });
+    const result = await commitPost({
+      repo: form.repo, branch: form.branch, slug, path: state.editPath || undefined,
+      title: form.title, content, token: form.token, sha: state.editSha || undefined,
+    });
     clearDraft();
-    setStatus(root, `${result.created ? 'Đã tạo' : 'Đã cập nhật'} ${result.path}. Đang về trang chủ…`, 'ok');
+    const editing = Boolean(state.editPath);
+    setStatus(root, `${result.created ? 'Đã tạo' : 'Đã cập nhật'} ${result.path}. ${editing ? 'Đang về danh sách…' : 'Đang về trang chủ…'}`, 'ok');
     window.setTimeout(() => {
+      if (editing) { window.location.hash = '#/blog'; return; }
       const home = document.querySelector('.navbar__logo')?.getAttribute('href') || '/';
       window.location.assign(home);
     }, 1400);
@@ -884,6 +865,203 @@ async function onSave(root, state) {
     setStatus(root, error.message || 'Không lưu được bài viết.', 'error');
   } finally {
     if (saveButton) saveButton.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Routes + post manager (#/blog = list, #/blog/new = new, #/blog/edit/<path>)
+// ---------------------------------------------------------------------------
+
+function blogRoute() {
+  const hash = location.hash || '';
+  if (hash.startsWith('#/blog/edit/')) {
+    return { view: 'editor', path: decodeURIComponent(hash.slice('#/blog/edit/'.length)) };
+  }
+  if (hash.startsWith('#/blog/new')) return { view: 'editor', path: '' };
+  return { view: 'list', path: '' };
+}
+
+// Markdown → editor HTML: expand figure shortcodes then render with `marked`,
+// converting the resulting <figure>s back into the editor's managed shape.
+async function markdownToEditorHtml(markdown = '') {
+  const marked = await loadMarked();
+  const render = typeof marked === 'function' ? marked : marked.parse;
+  const tpl = document.createElement('div');
+  tpl.innerHTML = render(expandFigureShortcodes(markdown));
+  tpl.querySelectorAll('figure').forEach((fig) => {
+    if (!fig.querySelector('img')) return;
+    const align = fig.classList.contains('md-figure--center') ? 'center'
+      : fig.classList.contains('md-figure--full') ? 'full' : 'left';
+    tpl.querySelectorAll;
+    fig.className = 'blog-figure';
+    fig.dataset.align = align;
+  });
+  return tpl.innerHTML;
+}
+
+function coverProvider(url = '') {
+  return /\/uploads\//.test(url) ? 'upload' : 'auto';
+}
+
+async function loadPostIntoEditor(root, state, path) {
+  const settings = getSettings();
+  setStatus(root, 'Đang tải bài viết để chỉnh sửa…');
+  const { text, sha } = await getPostFile({ repo: settings.repo, branch: settings.branch, token: settings.token, path });
+  const parsed = parsePostMarkdown(text);
+
+  // The cover is also the first body image (see buildPostMarkdown); drop it from
+  // the body so saving again does not duplicate it.
+  let body = parsed.body;
+  let cover = parsed.cover;
+  const lead = body.match(/^\s*!\[[^\]]*\]\(([^)\s]+)[^)]*\)\s*/);
+  if (lead) {
+    if (!cover) cover = lead[1];
+    if (lead[1] === cover) body = body.slice(lead[0].length);
+  }
+
+  root.querySelector('[data-blog-title]').value = parsed.title || '';
+  root.querySelector('[data-blog-tags]').value = (parsed.tags || []).join(', ');
+  const rich = richEl(root);
+  if (rich) rich.innerHTML = await markdownToEditorHtml(body);
+
+  state.thumb = cover
+    ? { url: cover, provider: /\/uploads\//.test(cover) ? 'upload' : 'auto', credit: '' }
+    : null;
+  state.file = null;
+  showThumb(root, state.thumb);
+  state.editPath = path;
+  state.editSha = '';
+  state.editSlug = slugFromPostPath(path);
+  enhanceFigures(root);
+  syncImageMode(root, state);
+  syncEmptyState(root);
+  setStatus(root, `Đang sửa “${parsed.title || state.editSlug}”. Lưu sẽ cập nhật bài trên GitHub.`);
+}
+
+function managerShellHtml(settings) {
+  return `<section class="blog-screen blog-manage" aria-labelledby="blog-manage-title">
+    <header class="blog-head">
+      <a class="blog-back" href="#" data-blog-home>← Trang chủ</a>
+      <p class="blog-eyebrow">BLOGCO · QUẢN LÝ</p>
+      <h1 id="blog-manage-title" tabindex="-1">Quản lý bài viết</h1>
+      <p>Sửa hoặc xoá bài đã đăng. Thay đổi áp dụng thẳng lên GitHub.</p>
+    </header>
+    <div class="blog-manage__bar">
+      <a class="blog-primary" href="#/blog/new">✍️ Viết bài mới</a>
+      <button type="button" class="blog-ghost" data-blog-list-refresh>🔄 Tải lại</button>
+      <details class="blog-manage__settings">
+        <summary>⚙️ Kết nối GitHub</summary>
+        <label class="blog-field">Token
+          <input type="password" data-blog-token value="${escapeHtml(settings.token)}" placeholder="ghp_… (cần quyền contents:write)" autocomplete="off">
+        </label>
+        <label class="blog-field">Repository
+          <input type="text" data-blog-repo value="${escapeHtml(settings.repo)}" placeholder="owner/repo">
+        </label>
+        <label class="blog-field">Branch
+          <input type="text" data-blog-branch value="${escapeHtml(settings.branch)}" placeholder="main">
+        </label>
+      </details>
+    </div>
+    <p class="blog-status" data-blog-status></p>
+    <ul class="blog-manage__list" data-blog-list aria-busy="true"></ul>
+  </section>`;
+}
+
+function postCardHtml(post) {
+  const tags = (post.tags || []).map((tag) => `#${tag}`).join(' ');
+  const date = post.date ? new Date(post.date).toLocaleDateString('vi-VN') : '';
+  const meta = [date, tags].filter(Boolean).join(' · ');
+  const cover = post.cover
+    ? `<img src="${escapeHtml(post.cover)}" alt="" loading="lazy">`
+    : '<span aria-hidden="true">📝</span>';
+  const href = `#/blog/edit/${post.path.split('/').map(encodeURIComponent).join('/')}`;
+  return `<li class="blog-manage__item" data-blog-post data-blog-path="${escapeHtml(post.path)}" data-blog-sha="${escapeHtml(post.sha || '')}">
+    <span class="blog-manage__media">${cover}</span>
+    <div class="blog-manage__body">
+      <h2 class="blog-manage__title">${escapeHtml(post.title || post.name || 'Không có tiêu đề')}</h2>
+      ${meta ? `<p class="blog-manage__meta">${escapeHtml(meta)}</p>` : ''}
+    </div>
+    <div class="blog-manage__actions">
+      <a class="blog-ghost blog-ghost--sm" href="${escapeHtml(href)}">✏️ Sửa</a>
+      <button type="button" class="blog-ghost blog-ghost--sm blog-ghost--danger" data-blog-post-delete>🗑️ Xóa</button>
+    </div>
+  </li>`;
+}
+
+async function renderList(root, state) {
+  const settings = getSettings();
+  state.view = 'list';
+  state.editPath = '';
+  root.innerHTML = managerShellHtml(settings);
+  const list = root.querySelector('[data-blog-list]');
+  list.innerHTML = '<li class="blog-manage__state">Đang tải danh sách bài viết…</li>';
+  try {
+    const files = (await listPostFiles({ repo: settings.repo, branch: settings.branch, token: settings.token }))
+      .filter((file) => /\.md$/i.test(file.name || ''));
+    if (!files.length) {
+      list.setAttribute('aria-busy', 'false');
+      list.innerHTML = '<li class="blog-manage__state">Chưa có bài viết nào. Bấm “Viết bài mới” để tạo bài đầu tiên.</li>';
+      return;
+    }
+    const posts = await Promise.all(files.map(async (file) => {
+      let meta = { title: '', date: '', tags: [], cover: '' };
+      try {
+        meta = parsePostMarkdown(await fetchPostText(file, { repo: settings.repo, branch: settings.branch }));
+      } catch { /* keep filename fallback */ }
+      return { ...meta, path: file.path, sha: file.sha, name: file.name };
+    }));
+    posts.sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+    list.setAttribute('aria-busy', 'false');
+    list.innerHTML = posts.map(postCardHtml).join('');
+  } catch (error) {
+    list.setAttribute('aria-busy', 'false');
+    list.innerHTML = `<li class="blog-manage__state is-error">${escapeHtml(error.message || 'Không tải được danh sách bài viết.')}</li>`;
+  }
+}
+
+async function deletePostItem(root, state, item) {
+  if (!item) return;
+  const settings = getSettings();
+  if (!window.confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) return;
+  if (!settings.token) { setStatus(root, 'Nhập GitHub token (mục “Kết nối GitHub”) để xoá bài viết.', 'error'); return; }
+  const button = item.querySelector('[data-blog-post-delete]');
+  if (button) button.disabled = true;
+  try {
+    await deletePost({ repo: settings.repo, branch: settings.branch, token: settings.token, path: item.dataset.blogPath, sha: item.dataset.blogSha });
+    item.remove();
+    setStatus(root, 'Đã xoá bài viết.', 'ok');
+    if (!root.querySelector('[data-blog-post]')) {
+      root.querySelector('[data-blog-list]').innerHTML = '<li class="blog-manage__state">Chưa còn bài viết nào.</li>';
+    }
+  } catch (error) {
+    if (button) button.disabled = false;
+    setStatus(root, error.message || 'Không xoá được bài viết.', 'error');
+  }
+}
+
+function renderRoute(root, state) {
+  const route = blogRoute();
+  const key = `${route.view}:${route.path}`;
+  if (state.routeKey !== key) {
+    state.routeKey = key;
+    if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+    state.blobs.clear();
+    state.images.clear();
+    state.imageSeq = 0;
+    state.file = null;
+    state.thumb = null;
+    state.editPath = '';
+    state.editSha = '';
+    state.editSlug = '';
+    state.selectedFigure = null;
+    state.activeFigure = null;
+    state.view = route.view;
+  }
+  if (route.view === 'list') { void renderList(root, state); return; }
+  renderEditor(root, state);
+  if (route.path) {
+    void loadPostIntoEditor(root, state, route.path)
+      .catch((error) => setStatus(root, error.message || 'Không tải được bài viết.', 'error'));
   }
 }
 
@@ -940,6 +1118,10 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         return;
       }
 
+      const deleteBtn = event.target.closest('[data-blog-post-delete]');
+      if (deleteBtn) { void deletePostItem(root, state, deleteBtn.closest('[data-blog-post]')); return; }
+      if (event.target.closest('[data-blog-list-refresh]')) { void renderList(root, state); return; }
+
       // Select an inline image (enables Delete/Backspace) or clear the selection.
       const image = event.target.closest('img');
       if (image && richEl(root)?.contains(image)) {
@@ -976,6 +1158,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
 
     root.addEventListener('input', (event) => {
       if (event.target.matches?.('input[name="blog-image-mode"]')) return;
+      if (!richEl(root)) return; // manager view has no draft
       if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
       persistDraft(root);
     });
@@ -1030,11 +1213,6 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       const target = event.target;
       if (target.matches?.('[data-blog-mode]')) {
         const wantsAuto = target.value === 'auto';
-        if (wantsAuto && hasLocalUpload(state)) {
-          syncImageMode(root, state);
-          setStatus(root, 'Bài viết đang dùng ảnh bạn tải lên nên Unsplash bị khoá. Xoá ảnh đã upload để dùng Unsplash.', 'error');
-          return;
-        }
         if (wantsAuto) {
           if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
           state.file = null;
@@ -1051,6 +1229,14 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       }
       if (target.matches?.('[data-blog-file]')) { acceptFile(root, target.files?.[0], state); return; }
       if (target.matches?.('[data-blog-image-input]')) { acceptToolbarImages(root, target.files, state); return; }
+      if (target.matches?.('[data-blog-token], [data-blog-repo], [data-blog-branch], [data-blog-author]')) {
+        saveSettings({
+          token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
+          repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
+          branch: root.querySelector('[data-blog-branch]')?.value?.trim() || '',
+          author: root.querySelector('[data-blog-author]')?.value?.trim() || '',
+        });
+      }
     });
 
     root.addEventListener('dragover', (event) => {
@@ -1069,5 +1255,5 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       acceptFile(root, event.dataTransfer?.files?.[0], state);
     });
   }
-  renderEditor(root, state);
+  renderRoute(root, state);
 }

@@ -68,6 +68,70 @@ export function postPath(slug) {
   return `content/posts/${slugify(slug)}.md`;
 }
 
+// Directory that holds published posts (listed/deleted by the blog manager).
+export const POSTS_DIR = 'content/posts';
+
+export function slugFromPostPath(path = '') {
+  return String(path).split('/').pop().replace(/\.md$/i, '') || '';
+}
+
+function unquoteYaml(value = '') {
+  const v = String(value).trim();
+  if (v.length >= 2 && v[0] === '"' && v[v.length - 1] === '"') {
+    return v.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  }
+  if (v.length >= 2 && v[0] === "'" && v[v.length - 1] === "'") return v.slice(1, -1).replace(/''/g, "'");
+  return v;
+}
+
+function parseInlineList(value = '') {
+  const v = String(value).trim().replace(/^\[|\]$/g, '');
+  if (!v) return [];
+  return v.split(',').map((item) => unquoteYaml(item)).filter(Boolean);
+}
+
+// Parse a post written by buildFrontMatter (or hand-written in the same shape):
+// returns { title, date, tags, author, cover, body }. Best-effort on unknown keys.
+export function parsePostMarkdown(markdown = '') {
+  const text = String(markdown).replace(/\r\n?/g, '\n');
+  const out = { title: '', date: '', tags: [], author: '', cover: '', body: '' };
+  const match = /^---\n([\s\S]*?)\n---\n?/.exec(text);
+  if (!match) { out.body = text.replace(/^\n+/, ''); return out; }
+  out.body = text.slice(match[0].length).replace(/^\n+/, '');
+  let section = '';
+  for (const rawLine of match[1].split('\n')) {
+    const line = rawLine.replace(/\s+$/, '');
+    if (!line.trim()) continue;
+    const listItem = line.match(/^\s+-\s+(.*)$/);
+    if (listItem) {
+      if (section === 'tags') out.tags.push(unquoteYaml(listItem[1]));
+      continue;
+    }
+    const kv = line.match(/^\s*([A-Za-z][\w-]*):\s*(.*)$/);
+    if (!kv) continue;
+    const key = kv[1].toLowerCase();
+    const value = kv[2].trim();
+    const nested = /^\s/.test(line);
+    if (nested) {
+      if (section === 'cover' && key === 'image') out.cover = unquoteYaml(value);
+      continue;
+    }
+    if (key === 'cover') { section = 'cover'; if (value) out.cover = unquoteYaml(value); continue; }
+    if (key === 'tags') { section = 'tags'; if (value) out.tags.push(...parseInlineList(value)); continue; }
+    section = '';
+    if (key === 'title') out.title = unquoteYaml(value);
+    else if (key === 'date') out.date = value;
+    else if (key === 'author') out.author = unquoteYaml(value);
+  }
+  return out;
+}
+
+// Raw text URL for a repo file, used to read posts without spending API quota.
+export function rawFileUrl(repo, branch = 'main', path = '') {
+  const clean = String(path).split('/').map(encodeURIComponent).join('/');
+  return `https://raw.githubusercontent.com/${repo}/${encodeURIComponent(branch)}/${clean}`;
+}
+
 export function parseRepo(repo = '') {
   const [owner = '', name = ''] = String(repo).trim().split('/');
   return { owner, name };
