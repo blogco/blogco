@@ -1,11 +1,15 @@
-// In-browser Markdown editor that publishes a post to the blog repository via
-// the GitHub contents API. Mounted at #/blog/new (a "Viết blog mới" entry).
+// In-browser editor that publishes a post to the blog repository via the GitHub
+// contents API. Mounted at #/blog/new (the "Viết blog mới" entry).
 //
-// Cover image comes from one of two modes (see the “Ảnh đại diện” panel):
+// The body is a contenteditable "rich text" surface: authors paste ordinary
+// prose (no Markdown syntax), format with the toolbar if they want, and the
+// editor converts everything to clean Markdown on save. Cover image still comes
+// from one of two modes (see the “Ảnh đại diện” panel):
 //   • upload — pick/drag a file; it is committed to the repo (static/uploads)
 //              and reused as both the cover and the first image of the post.
 //   • auto   — fetch a stock photo (Unsplash/Pexels) or a seeded illustration.
 
+import TurndownService from 'turndown';
 import {
   slugify, buildFrontMatter, buildPostMarkdown, isoNow, postPath,
   uploadFilename, assetPublicUrl,
@@ -15,19 +19,23 @@ import {
   uploadImage, mediaConfig,
 } from './store.js';
 import { pickThumbnail } from './thumbnail.js';
+import { escapeHtml, plainTextToHtml, sanitizePastedHtml, cleanMarkdown } from './rich.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 
-let markedPromise;
-function loadMarked() {
-  markedPromise ??= import('marked').then((mod) => mod.marked || mod.default);
-  return markedPromise;
-}
-
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[char]);
+let turndown;
+function markdownFromHtml(html = '') {
+  if (!turndown) {
+    const Service = TurndownService?.default || TurndownService;
+    turndown = new Service({
+      headingStyle: 'atx',
+      hr: '---',
+      bulletListMarker: '-',
+      codeBlockStyle: 'fenced',
+      emDelimiter: '_',
+    });
+  }
+  return cleanMarkdown(turndown.turndown(html || ''));
 }
 
 function formatBytes(bytes = 0) {
@@ -37,15 +45,15 @@ function formatBytes(bytes = 0) {
 }
 
 const TOOLBAR = [
-  { action: 'bold', label: 'B', title: 'In đậm (Ctrl+B)', wrap: ['**', '**'] },
-  { action: 'italic', label: 'I', title: 'In nghiêng (Ctrl+I)', wrap: ['_', '_'] },
-  { action: 'h2', label: 'H2', title: 'Tiêu đề H2', line: '## ' },
-  { action: 'h3', label: 'H3', title: 'Tiêu đề H3', line: '### ' },
-  { action: 'bullet', label: '•', title: 'Danh sách chấm', line: '- ' },
-  { action: 'number', label: '1.', title: 'Danh sách số', line: '1. ' },
-  { action: 'quote', label: '❝', title: 'Trích dẫn', line: '> ' },
-  { action: 'link', label: '🔗', title: 'Chèn liên kết', wrap: ['[', '](https://)'] },
-  { action: 'code', label: '</>', title: 'Code block', block: '```\n', blockEnd: '\n```' },
+  { action: 'bold', label: 'B', title: 'In đậm' },
+  { action: 'italic', label: 'I', title: 'In nghiêng' },
+  { action: 'h2', label: 'H2', title: 'Tiêu đề lớn', block: 'h2' },
+  { action: 'h3', label: 'H3', title: 'Tiêu đề nhỏ', block: 'h3' },
+  { action: 'bullet', label: '•', title: 'Danh sách chấm', cmd: 'insertUnorderedList' },
+  { action: 'number', label: '1.', title: 'Danh sách số', cmd: 'insertOrderedList' },
+  { action: 'quote', label: '❝', title: 'Trích dẫn', block: 'blockquote' },
+  { action: 'link', label: '🔗', title: 'Chèn liên kết', link: true },
+  { action: 'clear', label: '✨', title: 'Xoá định dạng', clear: true },
 ];
 
 function toolbarHtml() {
@@ -56,12 +64,15 @@ function renderEditor(root) {
   const settings = getSettings();
   const draft = getDraft();
   const isUpload = settings.imageMode === 'upload';
+  // Older drafts may hold plain/Markdown text; turn those into paragraphs.
+  const rawBody = draft.body || '';
+  const initialBody = rawBody && !/<[a-z][\s\S]*>/i.test(rawBody) ? plainTextToHtml(rawBody) : rawBody;
   root.innerHTML = `<section class="blog-screen" aria-labelledby="blog-title">
     <header class="blog-head">
       <a class="blog-back" href="#" data-blog-home>← Trang chủ</a>
       <p class="blog-eyebrow">BLOGCO · STUDIO</p>
       <h1 id="blog-title" tabindex="-1">Viết blog mới</h1>
-      <p>Soạn Markdown, chọn ảnh đại diện rồi sync thẳng lên GitHub.</p>
+      <p>Dán nội dung, chọn ảnh rồi sync thẳng lên GitHub. Không cần gõ Markdown.</p>
     </header>
 
     <div class="blog-layout">
@@ -70,15 +81,14 @@ function renderEditor(root) {
           <input type="text" data-blog-title value="${escapeHtml(draft.title)}" placeholder="VD: Kinh nghiệm uống cà phê lành mạnh">
         </label>
 
-        <div class="blog-toolbar" role="toolbar" aria-label="Định dạng Markdown">${toolbarHtml()}</div>
+        <div class="blog-toolbar" role="toolbar" aria-label="Định dạng văn bản">${toolbarHtml()}</div>
 
-        <label class="blog-field blog-field--grow">Nội dung (Markdown)
-          <textarea data-blog-body spellcheck="false" placeholder="# Tiêu đề&#10;&#10;Viết nội dung ở đây…">${escapeHtml(draft.body)}</textarea>
+        <label class="blog-field blog-field--grow">Nội dung bài viết
+          <div class="blog-rich" data-blog-body contenteditable="true" role="textbox" aria-multiline="true" spellcheck="false" data-placeholder="Dán nội dung bài viết vào đây — xuống dòng và đoạn văn tự nhận."></div>
         </label>
 
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>💾 Lưu &amp; Sync GitHub</button>
-          <button type="button" class="blog-ghost" data-blog-preview-toggle>👁️ Xem trước</button>
           <button type="button" class="blog-ghost" data-blog-clear>🗑️ Xoá nháp</button>
         </div>
         <p class="blog-status" data-blog-status role="status" aria-live="polite"></p>
@@ -124,46 +134,15 @@ function renderEditor(root) {
           </div>
           <p class="blog-thumb__credit" data-blog-credit></p>
         </fieldset>
-
-        <div class="blog-preview" data-blog-preview hidden>
-          <p class="blog-preview__label">Xem trước</p>
-          <div class="blog-preview__body md-content" data-blog-preview-body></div>
-        </div>
       </aside>
     </div>
   </section>`;
+  const rich = root.querySelector('[data-blog-body]');
+  if (rich) {
+    rich.innerHTML = initialBody;
+    syncEmptyState(root);
+  }
   root.querySelector('h1')?.focus?.({ preventScroll: true });
-}
-
-// ---------------------------------------------------------------------------
-// Toolbar helpers
-// ---------------------------------------------------------------------------
-
-export function applyWrap(textarea, before, after) {
-  const { selectionStart: start, selectionEnd: end, value } = textarea;
-  const selected = value.slice(start, end);
-  const next = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`;
-  textarea.value = next;
-  const caret = start + before.length + selected.length;
-  textarea.setSelectionRange(caret, caret);
-  textarea.focus();
-}
-
-export function applyLinePrefix(textarea, prefix) {
-  const { selectionStart: start, selectionEnd: end, value } = textarea;
-  const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-  const block = value.slice(lineStart, end);
-  const updated = block.split('\n').map((line) => `${prefix}${line}`).join('\n');
-  textarea.value = `${value.slice(0, lineStart)}${updated}${value.slice(end)}`;
-  textarea.focus();
-}
-
-export function applyBlock(textarea, open, close) {
-  const { selectionStart: start, selectionEnd: end, value } = textarea;
-  const selected = value.slice(start, end) || '';
-  const next = `${value.slice(0, start)}${open}${selected}${close}${value.slice(end)}`;
-  textarea.value = next;
-  textarea.focus();
 }
 
 // ---------------------------------------------------------------------------
@@ -178,10 +157,21 @@ function setStatus(root, message, kind = '') {
   el.classList.toggle('is-ok', kind === 'ok');
 }
 
+function richEl(root) {
+  return root.querySelector('[data-blog-body]');
+}
+
+function syncEmptyState(root) {
+  const rich = richEl(root);
+  if (!rich) return;
+  const empty = !rich.textContent?.trim() && !rich.querySelector('img');
+  rich.classList.toggle('is-empty', empty);
+}
+
 function readForm(root) {
   return {
     title: root.querySelector('[data-blog-title]')?.value?.trim() || '',
-    body: root.querySelector('[data-blog-body]')?.value || '',
+    html: richEl(root)?.innerHTML || '',
     tags: root.querySelector('[data-blog-tags]')?.value || '',
     token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
     repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
@@ -189,6 +179,30 @@ function readForm(root) {
     author: root.querySelector('[data-blog-author]')?.value?.trim() || '',
     imageMode: root.querySelector('input[name="blog-image-mode"]:checked')?.value || 'auto',
   };
+}
+
+function runCommand(root, command, value = null) {
+  const rich = richEl(root);
+  rich?.focus?.();
+  try { document.execCommand(command, false, value); } catch { /* unsupported command */ }
+  syncEmptyState(root);
+}
+
+function applyTool(root, action) {
+  const spec = TOOLBAR.find((item) => item.action === action);
+  if (!spec) return;
+  if (spec.cmd) return runCommand(root, spec.cmd);
+  if (spec.block) return runCommand(root, 'formatBlock', `<${spec.block}>`);
+  if (spec.link) {
+    const url = window.prompt('Nhập địa chỉ liên kết:', 'https://');
+    if (url) runCommand(root, 'createLink', url);
+    return;
+  }
+  if (spec.clear) {
+    runCommand(root, 'removeFormat');
+    return runCommand(root, 'formatBlock', '<p>');
+  }
+  return runCommand(root, action);
 }
 
 function showThumb(root, image) {
@@ -237,19 +251,6 @@ async function refreshThumbnail(root) {
   return image;
 }
 
-function togglePreview(root) {
-  const box = root.querySelector('[data-blog-preview]');
-  const body = root.querySelector('[data-blog-preview-body]');
-  if (!box || !body) return;
-  box.hidden = !box.hidden;
-  if (box.hidden) return;
-  const form = readForm(root);
-  loadMarked().then((marked) => {
-    const render = typeof marked === 'function' ? marked : marked.parse;
-    body.innerHTML = render(form.body || '_Chưa có nội dung._');
-  });
-}
-
 // Accept a picked/dropped file: validate, preview locally, switch to upload mode.
 function acceptFile(root, file, state) {
   if (!file) return;
@@ -274,8 +275,9 @@ function acceptFile(root, file, state) {
 
 async function onSave(root, state) {
   const form = readForm(root);
+  const body = markdownFromHtml(form.html);
   if (!form.title) { setStatus(root, 'Vui lòng nhập tiêu đề bài viết.', 'error'); return; }
-  if (!form.body.trim()) { setStatus(root, 'Vui lòng nhập nội dung bài viết.', 'error'); return; }
+  if (!body) { setStatus(root, 'Vui lòng nhập nội dung bài viết.', 'error'); return; }
   if (!form.token) { setStatus(root, 'Nhập GitHub token để sync.', 'error'); return; }
   if (!/^[^/\s]+\/[^/\s]+$/.test(form.repo)) { setStatus(root, 'Repository phải có dạng owner/repo.', 'error'); return; }
 
@@ -322,7 +324,7 @@ async function onSave(root, state) {
       frontMatter,
       image: cover?.url || '',
       imageAlt: form.title,
-      body: form.body,
+      body,
     });
 
     setStatus(root, `Đang commit ${postPath(slug)} …`);
@@ -346,18 +348,11 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
     root.dataset.mounted = 'true';
     const state = { thumb: null, file: null, previewUrl: '' };
     const dropzone = () => root.querySelector('[data-blog-dropzone]');
+    try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch { /* ignore */ }
 
     root.addEventListener('click', (event) => {
       const tool = event.target.closest('[data-blog-tool]');
-      const textarea = root.querySelector('[data-blog-body]');
-      if (tool && textarea) {
-        const spec = TOOLBAR.find((item) => item.action === tool.dataset.blogTool);
-        if (spec?.wrap) applyWrap(textarea, spec.wrap[0], spec.wrap[1]);
-        else if (spec?.line) applyLinePrefix(textarea, spec.line);
-        else if (spec?.block) applyBlock(textarea, spec.block, spec.blockEnd || '');
-        return;
-      }
-      if (event.target.closest('[data-blog-preview-toggle]')) { togglePreview(root); return; }
+      if (tool) { applyTool(root, tool.dataset.blogTool); return; }
       if (event.target.closest('[data-blog-dropzone]')) {
         if (!event.target.closest('[data-blog-file]')) root.querySelector('[data-blog-file]')?.click();
         return;
@@ -376,14 +371,16 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       if (event.target.closest('[data-blog-clear]')) {
         if (window.confirm('Xoá bản nháp đang soạn trên thiết bị này?')) {
           root.querySelector('[data-blog-title]').value = '';
-          root.querySelector('[data-blog-body]').value = '';
           root.querySelector('[data-blog-tags]').value = '';
+          const rich = richEl(root);
+          if (rich) rich.innerHTML = '';
           clearDraft();
           if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
           state.file = null;
           state.thumb = null;
           resetDropzone(root);
           showThumb(root, null);
+          syncEmptyState(root);
           setStatus(root, 'Đã xoá nháp.');
         }
         return;
@@ -405,7 +402,6 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         const upload = input.value === 'upload';
         setUploadZone(root, upload);
         if (!upload && state.thumb?.provider === 'upload') {
-          // Leaving upload mode: drop the staged file preview.
           if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
           state.file = null;
           state.thumb = null;
@@ -418,6 +414,17 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       }
     });
 
+    root.addEventListener('paste', (event) => {
+      if (!event.target.closest?.('[data-blog-body]')) return;
+      const data = event.clipboardData;
+      if (!data) return;
+      event.preventDefault();
+      const html = data.getData('text/html');
+      const payload = html ? sanitizePastedHtml(html) : plainTextToHtml(data.getData('text/plain'));
+      try { document.execCommand('insertHTML', false, payload); } catch { richEl(root).insertAdjacentHTML('beforeend', payload); }
+      window.setTimeout(() => syncEmptyState(root), 0);
+    });
+
     root.addEventListener('keydown', (event) => {
       const zone = event.target.closest?.('[data-blog-dropzone]');
       if (zone && (event.key === 'Enter' || event.key === ' ')) {
@@ -426,10 +433,17 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         return;
       }
       if (!(event.metaKey || event.ctrlKey)) return;
-      const textarea = root.querySelector('[data-blog-body]');
-      if (event.target !== textarea) return;
-      if (event.key === 'b') { event.preventDefault(); applyWrap(textarea, '**', '**'); }
-      if (event.key === 'i') { event.preventDefault(); applyWrap(textarea, '_', '_'); }
+      if (event.target.closest?.('[data-blog-body]')) {
+        if (event.key === 'b') { event.preventDefault(); runCommand(root, 'bold'); }
+        if (event.key === 'i') { event.preventDefault(); runCommand(root, 'italic'); }
+      }
+    });
+
+    root.addEventListener('input', (event) => {
+      if (event.target.matches?.('input[name="blog-image-mode"]')) return;
+      if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
+      const form = readForm(root);
+      saveDraft({ title: form.title, body: form.html, tags: form.tags });
     });
 
     root.addEventListener('dragover', (event) => {
@@ -446,12 +460,6 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       event.preventDefault();
       zone.classList.remove('is-dragging');
       acceptFile(root, event.dataTransfer?.files?.[0], state);
-    });
-
-    root.addEventListener('input', (event) => {
-      if (event.target.matches?.('input[name="blog-image-mode"]')) return;
-      const form = readForm(root);
-      saveDraft({ title: form.title, body: form.body, tags: form.tags });
     });
   }
   renderEditor(root);

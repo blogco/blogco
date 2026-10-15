@@ -6,7 +6,6 @@ import {
   thumbnailFallbackUrl, thumbnailQuery, stockApiUrl, pickStockImage,
   arrayBufferToBase64, uploadFilename, uploadPath, assetPublicUrl,
 } from './lib.js';
-import { applyWrap, applyLinePrefix, applyBlock } from './main.js';
 
 test('slugify handles Vietnamese diacritics and punctuation', () => {
   assert.equal(slugify('Kinh nghiệm uống cà phê lành mạnh'), 'kinh-nghiem-uong-ca-phe-lanh-manh');
@@ -75,20 +74,6 @@ test('pickStockImage reads the first result for each provider', () => {
     { url: 'R', credit: 'N', link: 'H' },
   );
   assert.equal(pickStockImage('pexels', { photos: [] }), null);
-});
-
-test('toolbar helpers wrap selections and prefix lines', () => {
-  const wrap = { value: 'hello world', selectionStart: 6, selectionEnd: 11, focus() {}, setSelectionRange(a, b) { this.selectionStart = a; this.selectionEnd = b; } };
-  applyWrap(wrap, '**', '**');
-  assert.equal(wrap.value, 'hello **world**');
-
-  const line = { value: 'a\nb\nc', selectionStart: 0, selectionEnd: 5, focus() {} };
-  applyLinePrefix(line, '- ');
-  assert.equal(line.value, '- a\n- b\n- c');
-
-  const block = { value: 'code', selectionStart: 0, selectionEnd: 4, focus() {} };
-  applyBlock(block, '```\n', '\n```');
-  assert.equal(block.value, '```\ncode\n```');
 });
 
 test('arrayBufferToBase64 encodes binary bytes without corruption', () => {
