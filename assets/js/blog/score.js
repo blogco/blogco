@@ -7,6 +7,20 @@ const LONG_SENTENCE = 25; // words
 const PARAGRAPH_SOFT_MAX = 4; // sentences
 const PARAGRAPH_HARD_MAX = 6; // sentences
 
+// Inline images can arrive either as classic Markdown or as the editor's Hugo
+// `figure` shortcode (used for alignment + captions).
+const IMAGE_MARKDOWN = /!\[[^\]]*\]\([^)]*\)/g;
+const IMAGE_SHORTCODE = /\{\{[<%]\s*figure\b[^}]*\}\}/gi;
+
+function countImages(markdown = '') {
+  const text = String(markdown);
+  return (text.match(IMAGE_MARKDOWN) || []).length + (text.match(IMAGE_SHORTCODE) || []).length;
+}
+
+function withoutImages(markdown = '') {
+  return String(markdown).replace(IMAGE_MARKDOWN, ' ').replace(IMAGE_SHORTCODE, ' ');
+}
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
@@ -61,7 +75,7 @@ export function analyzeArticle({ title = '', markdown = '' } = {}) {
   const text = String(markdown || '').replace(/\r\n?/g, '\n').trim();
   const lines = text.split('\n');
 
-  const imageCount = (text.match(/!\[[^\]]*\]\([^)]*\)/g) || []).length;
+  const imageCount = countImages(text);
   const headingCount = lines.filter((line) => /^#{1,6}\s+\S/.test(line)).length;
   const h3Count = lines.filter((line) => /^###\s+\S/.test(line)).length;
   const h2Count = headingCount - h3Count;
@@ -74,6 +88,7 @@ export function analyzeArticle({ title = '', markdown = '' } = {}) {
     || /^>\s?/.test(block)
     || /^\s*(?:[-*+]|\d+[.)])\s+/.test(block)
     || /^!\[[^\]]*\]\([^)]*\)$/.test(block)
+    || /^\{\{[<%]\s*figure\b/.test(block)
   );
   const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
   const paragraphs = blocks.filter((block) => !isSpecialBlock(block));
@@ -88,7 +103,7 @@ export function analyzeArticle({ title = '', markdown = '' } = {}) {
   const longSentenceCount = sentenceLengths.filter((length) => length >= LONG_SENTENCE).length;
   const shortSentenceCount = sentenceLengths.filter((length) => length <= 10).length;
 
-  const bodyWords = words(stripInline(text.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')));
+  const bodyWords = words(stripInline(withoutImages(text)));
   const cleanTitle = String(title || '').trim();
 
   return {

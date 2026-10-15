@@ -8,6 +8,10 @@
 //   • upload — pick/drag a file; it is committed to the repo (static/uploads)
 //              and reused as both the cover and the first image of the post.
 //   • auto   — fetch a stock photo (Unsplash/Pexels) or a seeded illustration.
+//
+// Inline images are managed in place: hovering a picture reveals a floating
+// toolbar to align it (left / center / full), add a caption, or delete it
+// without touching the surrounding prose.
 
 import TurndownService from 'turndown';
 import {
@@ -19,10 +23,14 @@ import {
   uploadImage, mediaConfig,
 } from './store.js';
 import { pickThumbnail } from './thumbnail.js';
-import { escapeHtml, plainTextToHtml, sanitizePastedHtml, cleanMarkdown } from './rich.js';
+import {
+  escapeHtml, plainTextToHtml, sanitizePastedHtml, cleanMarkdown,
+  figureShortcode, expandFigureShortcodes, FIGURE_ALIGNMENTS,
+} from './rich.js';
 import { scoreArticle } from './score.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
+const DEFAULT_ALIGN = 'center';
 
 let turndown;
 function markdownFromHtml(html = '') {
@@ -34,6 +42,23 @@ function markdownFromHtml(html = '') {
       bulletListMarker: '-',
       codeBlockStyle: 'fenced',
       emDelimiter: '_',
+    });
+    // An editor <figure> becomes a Hugo shortcode so alignment + caption survive
+    // the Goldmark build (raw HTML would be stripped with `unsafe = false`).
+    turndown.addRule('blogFigure', {
+      filter: (node) => node.nodeName === 'FIGURE' && Boolean(node.classList?.contains('blog-figure')),
+      replacement: (_content, node) => {
+        const img = node.querySelector('img');
+        const src = img?.getAttribute('src') || '';
+        if (!src) return '';
+        const block = figureShortcode({
+          src,
+          alt: img.getAttribute('alt') || '',
+          caption: node.querySelector('figcaption')?.textContent?.trim() || '',
+          align: node.dataset?.align || DEFAULT_ALIGN,
+        });
+        return block ? `\n\n${block}\n\n` : '';
+      },
     });
   }
   return cleanMarkdown(turndown.turndown(html || ''));
@@ -64,8 +89,36 @@ const TOOLBAR = [
   { action: 'clear', label: '✨', title: 'Xoá định dạng', clear: true },
 ];
 
+const BUBBLE = ['bold', 'italic', 'h2', 'quote', 'link'];
+const ALIGN_BUTTONS = [
+  { value: 'left', label: '⯇', title: 'Căn trái' },
+  { value: 'center', label: '↔', title: 'Căn giữa' },
+  { value: 'full', label: '⛶', title: 'Tràn lề (rộng hết)' },
+];
+
+function toolButton(tool) {
+  return `<button type="button" class="blog-tool" data-blog-tool="${tool.action}" title="${escapeHtml(tool.title)}" aria-label="${escapeHtml(tool.title)}">${escapeHtml(tool.label)}</button>`;
+}
+
 function toolbarHtml() {
-  return TOOLBAR.map((tool) => `<button type="button" class="blog-tool" data-blog-tool="${tool.action}" title="${escapeHtml(tool.title)}" aria-label="${escapeHtml(tool.title)}">${escapeHtml(tool.label)}</button>`).join('');
+  return TOOLBAR.map(toolButton).join('');
+}
+
+function bubbleHtml() {
+  return BUBBLE
+    .map((action) => TOOLBAR.find((tool) => tool.action === action))
+    .filter(Boolean)
+    .map((tool) => `<button type="button" class="blog-bubble__btn" data-blog-tool="${tool.action}" title="${escapeHtml(tool.title)}" aria-label="${escapeHtml(tool.title)}">${escapeHtml(tool.label)}</button>`)
+    .join('');
+}
+
+function figurebarHtml() {
+  const aligns = `<div class="blog-figurebar__group" role="group" aria-label="Căn chỉnh ảnh">${ALIGN_BUTTONS
+    .map((btn) => `<button type="button" class="blog-figurebar__btn" data-blog-fig-align="${btn.value}" title="${escapeHtml(btn.title)}" aria-label="${escapeHtml(btn.title)}">${btn.label}</button>`)
+    .join('')}</div>`;
+  return `${aligns}
+    <button type="button" class="blog-figurebar__btn" data-blog-fig-caption title="Thêm / sửa chú thích">🏷️ <span>Chú thích</span></button>
+    <button type="button" class="blog-figurebar__btn blog-figurebar__btn--danger" data-blog-fig-delete title="Xoá ảnh khỏi bài viết">🗑️ <span>Xoá</span></button>`;
 }
 
 function renderEditor(root) {
@@ -85,26 +138,35 @@ function renderEditor(root) {
 
     <div class="blog-layout">
       <div class="blog-editor">
-        <label class="blog-field">Tiêu đề bài viết
+        <label class="blog-field blog-field--title">Tiêu đề bài viết
           <input type="text" data-blog-title value="${escapeHtml(draft.title)}" placeholder="VD: Kinh nghiệm uống cà phê lành mạnh">
         </label>
 
-        <div class="blog-toolbar" role="toolbar" aria-label="Định dạng văn bản">${toolbarHtml()}<input type="file" accept="image/*" multiple data-blog-image-input hidden></div>
+        <div class="blog-toolbar" role="toolbar" aria-label="Định dạng văn bản">
+          <div class="blog-toolbar__tools">${toolbarHtml()}</div>
+          <div class="blog-toolbar__actions">
+            <button type="button" class="blog-tool blog-tool--ghost" data-blog-preview-open title="Xem trước bài viết" aria-label="Xem trước bài viết">👁️ Xem trước</button>
+            <button type="button" class="blog-tool blog-tool--ghost" data-blog-score-open title="Chấm điểm AI" aria-label="Chấm điểm AI">🤖 Điểm AI</button>
+          </div>
+          <input type="file" accept="image/*" multiple data-blog-image-input hidden>
+        </div>
 
-        <label class="blog-field blog-field--grow">Nội dung bài viết
-          <div class="blog-rich" data-blog-body contenteditable="true" role="textbox" aria-multiline="true" spellcheck="false" data-placeholder="Dán nội dung bài viết vào đây — xuống dòng và đoạn văn tự nhận."></div>
-        </label>
+        <div class="blog-canvas">
+          <label class="blog-field blog-field--body">Nội dung bài viết
+            <div class="blog-rich" data-blog-body contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" data-placeholder="Bắt đầu viết… Dán nội dung hoặc gõ trực tiếp. Bôi đen chữ để định dạng, rê chuột lên ảnh để chỉnh."></div>
+          </label>
+          <div class="blog-bubble" data-blog-bubble hidden role="toolbar" aria-label="Định dạng nhanh">${bubbleHtml()}</div>
+          <div class="blog-figurebar" data-blog-figurebar hidden role="toolbar" aria-label="Tuỳ chỉnh ảnh">${figurebarHtml()}</div>
+        </div>
 
         <div class="blog-actions">
-          <button type="button" class="blog-primary" data-blog-save>💾 Lưu &amp; Sync GitHub</button>
-          <button type="button" class="blog-ghost" data-blog-preview-open>👁️ Xem trước</button>
-          <button type="button" class="blog-ghost blog-ghost--ai" data-blog-score-open>🤖 Chấm điểm AI</button>
+          <button type="button" class="blog-primary" data-blog-save>Lưu &amp; đồng bộ GitHub</button>
           <button type="button" class="blog-ghost" data-blog-clear>🗑️ Xoá nháp</button>
         </div>
-        <p class="blog-status" data-blog-status role="status" aria-live="polite"></p>
+        <p class="blog-status" data-blog-status></p>
       </div>
 
-      <aside class="blog-side">
+      <aside class="blog-side" aria-label="Xuất bản">
         <h2 class="blog-side__title">Xuất bản</h2>
         <label class="blog-field">GitHub token (contents:write)
           <input type="password" data-blog-token value="${escapeHtml(settings.token)}" placeholder="ghp_… hoặc github_pat_…" autocomplete="off">
@@ -148,49 +210,49 @@ function renderEditor(root) {
     </div>
 
     <div class="blog-preview-overlay" data-blog-preview-overlay hidden>
-      <div class="blog-preview-modal" role="dialog" aria-modal="true" aria-labelledby="blog-preview-label">
-        <div class="blog-preview-modal__head">
+      <div class="blog-preview-drawer" role="dialog" aria-modal="true" aria-labelledby="blog-preview-label">
+        <div class="blog-preview-drawer__head">
           <span id="blog-preview-label">👁️ Xem trước bài viết</span>
-          <button type="button" class="blog-ghost blog-ghost--sm" data-blog-preview-close>✖️ Đóng</button>
+          <button type="button" class="blog-drawer__close" data-blog-preview-close aria-label="Đóng xem trước (Esc)">✕</button>
         </div>
-        <article class="blog-preview-modal__body">
-          <h1 class="blog-preview-modal__title" data-blog-preview-title></h1>
-          <p class="blog-preview-modal__meta" data-blog-preview-meta></p>
-          <figure class="blog-preview-modal__cover" data-blog-preview-cover-wrap hidden>
-            <img data-blog-preview-cover alt="Ảnh đại diện">
-          </figure>
-          <div class="blog-preview-modal__content md-content" data-blog-preview-content></div>
-        </article>
+        <div class="blog-preview-drawer__body">
+          <article class="blog-preview-drawer__article">
+            <h1 class="blog-preview-drawer__title" data-blog-preview-title></h1>
+            <p class="blog-preview-drawer__meta" data-blog-preview-meta></p>
+            <figure class="blog-preview-drawer__cover" data-blog-preview-cover-wrap hidden>
+              <img data-blog-preview-cover alt="Ảnh đại diện">
+            </figure>
+            <div class="blog-preview-drawer__content md-content" data-blog-preview-content></div>
+          </article>
+        </div>
       </div>
     </div>
 
-    <div class="blog-score-overlay" data-blog-score-overlay hidden>
-      <div class="blog-score-modal" role="dialog" aria-modal="true" aria-labelledby="blog-score-label">
-        <div class="blog-score-modal__head">
-          <span id="blog-score-label">🤖 Chấm điểm AI</span>
-          <button type="button" class="blog-ghost blog-ghost--sm" data-blog-score-close>✖️ Đóng</button>
-        </div>
-        <div class="blog-score-modal__body">
-          <div class="blog-score-hero">
-            <span class="blog-score-hero__value" data-blog-score-value>—</span>
-            <span class="blog-score-hero__max">/ 5 điểm</span>
-          </div>
-          <p class="blog-score-hero__verdict" data-blog-score-verdict></p>
-          <div class="blog-score-cats" data-blog-score-cats></div>
-          <div class="blog-score-tips">
-            <h3 class="blog-score-tips__title">Gợi ý để đạt 5/5</h3>
-            <ul class="blog-score-tips__list" data-blog-score-tips></ul>
-          </div>
-        </div>
+    <aside class="blog-score-panel" data-blog-score-panel hidden aria-labelledby="blog-score-label">
+      <div class="blog-score-panel__head">
+        <span id="blog-score-label">🤖 Chấm điểm AI</span>
+        <button type="button" class="blog-drawer__close" data-blog-score-close aria-label="Đóng bảng điểm (Esc)">✕</button>
       </div>
-    </div>
+      <div class="blog-score-panel__body">
+        <div class="blog-score-hero">
+          <span class="blog-score-hero__value" data-blog-score-value>0.0</span>
+          <span class="blog-score-hero__max">/5</span>
+        </div>
+        <p class="blog-score-hero__verdict" data-blog-score-verdict></p>
+        <div class="blog-score-cats" data-blog-score-cats></div>
+        <h3 class="blog-score-tips__title">Gợi ý nhanh</h3>
+        <ul class="blog-score-tips__list" data-blog-score-tips></ul>
+        <button type="button" class="blog-ghost blog-ghost--sm blog-score-panel__refresh" data-blog-score-open>🔄 Chấm lại</button>
+      </div>
+    </aside>
   </section>`;
-  const rich = root.querySelector('[data-blog-body]');
+  const rich = richEl(root);
   if (rich) {
     rich.innerHTML = initialBody;
-    syncEmptyState(root);
+    enhanceFigures(root);
   }
-  root.querySelector('h1')?.focus?.({ preventScroll: true });
+  syncEmptyState(root);
+  root.querySelector('#blog-title')?.focus({ preventScroll: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -223,38 +285,198 @@ function readForm(root) {
     tags: root.querySelector('[data-blog-tags]')?.value || '',
     token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
     repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
-    branch: root.querySelector('[data-blog-branch]')?.value?.trim() || 'main',
+    branch: root.querySelector('[data-blog-branch]')?.value?.trim() || '',
     author: root.querySelector('[data-blog-author]')?.value?.trim() || '',
     imageMode: root.querySelector('input[name="blog-image-mode"]:checked')?.value || 'auto',
   };
 }
 
-function runCommand(root, command, value = null) {
+function persistDraft(root) {
+  const form = readForm(root);
+  saveDraft({ title: form.title, body: form.html, tags: form.tags });
+}
+
+// Wrap legacy/plain images (e.g. from an older draft) in the managed <figure>
+// shape so the hover toolbar, caption and alignment work everywhere.
+function enhanceFigures(root) {
   const rich = richEl(root);
-  rich?.focus?.();
-  try { document.execCommand(command, false, value); } catch { /* unsupported command */ }
+  if (!rich) return;
+  rich.querySelectorAll('img').forEach((img) => {
+    if (img.closest('.blog-figure')) return;
+    const figure = document.createElement('figure');
+    figure.className = 'blog-figure';
+    figure.dataset.align = DEFAULT_ALIGN;
+    img.replaceWith(figure);
+    figure.appendChild(img);
+  });
+}
+
+function runCommand(root, command, value) {
+  const rich = richEl(root);
+  if (!rich) return;
+  rich.focus({ preventScroll: true });
+  try {
+    if (value === undefined) document.execCommand(command); else document.execCommand(command, false, value);
+  } catch { /* unsupported command */ }
   syncEmptyState(root);
 }
 
 function applyTool(root, action) {
-  const spec = TOOLBAR.find((item) => item.action === action);
-  if (!spec) return;
-  if (spec.cmd) return runCommand(root, spec.cmd);
-  if (spec.block) return runCommand(root, 'formatBlock', `<${spec.block}>`);
-  if (spec.link) {
+  const tool = TOOLBAR.find((item) => item.action === action);
+  if (!tool) return;
+  if (tool.cmd) return runCommand(root, tool.cmd);
+  if (tool.block) return runCommand(root, 'formatBlock', `<${tool.block}>`);
+  if (tool.link) {
     const url = window.prompt('Nhập địa chỉ liên kết:', 'https://');
     if (url) runCommand(root, 'createLink', url);
     return;
   }
-  if (spec.image) {
+  if (tool.image) {
     root.querySelector('[data-blog-image-input]')?.click();
     return;
   }
-  if (spec.clear) {
+  if (tool.clear) {
     runCommand(root, 'removeFormat');
     return runCommand(root, 'formatBlock', '<p>');
   }
   return runCommand(root, action);
+}
+
+// ---------------------------------------------------------------------------
+// Inline image editing (hover toolbar, alignment, caption, delete)
+// ---------------------------------------------------------------------------
+
+function figurebarEl(root) {
+  return root.querySelector('[data-blog-figurebar]');
+}
+
+function selectFigure(root, state, figure) {
+  if (!figure) return;
+  clearFigureSelection(root, state);
+  figure.classList.add('is-selected');
+  state.selectedFigure = figure;
+}
+
+function clearFigureSelection(root, state) {
+  if (state.selectedFigure?.isConnected) state.selectedFigure.classList.remove('is-selected');
+  state.selectedFigure = null;
+}
+
+function positionFigurebar(root, state) {
+  const bar = figurebarEl(root);
+  const figure = state.activeFigure;
+  if (!bar || bar.hidden || !figure?.isConnected) return;
+  const rect = figure.getBoundingClientRect();
+  const width = bar.offsetWidth || 240;
+  const height = bar.offsetHeight || 40;
+  const top = Math.max(8, Math.min(rect.top + 10, window.innerHeight - bar.offsetHeight));
+  const left = Math.max(8, Math.min(rect.right - bar.offsetWidth - 10, window.innerWidth - bar.offsetWidth - 8));
+  bar.style.top = `${Math.round(top)}px`;
+  bar.style.left = `${Math.round(left)}px`;
+}
+
+function showFigurebar(root, state, figure) {
+  if (!figure?.isConnected) return;
+  state.activeFigure = figure;
+  const bar = figurebarEl(root);
+  if (!bar) return;
+  bar.hidden = false;
+  if (window.clearTimeout) window.clearTimeout(state.figurebarTimer);
+  positionFigurebar(root, state);
+}
+
+function hideFigurebar(root, state) {
+  const bar = figurebarEl(root);
+  if (bar) bar.hidden = true;
+  state.activeFigure = null;
+}
+
+function scheduleHideFigurebar(root, state) {
+  window.clearTimeout(state.figurebarTimer);
+  state.figurebarTimer = window.setTimeout(() => hideFigurebar(root, state), 180);
+}
+
+function setFigureAlign(root, state, figure, align) {
+  if (!figure) return;
+  figure.dataset.align = FIGURE_ALIGNMENTS.includes(align) ? align : DEFAULT_ALIGN;
+  persistDraft(root);
+  positionFigurebar(root, state);
+}
+
+function focusFigureCaption(root, state, figure) {
+  if (!figure) return;
+  let caption = figure.querySelector('figcaption');
+  if (!caption) {
+    caption = document.createElement('figcaption');
+    caption.setAttribute('contenteditable', 'plaintext-only');
+    caption.dataset.placeholder = 'Viết chú thích cho ảnh…';
+    figure.appendChild(caption);
+  }
+  const range = document.createRange();
+  range.selectNodeContents(caption);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  caption.focus();
+  syncEmptyState(root);
+}
+
+function deleteFigure(root, state, figure) {
+  if (!figure) return;
+  const staged = figure.querySelector('img[data-blog-upload]');
+  if (staged) {
+    const id = staged.getAttribute('data-blog-upload');
+    const item = state.images.get(id);
+    if (item?.url) {
+      URL.revokeObjectURL(item.url);
+      state.blobs.delete(item.url);
+    }
+    state.images.delete(id);
+  }
+  figure.remove();
+  clearFigureSelection(root, state);
+  hideFigurebar(root, state);
+  syncEmptyState(root);
+  persistDraft(root);
+  setStatus(root, 'Đã xoá ảnh khỏi bài viết.');
+}
+
+function showFigurebarFor(root, state, target) {
+  const rich = richEl(root);
+  const figure = target.closest?.('.blog-figure');
+  if (figure && rich?.contains(figure)) {
+    showFigurebar(root, state, figure);
+    return true;
+  }
+  return false;
+}
+
+// Lightweight floating format bubble shown when the author selects text.
+function hideBubble(root) {
+  const bubble = root.querySelector('[data-blog-bubble]');
+  if (bubble) bubble.hidden = true;
+}
+
+function updateBubble(root) {
+  const bubble = root.querySelector('[data-blog-bubble]');
+  const rich = richEl(root);
+  if (!bubble || !rich) return;
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount || selection.isCollapsed) { bubble.hidden = true; return; }
+  const range = selection.getRangeAt(0);
+  if (!rich.contains(range.commonAncestorContainer) || !range.toString().trim()) { bubble.hidden = true; return; }
+  const rect = range.getBoundingClientRect();
+  if (!rect || (!rect.width && !rect.height)) { bubble.hidden = true; return; }
+  bubble.hidden = false;
+  const width = bubble.offsetWidth || 220;
+  const height = bubble.offsetHeight || 40;
+  let top = rect.top - height - 8;
+  if (top < 8) top = rect.bottom + 8;
+  let left = rect.left + (rect.width / 2) - (width / 2);
+  left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+  bubble.style.top = `${Math.round(top)}px`;
+  bubble.style.left = `${Math.round(left)}px`;
 }
 
 function showThumb(root, image) {
@@ -329,7 +551,7 @@ function acceptFile(root, file, state) {
 function insertHtmlAtCursor(root, html) {
   const rich = richEl(root);
   if (!rich) return;
-  rich.focus();
+  rich.focus({ preventScroll: true });
   const selection = window.getSelection();
   const hasCaret = selection && selection.rangeCount
     && rich.contains(selection.getRangeAt(0).commonAncestorContainer);
@@ -356,7 +578,7 @@ function acceptToolbarImages(root, fileList, state) {
     state.blobs.add(url);
     state.images.set(id, { file, url });
     const label = escapeHtml(file.name.replace(/\.[^.]+$/, ''));
-    insertHtmlAtCursor(root, `<p><img src="${url}" alt="${label}" data-blog-upload="${id}"></p>`);
+    insertHtmlAtCursor(root, `<figure class="blog-figure" data-align="${DEFAULT_ALIGN}"><img src="${url}" alt="${label}" data-blog-upload="${id}"></figure>`);
     added += 1;
   }
   if (added) {
@@ -377,35 +599,37 @@ async function resolvePendingImages(root, state, { repo, branch, token, slug }) 
     const asset = await uploadImage({ repo, branch, dir: media.dir, filename, file: item.file, token });
     img.src = assetPublicUrl(media.siteUrl, asset.path);
     img.removeAttribute('data-blog-upload');
-    if (state.blobs.has(item.url)) { URL.revokeObjectURL(item.url); state.blobs.delete(item.url); }
-    state.images.delete(id);
   }
 }
 
-// Preview the finished post (title + cover + body) exactly as it will publish,
-// including the thumbnail and every inline/gallery image.
-function openPreview(root, state) {
+// ---------------------------------------------------------------------------
+// Preview drawer (slide-over, not a fullscreen overlay)
+// ---------------------------------------------------------------------------
+
+function openPreview(root) {
   const overlay = root.querySelector('[data-blog-preview-overlay]');
   if (!overlay) return;
   const form = readForm(root);
-  const coverUrl = state.thumb?.url || (state.file ? state.previewUrl : '');
   overlay.querySelector('[data-blog-preview-title]').textContent = form.title || 'Chưa có tiêu đề';
-  const tags = String(form.tags || '').split(',').map((tag) => tag.trim()).filter(Boolean);
+  const tags = form.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
   overlay.querySelector('[data-blog-preview-meta]').textContent = [
     form.author,
     tags.length ? tags.map((tag) => `#${tag}`).join(' ') : '',
     new Date().toLocaleDateString('vi-VN'),
   ].filter(Boolean).join(' · ');
+
   const coverWrap = overlay.querySelector('[data-blog-preview-cover-wrap]');
   const coverImg = overlay.querySelector('[data-blog-preview-cover]');
+  const coverUrl = root.querySelector('[data-blog-thumb]')?.getAttribute('src') || '';
   if (coverUrl) { coverImg.src = coverUrl; coverWrap.hidden = false; }
   else { coverImg.removeAttribute('src'); coverWrap.hidden = true; }
 
   const content = overlay.querySelector('[data-blog-preview-content]');
   content.innerHTML = '<p class="blog-preview__loading">Đang dựng bản xem trước…</p>';
   overlay.hidden = false;
-  const markdown = markdownFromHtml(form.html);
-  loadMarked().then((marked) => {
+  document.body.classList.add('blog-drawer-open');
+  const markdown = expandFigureShortcodes(markdownFromHtml(form.html));
+  void loadMarked().then((marked) => {
     const render = typeof marked === 'function' ? marked : marked.parse;
     content.innerHTML = markdown ? render(markdown) : '<p><em>Chưa có nội dung.</em></p>';
   });
@@ -414,10 +638,11 @@ function openPreview(root, state) {
 function closePreview(root) {
   const overlay = root.querySelector('[data-blog-preview-overlay]');
   if (overlay) overlay.hidden = true;
+  document.body.classList.remove('blog-drawer-open');
 }
 
 // ---------------------------------------------------------------------------
-// AI scoring panel
+// AI scoring panel (floating card, does not cover the writing area)
 // ---------------------------------------------------------------------------
 
 function scoreLevel(score) {
@@ -427,37 +652,48 @@ function scoreLevel(score) {
 }
 
 function openScore(root) {
-  const overlay = root.querySelector('[data-blog-score-overlay]');
-  if (!overlay) return;
+  const panel = root.querySelector('[data-blog-score-panel]');
+  if (!panel) return;
   const form = readForm(root);
   const result = scoreArticle({ title: form.title, markdown: markdownFromHtml(form.html) });
 
-  overlay.querySelector('[data-blog-score-value]').textContent = result.score.toFixed(1);
-  const verdict = overlay.querySelector('[data-blog-score-verdict]');
+  panel.querySelector('[data-blog-score-value]').textContent = result.score.toFixed(1);
+  const verdict = panel.querySelector('[data-blog-score-verdict]');
   verdict.textContent = result.verdict;
   verdict.dataset.level = scoreLevel(result.score).replace('is-', '');
 
-  overlay.querySelector('[data-blog-score-cats]').innerHTML = result.categories.map((cat) => `
+  panel.querySelector('[data-blog-score-cats]').innerHTML = result.categories.map((cat) => `
     <article class="blog-score-cat ${scoreLevel(cat.score)}">
       <div class="blog-score-cat__head">
         <span class="blog-score-cat__label">${escapeHtml(cat.label)}</span>
         <span class="blog-score-cat__score">${cat.score.toFixed(1)}<small>/5</small></span>
       </div>
       <div class="blog-score-cat__bar"><span style="width:${(cat.score / 5) * 100}%"></span></div>
-      <ul class="blog-score-cat__notes">${cat.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>
     </article>`).join('');
 
   const tips = result.suggestions.length
     ? result.suggestions
     : ['Tuyệt vời! Bài viết đã đạt gần như tối đa các tiêu chí.'];
-  overlay.querySelector('[data-blog-score-tips]').innerHTML = tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
+  panel.querySelector('[data-blog-score-tips]').textContent = '';
+  panel.querySelector('[data-blog-score-tips]').innerHTML = tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
 
-  overlay.hidden = false;
+  panel.hidden = false;
 }
 
 function closeScore(root) {
-  const overlay = root.querySelector('[data-blog-score-overlay]');
-  if (overlay) overlay.hidden = true;
+  const panel = root.querySelector('[data-blog-score-panel]');
+  if (panel) panel.hidden = true;
+}
+
+function handleEscape(root, state) {
+  const preview = root.querySelector('[data-blog-preview-overlay]');
+  const score = root.querySelector('[data-blog-score-panel]');
+  if (preview && !preview.hidden) { closePreview(root); return; }
+  if (score && !score.hidden) { closeScore(root); return; }
+  hideBubble(root);
+  const bar = figurebarEl(root);
+  if (bar && !bar.hidden) hideFigurebar(root, state);
+  if (state.selectedFigure) clearFigureSelection(root, state);
 }
 
 async function onSave(root, state) {
@@ -479,7 +715,7 @@ async function onSave(root, state) {
       await resolvePendingImages(root, state, { repo: form.repo, branch: form.branch, token: form.token, slug });
     }
     // Re-read after inline uploads so the Markdown holds the final image URLs.
-    const body = markdownFromHtml(richEl(root)?.innerHTML || '');
+    const finalBody = markdownFromHtml(richEl(root)?.innerHTML || '');
     let cover = null;
 
     if (form.imageMode === 'upload') {
@@ -517,7 +753,7 @@ async function onSave(root, state) {
       frontMatter,
       image: cover?.url || '',
       imageAlt: form.title,
-      body,
+      body: finalBody,
     });
 
     setStatus(root, `Đang commit ${postPath(slug)} …`);
@@ -539,13 +775,23 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
   if (!root) return;
   if (!root.dataset.mounted) {
     root.dataset.mounted = 'true';
-    const state = { thumb: null, file: null, previewUrl: '', images: new Map(), blobs: new Set(), imageSeq: 0 };
+    const state = {
+      thumb: null, file: null, previewUrl: '',
+      images: new Map(), blobs: new Set(), imageSeq: 0,
+      activeFigure: null, selectedFigure: null,
+    };
     const dropzone = () => root.querySelector('[data-blog-dropzone]');
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch { /* ignore */ }
 
     root.addEventListener('click', (event) => {
       const tool = event.target.closest('[data-blog-tool]');
-      if (tool) { applyTool(root, tool.dataset.blogTool); return; }
+      if (tool) { applyTool(root, tool.dataset.blogTool); hideBubble(root); return; }
+
+      const align = event.target.closest('[data-blog-fig-align]');
+      if (align) { setFigureAlign(root, state, state.activeFigure, align.dataset.blogFigAlign); return; }
+      if (event.target.closest('[data-blog-fig-caption]')) { focusFigureCaption(root, state, state.activeFigure); return; }
+      if (event.target.closest('[data-blog-fig-delete]')) { deleteFigure(root, state, state.activeFigure); return; }
+
       if (event.target.closest('[data-blog-dropzone]')) {
         if (!event.target.closest('[data-blog-file]')) root.querySelector('[data-blog-file]')?.click();
         return;
@@ -561,12 +807,11 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         return;
       }
       if (event.target.closest('[data-blog-save]')) { void onSave(root, state); return; }
-      if (event.target.closest('[data-blog-preview-open]')) { openPreview(root, state); return; }
+      if (event.target.closest('[data-blog-preview-open]')) { openPreview(root); return; }
       if (event.target.closest('[data-blog-preview-close]')) { closePreview(root); return; }
-      if (event.target.closest('[data-blog-preview-overlay]') && !event.target.closest('.blog-preview-modal')) { closePreview(root); return; }
+      if (event.target.closest('[data-blog-preview-overlay]') && !event.target.closest('.blog-preview-drawer')) { closePreview(root); return; }
       if (event.target.closest('[data-blog-score-open]')) { openScore(root); return; }
       if (event.target.closest('[data-blog-score-close]')) { closeScore(root); return; }
-      if (event.target.closest('[data-blog-score-overlay]') && !event.target.closest('.blog-score-modal')) { closeScore(root); return; }
       if (event.target.closest('[data-blog-clear]')) {
         if (window.confirm('Xoá bản nháp đang soạn trên thiết bị này?')) {
           root.querySelector('[data-blog-title]').value = '';
@@ -580,6 +825,8 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
           state.images.clear();
           state.file = null;
           state.thumb = null;
+          clearFigureSelection(root, state);
+          hideFigurebar(root, state);
           resetDropzone(root);
           showThumb(root, null);
           syncEmptyState(root);
@@ -587,38 +834,45 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         }
         return;
       }
-      if (event.target.closest('[data-blog-home]')) {
-        event.preventDefault();
-        window.location.hash = '';
+
+      // Select an inline image (enables Delete/Backspace) or clear the selection.
+      const image = event.target.closest('img');
+      if (image && richEl(root)?.contains(image)) {
+        const figure = image.closest('.blog-figure');
+        if (figure) selectFigure(root, state, figure);
+        return;
+      }
+      if (event.target.closest('[data-blog-body]') && !event.target.closest('.blog-figure')) {
+        clearFigureSelection(root, state);
       }
     });
 
-    root.addEventListener('change', (event) => {
-      const input = event.target;
-      if (input.matches?.('[data-blog-file]')) {
-        acceptFile(root, input.files?.[0], state);
-        input.value = '';
-        return;
-      }
-      if (input.matches?.('[data-blog-image-input]')) {
-        acceptToolbarImages(root, input.files, state);
-        input.value = '';
-        return;
-      }
-      if (input.matches?.('input[name="blog-image-mode"]')) {
-        const upload = input.value === 'upload';
-        setUploadZone(root, upload);
-        if (!upload && state.thumb?.provider === 'upload') {
-          if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
-          state.file = null;
-          state.thumb = null;
-          resetDropzone(root);
-          showThumb(root, null);
-        }
-        setStatus(root, upload
-          ? 'Chế độ upload: chọn ảnh từ máy để dùng làm ảnh đại diện.'
-          : 'Chế độ tự động: bấm “Lấy ảnh khác” để tìm ảnh minh hoạ.');
-      }
+    // Keep the text selection alive when clicking the floating format bubble.
+    root.addEventListener('mousedown', (event) => {
+      if (event.target.closest('[data-blog-bubble]')) event.preventDefault();
+    });
+
+    root.addEventListener('mouseover', (event) => {
+      if (showFigurebarFor(root, state, event.target)) return;
+      if (event.target.closest?.('[data-blog-figurebar]')) { window.clearTimeout(state.figurebarTimer); return; }
+      if (state.activeFigure) scheduleHideFigurebar(root, state);
+    });
+
+    root.addEventListener('mouseleave', () => { if (state.activeFigure) scheduleHideFigurebar(root, state); });
+
+    root.addEventListener('mouseup', (event) => {
+      if (!event.target.closest?.('[data-blog-figurebar]')) window.setTimeout(() => updateBubble(root), 0);
+    });
+
+    root.addEventListener('keyup', (event) => {
+      if (event.key === 'Shift' || event.key === 'Meta' || event.key === 'Control') return;
+      window.setTimeout(() => updateBubble(root), 0);
+    });
+
+    root.addEventListener('input', (event) => {
+      if (event.target.matches?.('input[name="blog-image-mode"]')) return;
+      if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
+      persistDraft(root);
     });
 
     root.addEventListener('paste', (event) => {
@@ -628,7 +882,12 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       event.preventDefault();
       const html = data.getData('text/html');
       const payload = html ? sanitizePastedHtml(html) : plainTextToHtml(data.getData('text/plain'));
-      try { document.execCommand('insertHTML', false, payload); } catch { richEl(root).insertAdjacentHTML('beforeend', payload); }
+      try {
+        document.execCommand('insertHTML', false, payload);
+      } catch {
+        richEl(root)?.insertAdjacentHTML('beforeend', payload);
+      }
+      enhanceFigures(root);
       window.setTimeout(() => syncEmptyState(root), 0);
     });
 
@@ -639,6 +898,14 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         root.querySelector('[data-blog-file]')?.click();
         return;
       }
+      if ((event.key === 'Delete' || event.key === 'Backspace')
+        && state.selectedFigure
+        && event.target.closest?.('[data-blog-body]')
+        && !event.target.closest('figcaption')) {
+        event.preventDefault();
+        deleteFigure(root, state, state.selectedFigure);
+        return;
+      }
       if (!(event.metaKey || event.ctrlKey)) return;
       if (event.target.closest?.('[data-blog-body]')) {
         if (event.key === 'b') { event.preventDefault(); runCommand(root, 'bold'); }
@@ -646,11 +913,33 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       }
     });
 
-    root.addEventListener('input', (event) => {
-      if (event.target.matches?.('input[name="blog-image-mode"]')) return;
-      if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
-      const form = readForm(root);
-      saveDraft({ title: form.title, body: form.html, tags: form.tags });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') handleEscape(root, state);
+    });
+
+    const reposition = () => { if (state.activeFigure) positionFigurebar(root, state); };
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+
+    root.addEventListener('change', (event) => {
+      const target = event.target;
+      if (target.matches?.('[data-blog-mode]')) {
+        const upload = readForm(root).imageMode === 'upload';
+        setUploadZone(root, upload);
+        if (!upload) {
+          if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+          state.file = null;
+          state.thumb = null;
+          resetDropzone(root);
+          showThumb(root, null);
+        }
+        setStatus(root, upload
+          ? 'Chế độ upload: chọn ảnh từ máy để dùng làm ảnh đại diện.'
+          : 'Chế độ tự động: bấm “Lấy ảnh khác” để tìm ảnh minh hoạ.');
+        return;
+      }
+      if (target.matches?.('[data-blog-file]')) { acceptFile(root, target.files?.[0], state); return; }
+      if (target.matches?.('[data-blog-image-input]')) { acceptToolbarImages(root, target.files, state); return; }
     });
 
     root.addEventListener('dragover', (event) => {

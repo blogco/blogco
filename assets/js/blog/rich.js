@@ -1,6 +1,7 @@
-// Plain-text helpers for the #/blog/new editor. The editor is a contenteditable
-// "rich text" surface: authors paste ordinary prose and the site converts it to
-// Markdown on save, so no Markdown syntax ever has to be typed by hand.
+// Plain-text + Markdown helpers for the #/blog/new editor. The editor is a
+// contenteditable "rich text" surface: authors paste ordinary prose and the
+// site converts it to Markdown on save, so no Markdown syntax ever has to be
+// typed by hand.
 
 const BULLET = /^\s*[-*+•·]\s+(.*)$/;
 const ORDERED = /^\s*\d+[.)]\s+(.*)$/;
@@ -88,4 +89,66 @@ export function cleanMarkdown(markdown = '') {
     .replace(/\r\n?/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+// ---------------------------------------------------------------------------
+// Figures (inline images with alignment + optional caption)
+//
+// Hugo's Goldmark renderer runs with `unsafe = false`, so a raw `<figure>` in
+// the Markdown would be stripped from published posts. The site ships PaperMod's
+// `figure` shortcode (which renders a real <figure>/<figcaption> with lazy
+// loading and centering), so inline images are serialised to that shortcode.
+// `expandFigureShortcodes` reverses it for the client-side preview, which
+// renders Markdown with `marked` (no shortcode support).
+// ---------------------------------------------------------------------------
+
+export const FIGURE_ALIGNMENTS = ['left', 'center', 'full'];
+
+// Values must survive Hugo's shortcode lexer: no raw quotes or angle brackets.
+function shortcodeValue(value = '') {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&#34;')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function figureShortcode({ src = '', alt = '', caption = '', align = 'center' } = {}) {
+  if (!src) return '';
+  const mode = FIGURE_ALIGNMENTS.includes(align) ? align : 'left';
+  const params = [`src="${shortcodeValue(src)}"`];
+  if (alt) params.push(`alt="${shortcodeValue(alt)}"`);
+  if (caption) params.push(`caption="${shortcodeValue(caption)}"`);
+  if (mode === 'center') params.push('align="center"');
+  else if (mode === 'full') params.push('class="align-full"');
+  return `{{< figure ${params.join(' ')} >}}`;
+}
+
+const FIGURE_SHORTCODE = /\{\{[<%]\s*figure\s+([^>]*?)\s*[>%]\}\}/gi;
+
+function shortcodeAlign(params) {
+  if (params.align === 'center') return 'center';
+  if (/\balign-full\b/.test(params.class || '')) return 'full';
+  return 'left';
+}
+
+// Preview-only: turn `{{< figure … >}}` back into a <figure> that `marked` (and
+// the browser) can display. Values were entity-escaped on the way in, so they
+// are safe to drop straight back into attributes / text nodes.
+export function expandFigureShortcodes(markdown = '') {
+  return String(markdown).replace(FIGURE_SHORTCODE, (whole, attrs = '') => {
+    const params = {};
+    const matcher = /([\w-]+)\s*=\s*"([^"]*)"/g;
+    let match;
+    while ((match = matcher.exec(attrs))) params[match[1].toLowerCase()] = match[2];
+    if (!params.src) return whole;
+
+    const align = shortcodeAlign(params);
+    const cssClass = ['md-figure', align === 'center' ? 'md-figure--center' : '', align === 'full' ? 'md-figure--full' : ''].filter(Boolean).join(' ');
+    const caption = params.caption ? `<figcaption>${params.caption}</figcaption>` : '';
+    const alt = params.alt ? ` alt="${params.alt}"` : '';
+    return `<figure class="${cssClass}"><img src="${params.src}"${alt} loading="lazy">${caption}</figure>`;
+  });
 }

@@ -68,3 +68,15 @@ test('a giant paragraph and missing images raise visual/structure tips', () => {
   assert.match(joined, /ảnh minh hoạ/i);
   assert.ok(result.categories[0].score < 5);
 });
+
+test('figure shortcodes count as images without inflating the word count', () => {
+  const base = '## Mở\n\nMột đoạn văn ngắn gọn để đủ nội dung.\n\nKết thúc.';
+  const withFigure = base.replace(
+    'Kết thúc.',
+    '{{< figure src="https://x/a.jpg" caption="Ảnh" align="center" >}}\n\nKết thúc.',
+  );
+  const plain = analyzeArticle({ title: 'Bài', markdown: base });
+  const figure = analyzeArticle({ title: 'Bài', markdown: withFigure });
+  assert.equal(figure.imageCount, plain.imageCount + 1);
+  assert.equal(figure.wordCount, plain.wordCount);
+});

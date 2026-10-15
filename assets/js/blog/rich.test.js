@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { plainTextToHtml, sanitizePastedHtml, cleanMarkdown, escapeHtml } from './rich.js';
+import { plainTextToHtml, sanitizePastedHtml, cleanMarkdown, escapeHtml, figureShortcode, expandFigureShortcodes } from './rich.js';
 
 test('plainTextToHtml turns blank lines into paragraphs', () => {
   assert.equal(plainTextToHtml('Đoạn một\n\nĐoạn hai'), '<p>Đoạn một</p>\n<p>Đoạn hai</p>');
@@ -41,3 +41,39 @@ test('cleanMarkdown collapses blank runs and keeps hard breaks', () => {
   assert.equal(cleanMarkdown('  \nhello\n  '), 'hello');
   assert.equal(cleanMarkdown('line  \nnext'), 'line  \nnext');
 });
+
+test('figureShortcode emits a Hugo figure with alignment and caption', () => {
+  assert.equal(
+    figureShortcode({ src: 'https://x/a.jpg', alt: 'Ảnh', align: 'center' }),
+    '{{< figure src="https://x/a.jpg" alt="Ảnh" align="center" >}}',
+  );
+  assert.equal(
+    figureShortcode({ src: 'a.jpg', caption: 'Chú thích', align: 'full' }),
+    '{{< figure src="a.jpg" caption="Chú thích" class="align-full" >}}',
+  );
+  assert.equal(figureShortcode({ src: '', alt: 'x' }), '');
+});
+
+test('figureShortcode escapes values that would break the shortcode lexer', () => {
+  const block = figureShortcode({ src: 'a.jpg', caption: 'Anh "đẹp" > bình thường', align: 'left' });
+  assert.equal(block, '{{< figure src="a.jpg" caption="Anh &#34;đẹp&#34; &gt; bình thường" >}}');
+  assert.ok(block.includes('&#34;đẹp&#34;'));
+  assert.ok(!block.includes('Anh "đẹp" >'));
+});
+
+test('expandFigureShortcodes restores <figure> markup for the preview', () => {
+  const html = expandFigureShortcodes(
+    'Trước\n\n{{< figure src="a.jpg" alt="Ảnh" caption="Chú thích" align="center" >}}\n\nSau',
+  );
+  assert.match(html, /<figure class="md-figure md-figure--center">/);
+  assert.match(html, /<img src="a\.jpg" alt="Ảnh" loading="lazy">/);
+  assert.match(html, /<figcaption>Chú thích<\/figcaption>/);
+
+  const full = expandFigureShortcodes('{{< figure src="b.jpg" class="align-full" >}}');
+  assert.match(full, /md-figure--full/);
+  assert.ok(!full.includes('<figcaption>'));
+
+  // Unknown shortcodes are left untouched.
+  assert.equal(expandFigureShortcodes('{{< youtube abc >}}'), '{{< youtube abc >}}');
+});
+
