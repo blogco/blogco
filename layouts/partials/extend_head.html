@@ -1,6 +1,12 @@
-{{- /* Client-side privacy gate config (read by assets/js/auth.js). */ -}}
+{{- /* Client-side privacy gate config (read by assets/js/auth.js).
+   Only a SHA-256 digest of the passcode is shipped — never the plaintext. */ -}}
 <meta name="blogco-lock" content="{{ if site.Params.security.disableLock }}false{{ else }}true{{ end }}">
-<meta name="blogco-lock-code" content="{{ site.Params.security.passcode | default "123456" }}">
+{{- with site.Params.security.passcode }}
+<meta name="blogco-lock-code" content="{{ . }}">
+{{- end }}
+{{- with site.Params.security.passcodeHash }}
+<meta name="blogco-lock-hash" content="{{ . }}">
+{{- end }}
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

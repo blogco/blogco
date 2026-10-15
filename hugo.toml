@@ -37,8 +37,9 @@ enableGitInfo = false
 
   # Client-side lock for the personal SPA modules (#/water, #/health, #/coffee).
   # Static site only: this is a convenience gate, not a server-enforced secret.
+  # Only the SHA-256 digest is stored here (plaintext is never committed).
   [params.security]
-    passcode = '123456'
+    passcodeHash = '7c531d72f7f14604e25fbb7862b1ed4e2b8f9a64534e32f4d877e645e6364da3'
     disableLock = false
 
   [params.homeInfoParams]

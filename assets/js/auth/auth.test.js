@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   verifyCode, isSensitiveRoute, createDeviceId, unlock, lock,
   isAuthenticated, readAuth, SENSITIVE_PREFIXES, DEFAULT_PASSCODE,
+  sha256Hex, verifyHash, normalizeHash,
 } from '../auth.js';
 
 // localStorage stub so the browser-only persistence path can run in Node.
@@ -42,20 +43,38 @@ test('createDeviceId produces a stable, unique looking token', () => {
   assert.notEqual(a, b);
 });
 
-test('unlock persists a device token and lock forgets it', () => {
+test('sha256Hex hashes a code so only the digest is stored', async () => {
+  assert.equal(
+    await sha256Hex('abc'),
+    'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+  );
+  assert.equal(normalizeHash(' ABCD '), 'abcd');
+});
+
+test('verifyHash accepts the matching code and rejects others', async () => {
+  const secret = 'correct horse battery staple';
+  const digest = await sha256Hex(secret);
+  assert.match(digest, /^[0-9a-f]{64}$/);
+  assert.equal(await verifyHash(secret, digest), true);
+  assert.equal(await verifyHash(` ${secret} `, digest.toUpperCase()), true);
+  assert.equal(await verifyHash('wrong-code', digest), false);
+  assert.equal(await verifyHash(secret, ''), false);
+});
+
+test('unlock persists a device token and lock forgets it', async () => {
   assert.equal(isAuthenticated(), false);
 
-  assert.throws(() => unlock('nope'), /Mã khoá không đúng/);
+  await assert.rejects(unlock('nope'), /Mã khoá không đúng/);
   assert.equal(isAuthenticated(), false);
 
-  const auth = unlock(DEFAULT_PASSCODE);
+  const auth = await unlock(DEFAULT_PASSCODE);
   assert.equal(auth.isAuthenticated, true);
   assert.ok(auth.deviceId);
   assert.equal(isAuthenticated(), true);
   assert.equal(readAuth().deviceId, auth.deviceId);
 
   // Re-unlocking keeps the same device id (remembered device).
-  const again = unlock(DEFAULT_PASSCODE);
+  const again = await unlock(DEFAULT_PASSCODE);
   assert.equal(again.deviceId, auth.deviceId);
 
   lock();

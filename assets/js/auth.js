@@ -28,6 +28,29 @@ export function verifyCode(input, expected = DEFAULT_PASSCODE) {
   return reference.length > 0 && normalized === reference;
 }
 
+// SHA-256 (hex). Used so the repo/HTML only ever stores a digest of the
+// passcode — never the passcode itself.
+export async function sha256Hex(text) {
+  const data = new TextEncoder().encode(String(text ?? ''));
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function normalizeHash(hash) {
+  return String(hash ?? '').trim().toLowerCase();
+}
+
+export async function verifyHash(input, hash) {
+  const expected = normalizeHash(hash);
+  if (!expected) return false;
+  const actual = await sha256Hex(String(input ?? '').trim());
+  if (actual.length !== expected.length) return false;
+  // Constant-time-ish comparison to avoid trivial timing leaks.
+  let diff = 0;
+  for (let i = 0; i < actual.length; i += 1) diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
+}
+
 export function createDeviceId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `dev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -44,6 +67,18 @@ export function lockEnabled() {
 
 export function currentPasscode() {
   return metaContent('blogco-lock-code') || DEFAULT_PASSCODE;
+}
+
+// Hash takes precedence over the plaintext fallback when configured.
+export function currentPasscodeHash() {
+  return metaContent('blogco-lock-hash');
+}
+
+// Verify an entered code: prefer the SHA-256 digest, fall back to plaintext.
+export async function verify(input) {
+  const hash = currentPasscodeHash();
+  if (hash) return verifyHash(input, hash);
+  return verifyCode(input, currentPasscode());
 }
 
 function storage() {
@@ -83,8 +118,8 @@ function announce() {
 }
 
 // Verify the code, then remember this device so reloads skip the lock screen.
-export function unlock(input) {
-  if (!verifyCode(input, currentPasscode())) {
+export async function unlock(input) {
+  if (!(await verify(input))) {
     const error = new Error('Mã khoá không đúng. Vui lòng thử lại.');
     error.code = 'INVALID_CODE';
     throw error;
@@ -145,16 +180,20 @@ function buildLock() {
     </form>`;
   document.body.appendChild(el);
 
-  el.querySelector('[data-auth-form]')?.addEventListener('submit', (event) => {
+  el.querySelector('[data-auth-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const input = el.querySelector('[data-auth-input]');
+    const button = el.querySelector('.auth-lock__button');
+    if (button) button.disabled = true;
     try {
-      unlock(input?.value ?? '');
+      await unlock(input?.value ?? '');
       if (input) input.value = '';
       setError('');
     } catch (error) {
       setError(error.message);
       input?.select?.();
+    } finally {
+      if (button) button.disabled = false;
     }
   });
   el.querySelector('[data-auth-home]')?.addEventListener('click', (event) => {

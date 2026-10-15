@@ -86,6 +86,7 @@ body.auth-locked { overflow: hidden; }
   cursor: pointer;
 }
 .auth-lock__button:hover { background: #001b46; }
+.auth-lock__button:disabled { opacity: .6; cursor: progress; }
 .auth-lock__home { color: #0068bf; font-size: .84rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
 /* Header "Khoá lại" control (hidden until authenticated). */
