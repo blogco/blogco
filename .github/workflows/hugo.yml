@@ -9,6 +9,7 @@ on:
       - 'assets/**'
       - 'config/**'
       - 'content/**'
+      - 'data/**'
       - 'layouts/**'
       - 'static/**'
       - 'themes/**'

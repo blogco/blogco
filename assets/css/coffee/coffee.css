@@ -266,6 +266,23 @@ body.coffee-route .category-bar { display: none; }
 .coffee-toast.is-visible { opacity: 1; transform: translateY(0); }
 .coffee-toast.is-error { background: var(--coffee-danger); }
 
+/* AI Training --------------------------------------------------------------- */
+.coffee-training-step { display: grid; gap: .8rem; }
+.coffee-training-step .coffee-section-title { margin-top: 0 !important; padding-top: 0; border-top: 0; }
+.coffee-training-brands { display: flex; flex-wrap: wrap; gap: .6rem; }
+.coffee-training-brand {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .5rem .85rem; border: 1px solid var(--coffee-border); border-radius: 99px;
+  background: #fff; font-weight: 700; cursor: pointer;
+}
+.coffee-training-brand:has(input:checked) { border-color: var(--coffee-brown-dark); background: var(--coffee-soft); color: var(--coffee-brown-dark); }
+.coffee-training-custom { max-width: 26rem; }
+.coffee-training-labels { display: flex; flex-wrap: wrap; gap: .4rem; }
+.coffee-training-label { min-height: 38px; padding: .35rem .7rem; font-size: .82rem; }
+.coffee-training-text { min-height: 180px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; }
+.coffee-training-fields { margin: .4rem 0; }
+.coffee-training-fields .coffee-field--full { grid-column: 1 / -1; }
+
 /* Responsive ---------------------------------------------------------------- */
 @media (max-width: 860px) {
   .coffee-stats-grid { grid-template-columns: 1fr; }

@@ -1,0 +1,9 @@
+{
+  "brand": "starbucks",
+  "version": 1,
+  "updatedAt": "2026-10-15T07:00:00Z",
+  "sampleCount": 0,
+  "accuracy": 0.45,
+  "patterns": {},
+  "vietnameseFixes": {}
+}

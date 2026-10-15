@@ -8,7 +8,10 @@
 import { classifyItem, normalizeName } from './menu.js';
 
 const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';
+const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+const PDFJS_WORKER_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 let scriptPromise;
+let pdfPromise;
 
 function loadScript(url) {
   return new Promise((resolve, reject) => {
@@ -39,8 +42,95 @@ export async function loadTesseract() {
   return window.Tesseract;
 }
 
-export async function recognizeImage(file, { lang = 'vie+eng', onProgress, preprocess = true } = {}) {
+// ---------------------------------------------------------------------------
+// PDF input — hoá đơn gốc thường là PDF, không chỉ JPG/PNG.
+// ---------------------------------------------------------------------------
+//
+// pdf.js renders each PDF page to a canvas; the canvas then flows through the
+// exact same OCR pipeline as a photo. Both libraries are lazy-loaded from a CDN.
+
+export function isPdf(input) {
+  if (!input) return false;
+  const type = String(input.type || '').toLowerCase();
+  const name = String(input.name || input.fileName || '');
+  return type === 'application/pdf' || /\.pdf$/i.test(name);
+}
+
+async function loadPdfJs() {
+  if (typeof window !== 'undefined' && window.pdfjsLib) return window.pdfjsLib;
+  pdfPromise ??= loadScript(PDFJS_URL);
+  await pdfPromise;
+  if (!window.pdfjsLib) {
+    pdfPromise = undefined;
+    throw new Error('Thư viện đọc PDF không khởi động được.');
+  }
+  if (window.pdfjsLib.GlobalWorkerOptions) window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+  return window.pdfjsLib;
+}
+
+// Render (up to `maxPages`) PDF pages to canvases at `scale`x resolution.
+export async function pdfToPageCanvases(file, { maxPages = 5, scale = 2 } = {}) {
+  if (typeof document === 'undefined') throw new Error('Không có môi trường canvas để đọc PDF.');
+  const pdfjsLib = await loadPdfJs();
+  const data = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const total = pdf.numPages;
+  const count = Math.min(total, maxPages);
+  const canvases = [];
+  for (let pageNumber = 1; pageNumber <= count; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: context, viewport }).promise;
+    canvases.push(canvas);
+  }
+  return { canvases, total, used: count };
+}
+
+// Data-URL of the first PDF page, for the dropzone preview.
+export async function pdfToPreviewDataUrl(file, { maxDim = 1400, quality = 0.8 } = {}) {
+  const { canvases } = await pdfToPageCanvases(file, { maxPages: 1, scale: 2 });
+  const canvas = canvases[0];
+  if (!canvas) return '';
+  const ratio = Math.min(1, maxDim / Math.max(canvas.width, canvas.height));
+  if (ratio >= 1) return canvas.toDataURL('image/jpeg', quality);
+  const scaled = document.createElement('canvas');
+  scaled.width = Math.round(canvas.width * ratio);
+  scaled.height = Math.round(canvas.height * ratio);
+  scaled.getContext('2d').drawImage(canvas, 0, 0, scaled.width, scaled.height);
+  return scaled.toDataURL('image/jpeg', quality);
+}
+
+export async function recognizeImage(file, { lang = 'vie+eng', onProgress, preprocess = true, maxPdfPages = 5 } = {}) {
   const Tesseract = await loadTesseract();
+  const recognize = async (input) => {
+    const { data } = await Tesseract.recognize(input, lang, {
+      logger: (message) => {
+        if (typeof onProgress === 'function') onProgress(message);
+      },
+    });
+    return (data?.text || '').trim();
+  };
+
+  if (isPdf(file)) {
+    const { canvases, total, used } = await pdfToPageCanvases(file, { maxPages: maxPdfPages });
+    const texts = [];
+    for (let index = 0; index < canvases.length; index += 1) {
+      if (typeof onProgress === 'function') {
+        onProgress({ status: `PDF trang ${index + 1}/${used}${total > used ? ` (còn ${total - used} trang, tăng maxPdfPages để đọc thêm)` : ''}` });
+      }
+      let page = canvases[index];
+      if (preprocess) page = await preprocessImage(page).catch(() => canvases[index]);
+      texts.push(await recognize(page));
+    }
+    return texts.filter(Boolean).join('\n\n---\n\n');
+  }
+
   let input = file;
   if (preprocess) {
     try {
@@ -50,12 +140,7 @@ export async function recognizeImage(file, { lang = 'vie+eng', onProgress, prepr
       input = file;
     }
   }
-  const { data } = await Tesseract.recognize(input, lang, {
-    logger: (message) => {
-      if (typeof onProgress === 'function') onProgress(message);
-    },
-  });
-  return (data?.text || '').trim();
+  return recognize(input);
 }
 
 // ---------------------------------------------------------------------------

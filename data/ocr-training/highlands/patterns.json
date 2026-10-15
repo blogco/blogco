@@ -1,0 +1,33 @@
+{
+  "brand": "highlands",
+  "version": 1,
+  "updatedAt": "2026-10-15T07:00:00Z",
+  "sampleCount": 1,
+  "accuracy": 0.56,
+  "patterns": {
+    "brand": "^HIGHLANDS\\s+COFFEE$",
+    "address": "^\\d+\\s+[A-Z][a-z]+.*(TP\\.HCM|TP\\.HN|Ha Noi|Da Nang)$",
+    "phone": "SĐT[:\\s]+([\\d.]+)",
+    "shopId": "ShopID[:\\s]+(\\d+)",
+    "checkNo": "Check[:\\s]+(\\d+)",
+    "datetime": "Ngay[:\\s]+(\\d{2}[-/]\\d{2}[-/]\\d{4})\\s+(\\d{2}:\\d{2})",
+    "cashier": "Thu\\s*ngan[:\\s]+(.+)",
+    "pager": "Pager[:\\s]+(\\d+)",
+    "pos": "POS(\\d+)",
+    "item": "^(\\d+)\\s+(.+?)\\s+([\\d.,]+)$",
+    "discount": "^-\\s*(.+?)\\s+-([\\d.,]+)$",
+    "subtotal": "Thanh\\s*tien[:\\s]+([\\d.,]+)",
+    "total": "Tong\\s*tien[:\\s]+([\\d.,]+)",
+    "payment": "(Payoo Bank Card|Tien mat|Cash|Visa|Mastercard|MoMo|ZaloPay)"
+  },
+  "vietnameseFixes": {
+    "Thu rean": "Thu ngan",
+    "Tae tim": "Thanh tien",
+    "Tog tien": "Tong tien",
+    "May": "Ngay",
+    "Creck": "Check",
+    "Payoo Bark Card": "Payoo Bank Card",
+    "Matchadi Latte": "Matcha Latte",
+    "Xoyen Ouy Khang": "Nguyen Duy Khang"
+  }
+}

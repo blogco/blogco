@@ -1,0 +1,10 @@
+{
+  "updatedAt": "2026-10-15T07:00:00Z",
+  "repo": "blogco/blogco",
+  "branch": "main",
+  "brands": {
+    "highlands": { "samples": 1, "accuracy": 0.56, "version": 1 },
+    "starbucks": { "samples": 0, "accuracy": 0.45, "version": 1 },
+    "phuclong": { "samples": 0, "accuracy": 0.45, "version": 1 }
+  }
+}

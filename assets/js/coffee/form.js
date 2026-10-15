@@ -58,12 +58,12 @@ export function renderOcrBlock(receipt = {}) {
       <span class="coffee-badge coffee-badge--muted">OCR hoặc nhập tay</span>
     </div>
     <label class="coffee-dropzone${hasImage ? ' has-image' : ''}" data-dropzone>
-      <input type="file" accept="image/*" data-invoice-input hidden aria-label="Chọn ảnh hoá đơn Highlands Coffee">
+      <input type="file" accept="image/*,application/pdf,.pdf" data-invoice-input hidden aria-label="Chọn ảnh hoặc PDF hoá đơn Highlands Coffee">
       ${hasImage ? `<img data-invoice-preview src="${previewSrc}" alt="Xem trước hoá đơn">` : '<img data-invoice-preview alt="Xem trước hoá đơn" hidden>'}
       <span class="coffee-dropzone__hint"${hasImage ? ' hidden' : ''}>
         <span aria-hidden="true">☕</span>
-        <span>Kéo ảnh hoá đơn vào đây hoặc bấm để chọn</span>
-        <small>JPG · PNG · WEBP · hoá đơn Highlands Coffee</small>
+        <span>Kéo ảnh/PDF hoá đơn vào đây hoặc bấm để chọn</span>
+        <small>JPG · PNG · WEBP · PDF · hoá đơn Highlands Coffee</small>
       </span>
     </label>
     <div class="coffee-invoice__actions">

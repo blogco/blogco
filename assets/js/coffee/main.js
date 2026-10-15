@@ -15,7 +15,9 @@ import {
 import { CATEGORY_LABELS, categoryLabel } from './menu.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats } from './stats.js';
-import { recognizeImage, parseHighlandsInvoice } from './ocr.js';
+import { recognizeImage, parseHighlandsInvoice, isPdf, pdfToPreviewDataUrl } from './ocr.js';
+import { renderTrainingPage, mountTraining } from './training-view.js';
+import { loadPatterns, applyLearnedFixes } from './training.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -526,15 +528,24 @@ async function handleInvoiceFile(block, file) {
   const hint = block.querySelector('.coffee-dropzone__hint');
   const clear = block.querySelector('[data-invoice-clear]');
   const valueInput = block.querySelector('[data-invoice-value]');
+  const status = block.querySelector('[data-invoice-status]');
   block._pendingFile = file;
-  const dataUrl = await compressImage(file);
-  if (preview) { preview.src = dataUrl; preview.hidden = false; }
-  if (hint) hint.hidden = true;
+  let dataUrl = '';
+  try {
+    dataUrl = isPdf(file) ? await pdfToPreviewDataUrl(file) : await compressImage(file);
+  } catch (error) {
+    if (status) status.textContent = `${error.message} Bạn vẫn có thể bấm “OCR tự động”.`;
+  }
+  if (dataUrl && preview) { preview.src = dataUrl; preview.hidden = false; }
+  if (hint) hint.hidden = Boolean(dataUrl) || isPdf(file);
   if (clear) clear.hidden = false;
   block.querySelector('[data-dropzone]')?.classList.add('has-image');
   if (valueInput) valueInput.value = dataUrl;
-  const status = block.querySelector('[data-invoice-status]');
-  if (status) status.textContent = 'Đã nạp ảnh. Bấm “OCR tự động” để trích xuất.';
+  if (status) {
+    status.textContent = isPdf(file)
+      ? 'Đã nạp PDF. Bấm “OCR tự động” để trích xuất từng trang.'
+      : 'Đã nạp ảnh. Bấm “OCR tự động” để trích xuất.';
+  }
 }
 
 async function applyClearInvoice(block) {
@@ -595,20 +606,26 @@ async function runOcr(root, form, block) {
 function routeName(root) {
   if (location.hash.startsWith('#/coffee')) return location.hash.slice(1).replace(/\/$/, '') || '/coffee';
   const initial = root.dataset.initialRoute;
-  const map = { list: '/coffee', dashboard: '/coffee', history: '/coffee', add: '/coffee/add', stats: '/coffee/stats' };
+  const map = { list: '/coffee', dashboard: '/coffee', history: '/coffee', add: '/coffee/add', stats: '/coffee/stats', training: '/coffee/training' };
   return map[initial] || '/coffee';
+}
+
+function renderTraining(root) {
+  root.innerHTML = renderTrainingPage();
+  void mountTraining(root);
 }
 
 function showRoute(root) {
   const route = routeName(root);
   const [, , action = '', param = ''] = route.split('/');
-  const titles = { '': 'Chi phí đi cà phê', add: 'Thêm hoá đơn cà phê', edit: 'Sửa hoá đơn cà phê', detail: 'Chi tiết hoá đơn', stats: 'Thống kê chi phí cà phê' };
+  const titles = { '': 'Chi phí đi cà phê', add: 'Thêm hoá đơn cà phê', edit: 'Sửa hoá đơn cà phê', detail: 'Chi tiết hoá đơn', stats: 'Thống kê chi phí cà phê', training: 'AI Training — dạy OCR hoá đơn' };
   document.title = `${titles[action] || titles['']} | BlogCo`;
 
   if (action === 'add') renderFormPage(root, '');
   else if (action === 'edit') renderFormPage(root, decodeURIComponent(param));
   else if (action === 'detail') renderDetail(root, decodeURIComponent(param));
   else if (action === 'stats') renderStats(root);
+  else if (action === 'training') renderTraining(root);
   else renderHistory(root);
 
   if (pendingToast) {
