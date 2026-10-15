@@ -215,6 +215,22 @@ export function removeReceipt(id) {
   return true;
 }
 
+// Wipe every saved transaction (and reset the profile back to defaults) from
+// this device. Used by the "Xoá toàn bộ dữ liệu / Reset" button, so we clear
+// both the primary and backup keys and drop the in-memory cache to be sure a
+// stale clone can never resurrect the old list.
+export function clearCoffeeData() {
+  memoryCache = undefined;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(BACKUP_KEY);
+  } catch {
+    // Ignore: writeState below will surface a storage error if it matters.
+  }
+  writeState(blankState());
+  return getCoffeeState();
+}
+
 export function saveCoffeeProfile(input = {}) {
   const state = readState();
   const monthlyBudget = Math.round(toNumber(input.monthlyBudget));

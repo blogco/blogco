@@ -205,6 +205,8 @@ body.coffee-route .category-bar { display: none; }
 .coffee-ghost-button:hover { border-color: var(--coffee-border-strong); color: var(--coffee-text) !important; }
 .coffee-ghost-button--danger { border-color: #F1C4C4; color: var(--coffee-danger) !important; }
 .coffee-ghost-button--danger:hover { border-color: var(--coffee-danger); background: var(--coffee-danger-soft); }
+.coffee-clear-all { border-color: #F1C4C4 !important; color: var(--coffee-danger) !important; background: #fff; }
+.coffee-clear-all:hover { border-color: var(--coffee-danger) !important; background: var(--coffee-danger-soft); transform: translateY(-1px); }
 .coffee-ghost-button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .coffee-text-link { font-weight: 700; white-space: nowrap; }
 

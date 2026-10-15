@@ -10,7 +10,7 @@
 
 import {
   getCoffeeState, getReceiptById, saveReceipt, removeReceipt, saveCoffeeProfile,
-  exportReceipts, importReceipts, readJsonFile, downloadCsv,
+  exportReceipts, importReceipts, readJsonFile, downloadCsv, clearCoffeeData,
   escapeHtml, formatVnd, toNumber, PAYMENT_LABELS,
 } from './store.js';
 import { categoryLabel } from './menu.js';
@@ -29,7 +29,16 @@ import { renderDashboard } from './dashboard.js';
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
 let pendingToast = '';
-let searchState = { query: '', month: '', store: '', category: '', page: 1 };
+
+// Default ("Tất cả") filter state. Every time the list screen mounts we reset
+// back to this so a stale filter left over from a previous visit can never hide
+// the saved transactions (which showed up as "0/0 · Không tìm thấy hoá đơn").
+const DEFAULT_SEARCH_STATE = { query: '', month: '', store: '', category: '', page: 1 };
+let searchState = { ...DEFAULT_SEARCH_STATE };
+
+function resetSearchState() {
+  searchState = { ...DEFAULT_SEARCH_STATE };
+}
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -229,6 +238,9 @@ function renderHistoryResults(state) {
 }
 
 function renderHistory(root) {
+  // Entering the list always starts from the "Tất cả" filters and renders the
+  // full saved list immediately, so users never land on an empty filtered view.
+  resetSearchState();
   const state = getCoffeeState();
   const stats = computeCoffeeStats(state.receipts, { budget: state.profile.monthlyBudget });
   const { months, stores, categories } = filterOptions(state.receipts);
@@ -249,6 +261,7 @@ function renderHistory(root) {
       <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
       <button type="button" class="coffee-secondary-button" data-import-trigger>⬆ Import</button>
       <button type="button" class="coffee-secondary-button" data-export-csv>⬇ CSV</button>
+      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>🗑️ Xóa toàn bộ dữ liệu / Reset</button>
       <input type="file" accept="application/json,.json" data-import-input hidden aria-label="Chọn file JSON để nhập">
     </div>
 
@@ -403,7 +416,8 @@ function renderStats(root) {
     ${renderDashboard(state.receipts)}
     ${renderAiInsights(state.receipts)}`}
 
-    <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">← Danh sách</a></div>
+    <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">← Danh sách</a>
+      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>🗑️ Xóa toàn bộ dữ liệu / Reset</button></div>
   </section>${toastMarkup()}`;
 }
 
@@ -708,7 +722,7 @@ export function mountCoffeeApp(root) {
         const payload = await readJsonFile(file);
         const result = importReceipts(payload);
         pendingToast = `Đã nhập ${result.added} hoá đơn mới, cập nhật ${result.updated}. Tổng ${result.total}.`;
-        searchState = { query: '', month: '', store: '', category: '', page: 1 };
+        resetSearchState();
         showRoute(root);
       } catch (error) {
         showToast(root, error.message, true);
@@ -800,6 +814,14 @@ export function mountCoffeeApp(root) {
     if (target.closest('[data-export]')) { exportReceipts(); return; }
     if (target.closest('[data-export-csv]')) { downloadCsv(); return; }
     if (target.closest('[data-import-trigger]')) { root.querySelector('[data-import-input]')?.click(); return; }
+    if (target.closest('[data-clear-all]')) {
+      if (!window.confirm('Bạn có chắc muốn xóa toàn bộ lịch sử chi phí không? Hành động này không thể hoàn tác.')) return;
+      clearCoffeeData();
+      resetSearchState();
+      pendingToast = 'Đã xóa toàn bộ dữ liệu chi phí trên thiết bị này.';
+      showRoute(root);
+      return;
+    }
     if (target.closest('[data-print]')) { window.print(); return; }
 
     const pageButton = target.closest('[data-page]');
@@ -848,7 +870,7 @@ export function mountCoffeeApp(root) {
             items: rowToItems(row.itemsText, row.subtotal, row.quantity),
           }));
         });
-        searchState = { query: '', month: '', store: '', category: '', page: 1 };
+        resetSearchState();
         showExpenseReview(root, saved);
       } catch (error) {
         showToast(root, error.message || 'Không lưu được dữ liệu.', true);
@@ -861,7 +883,7 @@ export function mountCoffeeApp(root) {
         const input = readReceiptForm(form);
         const record = saveReceipt(input, input.id);
         pendingToast = `Đã lưu giao dịch ${record.id} · ${record.store || 'cà phê'} · ${formatVnd(record.total)}.`;
-        searchState = { query: '', month: '', store: '', category: '', page: 1 };
+        resetSearchState();
         location.hash = '#/coffee';
         if (routeName(root) === '/coffee') showRoute(root);
       } catch (error) {

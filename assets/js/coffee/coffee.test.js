@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { classifyItem, normalizeName } from './menu.js';
 import {
   computeReceiptTotals, toNumber, formatVnd,
-  saveReceipt, getReceipts, getReceiptById, removeReceipt, importReceipts, validateReceipt,
+  saveReceipt, getReceipts, getReceiptById, removeReceipt, importReceipts, validateReceipt, clearCoffeeData,
 } from './store.js';
 import { computeCoffeeStats } from './stats.js';
 import { filterReceipts } from './main.js';
@@ -69,6 +69,21 @@ test('store CRUD: save, read, update, remove, import and validate', () => {
   assert.doesNotThrow(() => validateReceipt({ store: 'A', date: '2026-10-15', items: [], total: 1000 }));
 });
 
+test('clearCoffeeData wipes receipts and profile back to defaults', () => {
+  clearCoffeeData();
+  saveReceipt({ store: 'Highlands Coffee', date: '2026-10-15', total: 50000 });
+  saveReceipt({ store: 'Phúc Long', date: '2026-10-16', total: 40000 });
+  assert.equal(getReceipts().length, 2);
+
+  const cleared = clearCoffeeData();
+  assert.equal(getReceipts().length, 0);
+  assert.equal(cleared.receipts.length, 0);
+  assert.equal(cleared.nextId, 1);
+  assert.equal(cleared.profile.monthlyBudget, 500000);
+  // Backup key is wiped too, so a reload cannot restore the old list.
+  assert.equal(localStorage.getItem('blogco.coffee.receipts.backup.v1'), JSON.stringify(cleared));
+});
+
 test('computeCoffeeStats aggregates totals per month, store and category', () => {
   const receipts = [
     { date: '2026-10-15', store: 'Highlands A', total: 88000, items: [{ name: 'Phin sữa đá', qty: 2, amount: 90000, category: 'coffee' }] },
@@ -96,4 +111,7 @@ test('filterReceipts searches by store, order code and item name', () => {
   assert.equal(filterReceipts(receipts, { store: 'Highlands Landmark' }).length, 1);
   assert.equal(filterReceipts(receipts, { month: '2026-09' }).length, 1);
   assert.equal(filterReceipts(receipts, { query: 'không có' }).length, 0);
+  // Default "Tất cả" filters (all empty) must never hide the saved list.
+  assert.equal(filterReceipts(receipts).length, 2);
+  assert.equal(filterReceipts(receipts, { query: '', month: '', store: '', category: '' }).length, 2);
 });
