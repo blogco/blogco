@@ -134,14 +134,14 @@ export function renderManualTable(rows = [{}]) {
 export function renderManualForm() {
   return `<form id="coffee-manual-form" class="coffee-card coffee-manual" novalidate>
     <div class="coffee-manual-toolbar">
-      <button type="button" class="coffee-secondary-button" data-manual-add>＋ Thêm hàng</button>
+      <button type="button" class="coffee-secondary-button" data-manual-add>＋ Thêm dòng</button>
       <button type="button" class="coffee-ghost-button" data-manual-clear>Xoá tất cả</button>
-      <span class="coffee-manual-total" data-manual-total>Tổng: <strong>0 đ</strong></span>
+      <span class="coffee-manual-total" data-manual-total>Tổng cộng: <strong>0 đ</strong></span>
     </div>
 
     ${renderManualTable([{}])}
 
-    <p class="coffee-manual-hint">Cột <strong>Seasons</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy (ví dụ: “Matcha Latte, Bánh dừa”).</p>
+    <p class="coffee-manual-hint">Cột <strong>Mùa</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Món / Nội dung</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy (ví dụ: “Matcha Latte, Bánh dừa”).</p>
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>

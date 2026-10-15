@@ -59,10 +59,10 @@ function showToast(root, text, isError = false) {
   showToast.timeout = setTimeout(() => toast.classList.remove('is-visible'), 4200);
 }
 
-function pageHeader(title, description, back = '/coffee') {
-  return `<div class="coffee-page-heading">
+function pageHeader(title, description, back = '/coffee', hero = false) {
+  return `<div class="coffee-page-heading${hero ? ' coffee-page-heading--hero' : ''}">
     <a class="coffee-back" href="#${back}" aria-label="Quay lại">← Quay lại</a>
-    <p class="coffee-eyebrow">BLOGCO · CHI PHÍ CÀ PHÊ</p>
+    <p class="coffee-eyebrow">BLOGCO · EXPENSE MANAGEMENT</p>
     <h1 tabindex="-1">${escapeHtml(title)}</h1>
     <p>${escapeHtml(description)}</p>
   </div>`;
@@ -355,9 +355,9 @@ function renderStats(root) {
   const budgetClass = !budget ? '' : monthPct >= 100 ? 'is-danger' : monthPct >= 80 ? 'is-warning' : 'is-success';
 
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
-    ${pageHeader('Thống kê chi phí & phân tích tài chính', 'Tổng hợp chi phí theo mùa, thương hiệu và nhóm đồ uống, kèm phân tích thói quen & sức khỏe bằng AI.')}
+    ${pageHeader('Thống kê & phân tích chi phí', 'Báo cáo tổng hợp theo mùa, thương hiệu và nhóm đồ uống, kèm phân tích thói quen tiêu dùng bằng AI.', '/coffee', true)}
     ${stats.count === 0 ? '<p class="coffee-empty">Chưa có dữ liệu để thống kê. Hãy nhập chi phí thủ công để bắt đầu.</p>' : `
-    <div class="coffee-summary-grid">
+    <div class="coffee-summary-grid coffee-summary-grid--stats">
       <div class="coffee-summary-card"><span>Tổng chi phí</span><strong>${escapeHtml(formatVnd(stats.totalSpend))}</strong></div>
       <div class="coffee-summary-card"><span>Số hoá đơn</span><strong>${stats.count}</strong></div>
       <div class="coffee-summary-card"><span>Lượt món</span><strong>${stats.itemCount}</strong></div>
@@ -483,7 +483,7 @@ function updateManualTotal(form) {
 
 function renderManualPage(root) {
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
-    ${pageHeader('Nhập chi phí thủ công', 'Nhập nhanh nhiều giao dịch cà phê theo dạng bảng. Cột Seasons tự động điền theo ngày giao dịch.')}
+    ${pageHeader('Nhập chi phí cà phê', 'Nhập nhanh nhiều giao dịch theo dạng bảng tính. Cột Mùa được tự động điền theo ngày giao dịch.', '/coffee', true)}
     ${renderManualForm()}
   </section>${toastMarkup()}`;
   updateManualTotal(root.querySelector('#coffee-manual-form'));

@@ -248,6 +248,20 @@ body.coffee-route .category-bar { display: none; }
 .coffee-summary-card:last-child { border-right: 0; }
 .coffee-summary-card span { color: var(--coffee-muted); font-size: .74rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .coffee-summary-card strong { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--coffee-ink); }
+/* Statistics page: responsive KPI tile grid (card-based, no dividers). */
+.coffee-summary-grid--stats {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .75rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.coffee-summary-grid--stats .coffee-summary-card {
+  border: 1px solid var(--coffee-border);
+  border-radius: var(--coffee-radius-sm);
+  background: var(--coffee-surface);
+  box-shadow: var(--coffee-shadow-sm);
+}
 
 /* --------------------------------------------------------------------------
    Budget
