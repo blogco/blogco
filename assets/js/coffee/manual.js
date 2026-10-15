@@ -7,7 +7,7 @@
 // The router (main.js) owns the DOM events; everything here is rendering plus a
 // few small pure helpers that are unit-tested.
 
-import { escapeHtml, toNumber } from './store.js';
+import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { seasonOf, seasonLabel } from './season.js';
 import { POPULAR_ITEMS, classifyItem } from './menu.js';
 
@@ -66,31 +66,54 @@ export function distributeAmount(total, count) {
   return parts;
 }
 
-// Build the receipt `items` array from a comma-separated Items cell + row amount.
-export function rowToItems(itemsText, total) {
+// Chia tổng số món (quantity) cho các món đã nêu tên, luôn giữ tối thiểu 1 món
+// mỗi dòng để "Số món" không nhỏ hơn số tên món.
+export function distributeCount(total, count) {
+  const n = Math.max(0, Math.floor(count));
+  if (!n) return [];
+  const value = Math.max(0, Math.round(toNumber(total)));
+  if (value <= 0) return Array(n).fill(1);
+  const base = Math.floor(value / n);
+  const parts = Array(n).fill(base);
+  parts[n - 1] += value - base * n;
+  return parts.map((qty) => Math.max(1, qty));
+}
+
+// Build the receipt `items` array from a comma-separated Items cell + row
+// subtotal. `quantity` (số món) is spread across the named items; when omitted
+// each named item counts as one.
+export function rowToItems(itemsText, subtotal, quantity = 0) {
   const names = parseItemNames(itemsText);
-  const parts = distributeAmount(total, names.length);
+  if (!names.length) return [];
+  const amounts = distributeAmount(subtotal, names.length);
+  const qtys = distributeCount(quantity, names.length);
   return names.map((name, index) => {
-    const amount = parts[index] || 0;
-    return { name, qty: 1, unitPrice: amount, amount, category: classifyItem(name) };
+    const amount = amounts[index] || 0;
+    const qty = qtys[index] || 1;
+    return { name, qty, unitPrice: qty ? Math.round(amount / qty) : amount, amount, category: classifyItem(name) };
   });
 }
 
 export function renderManualRow(row = {}, index = 0) {
   const date = row.date || todayKey();
-  const amount = row.amount === undefined || row.amount === null || row.amount === ''
-    ? ''
-    : formatAmountInput(row.amount);
+  const subtotalRaw = row.subtotal ?? row.amount ?? '';
+  const discountRaw = row.discount ?? '';
+  const subtotal = subtotalRaw === '' ? '' : formatAmountInput(subtotalRaw);
+  const discount = discountRaw === '' ? '' : formatAmountInput(discountRaw);
+  const quantity = row.quantity === undefined || row.quantity === null || row.quantity === '' ? 1 : row.quantity;
+  const total = Math.max(0, toNumber(subtotalRaw) - toNumber(discountRaw));
   const season = seasonOf(date);
   const itemsText = row.itemsText ?? row.items ?? '';
   return `<tr class="coffee-manual-row" data-manual-row>
     <td class="coffee-manual-cell--index"><span data-row-index>${index + 1}</span></td>
     <td>
-      <input class="coffee-manual-input" name="brand" type="text" list="coffee-brand-suggest" maxlength="160" autocomplete="off" value="${escapeHtml(row.brand ?? '')}" placeholder="Highlands Coffee" aria-label="Brand (thương hiệu) dòng ${index + 1}">
+      <input class="coffee-manual-input" name="brand" type="text" list="coffee-brand-suggest" maxlength="160" autocomplete="off" value="${escapeHtml(row.brand ?? '')}" placeholder="Highlands Coffee" aria-label="Brand (quán) dòng ${index + 1}">
     </td>
-    <td class="coffee-manual-cell--amount">
-      <input class="coffee-manual-input coffee-manual-input--amount" name="amount" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(amount)}" placeholder="100.200" aria-label="Số tiền dòng ${index + 1}">
-      <span class="coffee-manual-currency" aria-hidden="true">đ</span>
+    <td class="coffee-manual-cell--items">
+      <input class="coffee-manual-input" name="items" type="text" list="coffee-manual-item-suggest" maxlength="300" autocomplete="off" value="${escapeHtml(itemsText)}" placeholder="Matcha Latte, Bánh dừa" aria-label="Items (tên món) dòng ${index + 1}, nhiều món phân cách bằng dấu phẩy">
+    </td>
+    <td class="coffee-manual-cell--qty">
+      <input class="coffee-manual-input coffee-manual-input--qty" name="quantity" type="number" min="1" max="999" step="1" inputmode="numeric" value="${escapeHtml(quantity)}" aria-label="Số món dòng ${index + 1}">
     </td>
     <td>
       <input class="coffee-manual-input coffee-manual-input--date" name="date" type="date" value="${escapeHtml(date)}" aria-label="Ngày giao dịch dòng ${index + 1}">
@@ -98,8 +121,16 @@ export function renderManualRow(row = {}, index = 0) {
     <td class="coffee-manual-cell--season">
       <span class="coffee-season-chip${season ? '' : ' is-empty'}" data-season-cell title="Tự động theo ngày giao dịch">${season ? `${season.emoji} ${escapeHtml(season.label)}` : '—'}</span>
     </td>
-    <td class="coffee-manual-cell--items">
-      <input class="coffee-manual-input" name="items" type="text" list="coffee-manual-item-suggest" maxlength="300" autocomplete="off" value="${escapeHtml(itemsText)}" placeholder="Matcha Latte, Bánh dừa" aria-label="Tên món dòng ${index + 1}, nhiều món phân cách bằng dấu phẩy">
+    <td class="coffee-manual-cell--money">
+      <input class="coffee-manual-input coffee-manual-input--amount" name="subtotal" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(subtotal)}" placeholder="100.200" aria-label="Thành tiền dòng ${index + 1}">
+      <span class="coffee-manual-currency" aria-hidden="true">đ</span>
+    </td>
+    <td class="coffee-manual-cell--money">
+      <input class="coffee-manual-input coffee-manual-input--amount" name="discount" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(discount)}" placeholder="0" aria-label="Giảm giá dòng ${index + 1}">
+      <span class="coffee-manual-currency" aria-hidden="true">đ</span>
+    </td>
+    <td class="coffee-manual-cell--total">
+      <span class="coffee-manual-total-cell" data-manual-total-cell>${escapeHtml(formatVnd(total))}</span>
     </td>
     <td class="coffee-manual-cell--action">
       <button type="button" class="coffee-ghost-button coffee-ghost-button--danger coffee-manual-remove" data-manual-remove aria-label="Xoá dòng ${index + 1}">✕</button>
@@ -114,11 +145,14 @@ export function renderManualTable(rows = [{}]) {
       <thead>
         <tr>
           <th class="coffee-manual-cell--index" scope="col">STT</th>
-          <th scope="col">Thương hiệu / Quán</th>
-          <th class="coffee-manual-cell--amount" scope="col">Số tiền (đ)</th>
+          <th scope="col">Quán <span class="coffee-manual-th-sub">brand</span></th>
+          <th class="coffee-manual-cell--items" scope="col">Items <span class="coffee-manual-th-sub">tên món, cách nhau dấu phẩy</span></th>
+          <th class="coffee-manual-cell--qty" scope="col">Số món</th>
           <th scope="col">Ngày giao dịch</th>
           <th class="coffee-manual-cell--season" scope="col">Mùa <span class="coffee-manual-th-sub">tự động theo ngày</span></th>
-          <th scope="col">Món / Nội dung <span class="coffee-manual-th-sub">nhiều món cách nhau dấu phẩy</span></th>
+          <th class="coffee-manual-cell--money" scope="col">Thành tiền (đ)</th>
+          <th class="coffee-manual-cell--money" scope="col">Giảm giá (đ)</th>
+          <th class="coffee-manual-cell--total" scope="col">Thanh toán <span class="coffee-manual-th-sub">tự động = thành tiền − giảm giá</span></th>
           <th class="coffee-manual-cell--action" scope="col"><span class="coffee-visually-hidden">Thao tác</span></th>
         </tr>
       </thead>
@@ -141,7 +175,7 @@ export function renderManualForm() {
 
     ${renderManualTable([{}])}
 
-    <p class="coffee-manual-hint">Cột <strong>Mùa</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Món / Nội dung</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy (ví dụ: “Matcha Latte, Bánh dừa”).</p>
+    <p class="coffee-manual-hint">Cột <strong>Mùa</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy (ví dụ: “Matcha Latte, Bánh dừa”). Cột <strong>Thanh toán</strong> tự động tính bằng <strong>Thành tiền − Giảm giá</strong>.</p>
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
@@ -156,15 +190,25 @@ export function readManualRows(form) {
   return [...form.querySelectorAll('[data-manual-row]')].map((row) => {
     const date = row.querySelector('[name="date"]')?.value || '';
     const itemsText = (row.querySelector('[name="items"]')?.value || '').trim();
+    const subtotal = toNumber(row.querySelector('[name="subtotal"]')?.value);
+    const discount = maxZero(toNumber(row.querySelector('[name="discount"]')?.value));
+    const quantity = Math.max(1, Math.round(toNumber(row.querySelector('[name="quantity"]')?.value) || 1));
     return {
       brand: (row.querySelector('[name="brand"]')?.value || '').trim(),
-      amount: toNumber(row.querySelector('[name="amount"]')?.value),
-      date,
-      season: seasonOf(date)?.key || '',
       itemsText,
       itemNames: parseItemNames(itemsText),
+      quantity,
+      subtotal,
+      discount,
+      total: Math.max(0, subtotal - discount),
+      date,
+      season: seasonOf(date)?.key || '',
     };
-  }).filter((row) => row.brand || row.amount || row.itemsText || row.date !== todayKey());
+  }).filter((row) => row.brand || row.itemsText || row.subtotal || row.discount || row.date !== todayKey());
+}
+
+function maxZero(value) {
+  return value > 0 ? value : 0;
 }
 
 export { seasonOf, seasonLabel, classifyItem };

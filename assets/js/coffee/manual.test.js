@@ -44,16 +44,18 @@ test('BRAND_SUGGESTIONS includes the popular chains', () => {
 
 test('readManualRows parses formatted amounts and drops blank rows', () => {
   const rows = [
-    { brand: 'Highlands Coffee', amount: '100.200', date: '2026-05-10', items: 'Matcha Latte, Bánh dừa' },
-    { brand: '', amount: '50.000', date: '2026-01-02', items: '' },
-    { brand: '', amount: '', date: new Date().toISOString().slice(0, 10), items: '' },
+    { brand: 'Highlands Coffee', items: 'Matcha Latte, Bánh dừa', quantity: '2', subtotal: '100.200', discount: '20.000', date: '2026-05-10' },
+    { brand: '', items: '', quantity: '1', subtotal: '50.000', discount: '', date: '2026-01-02' },
+    { brand: '', items: '', quantity: '1', subtotal: '', discount: '', date: new Date().toISOString().slice(0, 10) },
   ];
   const nodes = rows.map((row) => ({
     querySelector(selector) {
       if (selector === '[name="brand"]') return { value: row.brand };
-      if (selector === '[name="amount"]') return { value: row.amount };
-      if (selector === '[name="date"]') return { value: row.date };
       if (selector === '[name="items"]') return { value: row.items };
+      if (selector === '[name="quantity"]') return { value: row.quantity };
+      if (selector === '[name="subtotal"]') return { value: row.subtotal };
+      if (selector === '[name="discount"]') return { value: row.discount };
+      if (selector === '[name="date"]') return { value: row.date };
       return null;
     },
   }));
@@ -61,10 +63,11 @@ test('readManualRows parses formatted amounts and drops blank rows', () => {
   const parsed = readManualRows(form);
   assert.equal(parsed.length, 2);
   assert.deepEqual(parsed[0], {
-    brand: 'Highlands Coffee', amount: 100200, date: '2026-05-10', season: 'summer',
-    itemsText: 'Matcha Latte, Bánh dừa', itemNames: ['Matcha Latte', 'Bánh dừa'],
+    brand: 'Highlands Coffee', itemsText: 'Matcha Latte, Bánh dừa', itemNames: ['Matcha Latte', 'Bánh dừa'],
+    quantity: 2, subtotal: 100200, discount: 20000, total: 80200, date: '2026-05-10', season: 'summer',
   });
-  assert.equal(parsed[1].amount, 50000);
+  assert.equal(parsed[1].subtotal, 50000);
+  assert.equal(parsed[1].total, 50000);
 });
 
 test('parseItemNames splits on commas/semicolons and de-dupes', () => {

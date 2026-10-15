@@ -128,13 +128,15 @@ function itemSummary(receipt) {
 function renderReceiptRow(receipt) {
   const id = escapeHtml(receipt.id);
   const items = receipt.items || [];
-  const pay = receipt.paymentMethod ? PAYMENT_LABELS[receipt.paymentMethod] : '';
+  const qty = items.reduce((sum, item) => sum + Math.max(1, Math.round(toNumber(item.qty) || 1)), 0);
+  const discount = Math.round(toNumber(receipt.discount) || 0);
   return `<tr>
     <td><span class="coffee-datatable__date">${escapeHtml(formatDate(receipt.date))}</span>${receipt.time ? `<span class="coffee-datatable__time">${escapeHtml(receipt.time)}</span>` : ''}</td>
-    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span><span class="coffee-datatable__items">${escapeHtml(itemSummary(receipt))}</span></td>
-    <td>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : '<span class="coffee-muted">—</span>'}</td>
-    <td class="coffee-num">${items.length}</td>
-    <td>${pay ? `<span class="coffee-chip">${escapeHtml(pay)}</span>` : '<span class="coffee-muted">—</span>'}</td>
+    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : ''}</td>
+    <td><span class="coffee-datatable__items">${escapeHtml(itemSummary(receipt))}</span></td>
+    <td class="coffee-num">${qty}</td>
+    <td class="coffee-num">${escapeHtml(formatVnd(receipt.subtotal))}</td>
+    <td class="coffee-num">${discount ? `− ${escapeHtml(formatVnd(discount))}` : '<span class="coffee-muted">—</span>'}</td>
     <td class="coffee-num coffee-datatable__total">${escapeHtml(formatVnd(receipt.total))}</td>
     <td>
       <div class="coffee-row-actions">
@@ -149,6 +151,7 @@ function renderReceiptRow(receipt) {
 function renderRecordCard(receipt) {
   const id = escapeHtml(receipt.id);
   const items = receipt.items || [];
+  const discount = Math.round(toNumber(receipt.discount) || 0);
   return `<li class="coffee-record-card">
     <div class="coffee-record-card__top">
       <span class="coffee-record-card__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span>
@@ -156,6 +159,7 @@ function renderRecordCard(receipt) {
     </div>
     <p class="coffee-record-card__meta">📅 ${escapeHtml(formatDate(receipt.date))}${receipt.time ? ` · ${escapeHtml(receipt.time)}` : ''} · ${items.length} món${receipt.paymentMethod ? ` · ${escapeHtml(PAYMENT_LABELS[receipt.paymentMethod])}` : ''}${receipt.orderCode ? ` · ${escapeHtml(receipt.orderCode)}` : ''}</p>
     <p class="coffee-record-card__meta">${escapeHtml(itemSummary(receipt))}</p>
+    ${discount ? `<p class="coffee-record-card__meta">Thành tiền ${escapeHtml(formatVnd(receipt.subtotal))} · Giảm giá −${escapeHtml(formatVnd(discount))} · Thanh toán ${escapeHtml(formatVnd(receipt.total))}</p>` : ''}
     <div class="coffee-record-card__actions">
       <a class="coffee-ghost-button" href="#/coffee/detail/${id}">Chi tiết</a>
       <a class="coffee-ghost-button" href="#/coffee/edit/${id}">Sửa</a>
@@ -184,11 +188,12 @@ function renderHistoryResults(state) {
         <thead>
           <tr>
             <th scope="col">Ngày</th>
-            <th scope="col">Quán / Chi nhánh</th>
-            <th scope="col">Mã HĐ</th>
+            <th scope="col">Quán</th>
+            <th scope="col">Items (Tên món)</th>
             <th scope="col" class="coffee-num">Số món</th>
-            <th scope="col">Thanh toán</th>
-            <th scope="col" class="coffee-num">Số tiền</th>
+            <th scope="col" class="coffee-num">Thành tiền</th>
+            <th scope="col" class="coffee-num">Giảm giá</th>
+            <th scope="col" class="coffee-num">Thanh toán</th>
             <th scope="col">Thao tác</th>
           </tr>
         </thead>
@@ -474,9 +479,17 @@ function refreshManualSeason(row) {
   cell.classList.toggle('is-empty', !season);
 }
 
+function refreshManualRowTotal(row) {
+  const cell = row?.querySelector('[data-manual-total-cell]');
+  if (!cell) return;
+  const subtotal = toNumber(row.querySelector('[name="subtotal"]')?.value);
+  const discount = Math.max(0, toNumber(row.querySelector('[name="discount"]')?.value));
+  cell.textContent = formatVnd(Math.max(0, subtotal - discount));
+}
+
 function updateManualTotal(form) {
   if (!form) return;
-  const total = readManualRows(form).reduce((sum, row) => sum + row.amount, 0);
+  const total = readManualRows(form).reduce((sum, row) => sum + row.total, 0);
   const value = form.querySelector('[data-manual-total] strong');
   if (value) value.textContent = formatVnd(total);
 }
@@ -553,9 +566,10 @@ export function mountCoffeeApp(root) {
     const form = event.target.closest('#coffee-receipt-form');
     if (form && ['itemQty', 'itemUnitPrice', 'itemAmount', 'discount', 'vat'].includes(event.target.name)) updateCostDisplays(form);
     const manualForm = event.target.closest('#coffee-manual-form');
-    if (manualForm && event.target.name === 'amount') {
+    if (manualForm && (event.target.name === 'subtotal' || event.target.name === 'discount')) {
       const formatted = formatAmountInput(event.target.value);
       if (formatted !== event.target.value) event.target.value = formatted;
+      refreshManualRowTotal(event.target.closest('[data-manual-row]'));
       updateManualTotal(manualForm);
     }
     if (event.target.matches('[data-search-input]')) {
@@ -572,8 +586,9 @@ export function mountCoffeeApp(root) {
       refreshManualSeason(target.closest('[data-manual-row]'));
       updateManualTotal(manualForm);
     }
-    if (manualForm && target.name === 'amount') {
+    if (manualForm && (target.name === 'subtotal' || target.name === 'discount')) {
       target.value = formatAmountInput(target.value);
+      refreshManualRowTotal(target.closest('[data-manual-row]'));
       updateManualTotal(manualForm);
     }
     if (target.matches('[data-filter-month]')) { searchState.month = target.value; searchState.page = 1; refreshHistoryResults(root); }
@@ -681,8 +696,8 @@ export function mountCoffeeApp(root) {
         if (!rows.length) throw new Error('Hãy nhập ít nhất một giao dịch (thương hiệu và số tiền).');
         const problems = [];
         rows.forEach((row, index) => {
-          if (!row.brand) problems.push(`Dòng ${index + 1}: thiếu thương hiệu`);
-          else if (!row.amount) problems.push(`Dòng ${index + 1}: số tiền phải lớn hơn 0`);
+          if (!row.brand) problems.push(`Dòng ${index + 1}: thiếu quán (brand)`);
+          else if (!row.subtotal) problems.push(`Dòng ${index + 1}: thành tiền phải lớn hơn 0`);
           else if (!/^\d{4}-\d{2}-\d{2}$/.test(row.date)) problems.push(`Dòng ${index + 1}: ngày giao dịch chưa hợp lệ`);
         });
         if (problems.length) throw new Error(problems.join(' · '));
@@ -691,11 +706,12 @@ export function mountCoffeeApp(root) {
           saveReceipt({
             store: row.brand,
             date: row.date,
-            subtotal: row.amount,
-            total: row.amount,
-            items: rowToItems(row.itemsText, row.amount),
+            subtotal: row.subtotal,
+            discount: row.discount,
+            total: row.total,
+            items: rowToItems(row.itemsText, row.subtotal, row.quantity),
           });
-          total += row.amount;
+          total += row.total;
         });
         pendingToast = `Đã lưu ${rows.length} giao dịch (${formatVnd(total)}). Đang cập nhật trang thống kê…`;
         searchState = { query: '', month: '', store: '', page: 1 };

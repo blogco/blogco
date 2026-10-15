@@ -126,7 +126,6 @@ body.coffee-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .coffee-page-heading > p:last-child { margin: 0; color: var(--coffee-muted); max-width: 70ch; }
-
 /* Corporate hero band (list + stats landing) */
 .coffee-page-heading--hero {
   border: 0;
@@ -148,7 +147,7 @@ body.coffee-route .category-bar { display: none; }
 }
 .coffee-page-heading--hero .coffee-eyebrow { color: #B9C6FF !important; }
 .coffee-page-heading--hero h1 { color: #fff; }
-.coffee-page-heading--hero > p:last-child { color: rgba(255, 255, 255, .82); }
+.coffee-page-heading--hero > p:last-child { color: rgba(255, 255, 255, .82); max-width: 100%; white-space: normal; }
 
 /* --------------------------------------------------------------------------
    Cards
@@ -287,7 +286,7 @@ body.coffee-route .category-bar { display: none; }
    Expense data table (management view)
    -------------------------------------------------------------------------- */
 .coffee-datatable-wrap { overflow-x: auto; border: 1px solid var(--coffee-border); border-radius: var(--coffee-radius); background: var(--coffee-surface); }
-.coffee-datatable { width: 100%; border-collapse: collapse; }
+.coffee-datatable { width: 100%; min-width: 900px; border-collapse: collapse; }
 .coffee-datatable thead th {
   position: sticky;
   top: 0;
@@ -408,7 +407,7 @@ body.coffee-route .category-bar { display: none; }
 .coffee-manual-total strong { color: var(--coffee-primary); font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 
 .coffee-manual-wrap { overflow-x: auto; border: 1px solid var(--coffee-border); border-radius: var(--coffee-radius); background: var(--coffee-surface); box-shadow: var(--coffee-shadow-sm); }
-.coffee-manual-table { width: 100%; min-width: 940px; border-collapse: separate; border-spacing: 0; }
+.coffee-manual-table { width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; }
 .coffee-manual-table th,
 .coffee-manual-table td { padding: .3rem .5rem; text-align: left; }
 
@@ -434,15 +433,20 @@ body.coffee-route .category-bar { display: none; }
 .coffee-manual-row:last-child td { border-bottom: 0; }
 
 .coffee-manual-cell--index { width: 3rem; color: var(--coffee-primary); font-weight: 800; text-align: center; }
-.coffee-manual-cell--amount { width: 11rem; }
+.coffee-manual-cell--amount,
+.coffee-manual-cell--money { width: 10rem; position: relative; }
+.coffee-manual-cell--qty { width: 5.5rem; }
 .coffee-manual-cell--season { width: 8.5rem; white-space: nowrap; }
 .coffee-manual-cell--items { min-width: 13rem; }
+.coffee-manual-cell--total { width: 10rem; white-space: nowrap; }
 .coffee-manual-cell--action { width: 3.5rem; text-align: right; }
 
 .coffee-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: var(--coffee-radius-xs); color: var(--coffee-ink); background: transparent; font-size: .86rem; font-weight: 500; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
 .coffee-manual-input:hover { border-color: var(--coffee-border); background: #fff; }
 .coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(20, 40, 160, .16); }
 .coffee-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.coffee-manual-input--qty { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.coffee-manual-total-cell { display: inline-block; min-width: 100%; color: var(--coffee-primary-deep); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
 .coffee-manual-cell--amount { position: relative; }
 .coffee-manual-currency { position: absolute; top: 50%; right: .7rem; transform: translateY(-50%); color: var(--coffee-muted); font-size: .8rem; pointer-events: none; }
 
