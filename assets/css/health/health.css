@@ -337,6 +337,68 @@ body.health-route .category-bar { display: none; }
   .health-screen *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
+/* Vaccination tracker (#/health/vaccine) ------------------------------------ */
+.vaccine-screen {
+  --vaccine-blue: #002561;
+  --vaccine-blue-dark: #001b46;
+  --vaccine-sky: #0082f0;
+  --vaccine-soft: #EAF3FE;
+  --vaccine-border: #D5E3F0;
+}
+.vaccine-screen .health-page-heading--hero { background: linear-gradient(120deg, var(--vaccine-soft), #fff); }
+.vaccine-screen .health-back,
+.vaccine-screen a { color: var(--vaccine-sky); }
+.vaccine-screen .health-eyebrow { color: var(--vaccine-sky) !important; }
+.vaccine-screen .health-fieldset,
+.vaccine-screen .health-card { border-color: var(--vaccine-border); }
+.vaccine-screen .health-fieldset > legend { color: var(--vaccine-blue); }
+.vaccine-screen .health-primary-button { border-color: var(--vaccine-blue); background: var(--vaccine-blue); box-shadow: 0 6px 16px rgba(0, 37, 97, .2); }
+.vaccine-screen .health-primary-button:hover { background: var(--vaccine-blue-dark); }
+.vaccine-screen .health-secondary-button { border-color: var(--vaccine-sky); color: var(--vaccine-blue) !important; }
+.vaccine-screen .health-ghost-button { border-color: var(--vaccine-border); }
+.vaccine-screen .health-ghost-button:hover { border-color: var(--vaccine-sky); color: var(--vaccine-blue) !important; }
+.vaccine-screen .health-screen :focus-visible { outline-color: var(--vaccine-blue); }
+
+.vaccine-form-card[hidden] { display: none; }
+.vaccine-status { margin: 0 0 1rem; min-height: 1.1rem; color: #127a4b; font-size: .9rem; font-weight: 700; }
+.vaccine-status.is-error { color: #c81e1e; }
+
+.vaccine-reminder {
+  margin: 0 0 1.2rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #f0c36d;
+  border-left: 5px solid #c2740b;
+  border-radius: 8px;
+  background: #fff8ec;
+}
+.vaccine-reminder.is-overdue { border-color: #f3b4b4; border-left-color: #c81e1e; background: #fef2f2; }
+.vaccine-reminder__title { margin: 0 0 .6rem !important; color: #8a4b08 !important; font-weight: 800; }
+.vaccine-reminder.is-overdue .vaccine-reminder__title { color: #9b1c1c !important; }
+.vaccine-reminder__list { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.vaccine-reminder__chip { display: inline-flex; flex-direction: column; gap: .1rem; padding: .45rem .7rem; border: 1px solid #ead6a8; border-radius: 10px; background: #fff; }
+.vaccine-reminder__chip-name { color: #33475b; font-weight: 700; }
+.vaccine-reminder__chip-due { color: #8a4b08; font-size: .78rem; font-weight: 700; }
+.vaccine-reminder__chip.vaccine-badge--danger { border-color: #f3b4b4; }
+.vaccine-reminder__chip.vaccine-badge--danger .vaccine-reminder__chip-due { color: #9b1c1c; }
+
+.vaccine-list { display: grid; gap: .85rem; margin: .25rem 0 0; padding: 0; list-style: none; }
+.vaccine-card { display: grid; gap: .5rem; padding: 1rem 1.1rem; border: 1px solid var(--vaccine-border); border-radius: 12px; background: #fff; }
+.vaccine-card__top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.vaccine-card__title { margin: 0 !important; color: var(--vaccine-blue) !important; font-size: 1.12rem !important; }
+.vaccine-card__meta { margin: .2rem 0 0 !important; color: var(--health-muted) !important; font-size: .86rem; font-weight: 700; }
+.vaccine-card__next { margin: 0 !important; color: #33475b !important; font-size: .9rem; }
+.vaccine-card__notes { margin: 0 !important; padding: .5rem .7rem; border-left: 3px solid var(--vaccine-sky); border-radius: 0 6px 6px 0; background: var(--vaccine-soft); color: #33475b !important; font-size: .9rem; white-space: pre-line; }
+.vaccine-card__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .25rem; }
+
+.vaccine-badge { align-self: flex-start; padding: .3rem .6rem; border-radius: 99px; font-size: .76rem; font-weight: 800; white-space: nowrap; }
+.vaccine-badge--danger { color: #9b1c1c; border: 1px solid #f3b4b4; background: #fef2f2; }
+.vaccine-badge--warning { color: #8a4b08; border: 1px solid #f0c36d; background: #fff8ec; }
+.vaccine-badge--muted { color: #33475b; border: 1px solid var(--vaccine-border); background: var(--vaccine-soft); }
+
+@media (max-width: 767px) {
+  .vaccine-card__top { flex-direction: column; }
+}
+
 /* Print: clean one-visit / yearly summary ----------------------------------- */
 @media print {
   body { padding-top: 0 !important; background: #fff !important; }

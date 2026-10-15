@@ -6,6 +6,7 @@
 //   #/health/edit/:id       → edit a visit
 //   #/health/detail/:id     → read-only detail + print
 //   #/health/stats          → cost statistics
+//   #/health/vaccine        → vaccination tracker (see vaccine.js)
 
 import {
   getHealthState, getVisitById, saveVisit, removeVisit,
@@ -16,6 +17,7 @@ import { renderMedicineRow, readMedicines, renumberMedicineRows, checkInteractio
 import { getICD, searchICD } from './icd.js';
 import { computeStats } from './stats.js';
 import { recognizeImage, parseInvoiceText } from './ocr.js';
+import { mountVaccineView } from './vaccine.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -614,7 +616,7 @@ function routeName(root) {
   if (location.hash.startsWith('#/health')) return location.hash.slice(1).replace(/\/$/, '') || '/health';
   const initial = root.dataset.initialRoute;
   if (initial) {
-    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats' };
+    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine' };
     return map[initial] || '/health/history';
   }
   return '/health/history';
@@ -623,13 +625,14 @@ function routeName(root) {
 function showRoute(root) {
   const route = routeName(root);
   const [, , action = 'history', param = ''] = route.split('/');
-  const titles = { history: 'Lịch sử khám bệnh', add: 'Thêm lần khám bệnh', edit: 'Sửa lần khám bệnh', detail: 'Chi tiết lần khám', stats: 'Thống kê chi phí' };
+  const titles = { history: 'Lịch sử khám bệnh', add: 'Thêm lần khám bệnh', edit: 'Sửa lần khám bệnh', detail: 'Chi tiết lần khám', stats: 'Thống kê chi phí', vaccine: 'Nhật ký tiêm ngừa' };
   document.title = `${titles[action] || 'Lịch sử khám bệnh'} | BlogCo`;
 
   if (action === 'add') renderFormPage(root, '');
   else if (action === 'edit') renderFormPage(root, decodeURIComponent(param));
   else if (action === 'detail') renderDetail(root, decodeURIComponent(param));
   else if (action === 'stats') renderStats(root);
+  else if (action === 'vaccine') { mountVaccineView(root); return; }
   else renderHistory(root);
 
   if (pendingToast) {
