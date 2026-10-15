@@ -1,0 +1,171 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { classifyItem, normalizeName } from './menu.js';
+import { parseMoney, parseDate, parseItemLine, parseHighlandsInvoice } from './ocr.js';
+import {
+  computeReceiptTotals, toNumber, formatVnd,
+  saveReceipt, getReceipts, getReceiptById, removeReceipt, importReceipts, validateReceipt,
+} from './store.js';
+import { computeCoffeeStats } from './stats.js';
+import { filterReceipts } from './main.js';
+
+// Minimal localStorage stub so the store CRUD layer can be exercised in Node.
+globalThis.localStorage = (() => {
+  let store = {};
+  return {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, value) => { store[key] = String(value); },
+    removeItem: (key) => { delete store[key]; },
+    clear: () => { store = {}; },
+  };
+})();
+
+test('classifyItem buckets Highlands drinks by keyword, ignoring accents', () => {
+  assert.equal(classifyItem('Phin Sữa Đá'), 'coffee');
+  assert.equal(classifyItem('bac xiu'), 'coffee');
+  assert.equal(classifyItem('Trà Thạch Đào'), 'tea');
+  assert.equal(classifyItem('Freeze Trà Xanh'), 'freeze');
+  assert.equal(classifyItem('Bánh Croissant'), 'bakery');
+  assert.equal(classifyItem('Nước suối'), 'other');
+  assert.equal(normalizeName('Cà Phê Sữa'), 'ca phe sua');
+});
+
+test('parseMoney and parseDate understand Vietnamese formats', () => {
+  assert.equal(parseMoney('45.000 đ'), 45000);
+  assert.equal(parseMoney('1,200,000'), 1200000);
+  assert.equal(parseMoney(''), null);
+  assert.equal(parseDate('Ngày: 15/10/2026'), '2026-10-15');
+  assert.equal(parseDate('2026-09-02'), '2026-09-02');
+  assert.equal(parseDate('không có ngày'), '');
+});
+
+test('parseItemLine handles qty-first, qty-last and two-price lines', () => {
+  const a = parseItemLine('1  Phin Sữa Đá        45.000');
+  assert.equal(a.name, 'Phin Sữa Đá');
+  assert.equal(a.qty, 1);
+  assert.equal(a.amount, 45000);
+  assert.equal(a.category, 'coffee');
+
+  const b = parseItemLine('2  Trà Thạch Đào      50.000   100.000');
+  assert.equal(b.name, 'Trà Thạch Đào');
+  assert.equal(b.qty, 2);
+  assert.equal(b.unitPrice, 50000);
+  assert.equal(b.amount, 100000);
+
+  // Summary rows are never items.
+  assert.equal(parseItemLine('Tổng thanh toán    194.400'), null);
+  assert.equal(parseItemLine('Tiền mặt           200.000'), null);
+});
+
+test('parseHighlandsInvoice extracts store, date, items, amounts and payment', () => {
+  const text = `HIGHLANDS COFFEE
+Chi nhánh: Landmark 81
+Tầng 1, Vincom Landmark 81, P.22, Q. Bình Thạnh, TP.HCM
+Số HĐ: HD0000123
+Ngày: 15/10/2026   Giờ: 09:30
+Thu ngân: Ngọc
+--------------------------------
+1  Phin Sữa Đá        45.000
+2  Trà Thạch Đào      50.000   100.000
+1  Bánh Croissant     39.000
+--------------------------------
+Tổng tiền hàng        184.000
+Giảm giá              4.000
+VAT                   14.400
+Tổng thanh toán       194.400
+Tiền mặt              200.000
+Tiền thừa             5.600`;
+
+  const result = parseHighlandsInvoice(text);
+  assert.match(result.store, /Landmark/);
+  assert.match(result.address, /Vincom/);
+  assert.equal(result.orderCode, 'HD0000123');
+  assert.equal(result.date, '2026-10-15');
+  assert.equal(result.time, '09:30');
+  assert.equal(result.items.length, 3);
+  assert.equal(result.items.find((item) => item.name === 'Trà Thạch Đào').amount, 100000);
+  assert.equal(result.subtotal, 184000);
+  assert.equal(result.discount, 4000);
+  assert.equal(result.vat, 14400);
+  assert.equal(result.total, 194400);
+  assert.equal(result.paymentMethod, 'cash');
+});
+
+test('parseHighlandsInvoice derives the total when only items are printed', () => {
+  const text = `Highlands Coffee - Nguyễn Huệ
+1  Bạc Xỉu   35.000
+1  Americano 40.000`;
+  const result = parseHighlandsInvoice(text);
+  assert.equal(result.items.length, 2);
+  assert.equal(result.subtotal, 75000);
+  assert.equal(result.total, 75000);
+});
+
+test('computeReceiptTotals derives subtotal and grand total', () => {
+  const totals = computeReceiptTotals({ items: [{ qty: 2, unitPrice: 45000 }, { amount: 39000 }], discount: 10000, vat: 8000 });
+  assert.equal(totals.itemsTotal, 129000);
+  assert.equal(totals.subtotal, 129000);
+  assert.equal(totals.total, 127000);
+  assert.equal(toNumber('194.400'), 194400);
+  assert.equal(formatVnd(194400), '194.400 đ');
+});
+
+test('store CRUD: save, read, update, remove, import and validate', () => {
+  localStorage.clear();
+  const base = {
+    store: 'Highlands Coffee - Landmark 81',
+    date: '2026-10-15', time: '09:30',
+    items: [{ name: 'Phin sữa đá', qty: 2, unitPrice: 45000 }],
+    discount: '10000', vat: '8000',
+  };
+  const record = saveReceipt(base);
+  assert.equal(record.id.startsWith('cf-2026-10-15-'), true);
+  assert.equal(record.items[0].amount, 90000);
+  assert.equal(record.subtotal, 90000);
+  assert.equal(record.total, 88000);
+  assert.equal(getReceipts().length, 1);
+  assert.equal(getReceiptById(record.id).store, 'Highlands Coffee - Landmark 81');
+
+  const updated = saveReceipt({ ...base, discount: '0', id: record.id }, record.id);
+  assert.equal(updated.total, 98000);
+  assert.equal(getReceipts().length, 1);
+
+  const imported = importReceipts({ receipts: [{ ...record, id: 'cf-2026-09-02-999', date: '2026-09-02', total: 50000, items: [] }] });
+  assert.equal(imported.added, 1);
+  assert.equal(getReceipts().length, 2);
+
+  assert.equal(removeReceipt(record.id), true);
+  assert.equal(getReceipts().length, 1);
+
+  assert.throws(() => validateReceipt({ date: '2026-10-15' }), /tên quán/);
+  assert.doesNotThrow(() => validateReceipt({ store: 'A', date: '2026-10-15', items: [], total: 1000 }));
+});
+
+test('computeCoffeeStats aggregates totals per month, store and category', () => {
+  const receipts = [
+    { date: '2026-10-15', store: 'Highlands A', total: 88000, items: [{ name: 'Phin sữa đá', qty: 2, amount: 90000, category: 'coffee' }] },
+    { date: '2026-10-20', store: 'Highlands B', total: 50000, items: [{ name: 'Trà đào', qty: 1, amount: 50000, category: 'tea' }] },
+    { date: '2026-09-02', store: 'Highlands A', total: 120000, items: [{ name: 'Bánh', qty: 1, amount: 120000, category: 'bakery' }] },
+  ];
+  const stats = computeCoffeeStats(receipts, { budget: 200000 });
+  assert.equal(stats.count, 3);
+  assert.equal(stats.totalSpend, 258000);
+  assert.equal(stats.itemCount, 4);
+  assert.equal(stats.byMonth.find((month) => month.key === '2026-10').total, 138000);
+  assert.equal(stats.byStore[0].store, 'Highlands A');
+  assert.equal(stats.byStore[0].total, 208000);
+  assert.equal(stats.byCategory.find((category) => category.category === 'coffee').total, 90000);
+  assert.equal(stats.topItems[0].name, 'Phin sữa đá');
+  assert.equal(stats.budget, 200000);
+});
+
+test('filterReceipts searches by store, order code and item name', () => {
+  const receipts = [
+    { id: 'cf-1', store: 'Highlands Landmark', orderCode: 'HD001', date: '2026-10-15', total: 45000, items: [{ name: 'Phin sữa đá', category: 'coffee' }] },
+    { id: 'cf-2', store: 'Highlands Nguyễn Huệ', orderCode: 'HD002', date: '2026-09-02', total: 50000, items: [{ name: 'Trà thạch đào', category: 'tea' }] },
+  ];
+  assert.equal(filterReceipts(receipts, { query: 'trà thạch' }).length, 1);
+  assert.equal(filterReceipts(receipts, { store: 'Highlands Landmark' }).length, 1);
+  assert.equal(filterReceipts(receipts, { month: '2026-09' }).length, 1);
+  assert.equal(filterReceipts(receipts, { query: 'không có' }).length, 0);
+});

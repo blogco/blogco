@@ -11,6 +11,7 @@ let waterAppPromise;
 let healthAppPromise;
 let storesAppPromise;
 let lessonsAppPromise;
+let coffeeAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -64,14 +65,29 @@ function syncLessonsRoute() {
   void lessonsAppPromise.then(({ mountLessonsApp }) => mountLessonsApp(root));
 }
 
+function syncCoffeeRoute() {
+  const root = document.querySelector('[data-coffee-app]');
+  if (!root) return;
+  const hashRoute = location.hash.startsWith('#/coffee');
+  const directRoute = Boolean(root.dataset.initialRoute);
+  const active = hashRoute || directRoute;
+  root.hidden = !active;
+  document.body.classList.toggle('coffee-route', active);
+  if (!active) return;
+  coffeeAppPromise ??= import('./coffee/main.js');
+  void coffeeAppPromise.then(({ mountCoffeeApp }) => mountCoffeeApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncStoresRoute);
 window.addEventListener('hashchange', syncLessonsRoute);
+window.addEventListener('hashchange', syncCoffeeRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncStoresRoute();
 syncLessonsRoute();
+syncCoffeeRoute();
 document.querySelectorAll('[data-blog-feature]').forEach((element) => {
   const feature = element.dataset.blogFeature;
   if (!(feature in featureLoaders)) return;
