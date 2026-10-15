@@ -1,28 +1,39 @@
 :root {
-  --bg: #fff;
-  --text: #111;
-  --muted: #4b5563;
-  --border: #e5e7eb;
-  --accent: #0082f0;
-  --accent-dark: #005fb8;
-  --font-sans: "Inter", "Be Vietnam Pro", system-ui, sans-serif;
+  /* Delivery Hero corporate identity */
+  --dh-red: #D82128;
+  --dh-red-dark: #B51B21;
+  --dh-black: #121212;
+  --dh-black-2: #1F1F1F;
+  --dh-soft: #FFF0F1;
+  --dh-bg: #FAFAFA;
+  --dh-surface: #FFFFFF;
+  --dh-border: #E5E7EB;
+
+  --bg: #FAFAFA;
+  --text: #121212;
+  --muted: #6B7280;
+  --border: #E5E7EB;
+  --accent: #D82128;
+  --accent-dark: #B51B21;
+  --font-sans: "Inter", "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
   --fw-body: 500;
   --fw-heading: 700;
   --fw-h1: 800;
   --fs-body: 18px;
   --lh-body: 1.75;
-  --radius: 6px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
   --max-wide: 1200px;
   --max-content: 720px;
   --space-section: 96px;
 
-  --theme: var(--bg);
-  --entry: var(--bg);
+  --theme: var(--dh-surface);
+  --entry: var(--dh-surface);
   --primary: var(--text);
   --secondary: var(--muted);
-  --content: var(--text);
-  --border: #e5e7eb;
-  --code-bg: #f3f4f6;
+  --content: #333333;
+  --code-bg: #F3F4F6;
   color-scheme: light;
 }
 
@@ -233,9 +244,9 @@ body.article-body .main {
 .pagination__link { display: inline-flex; min-width: 40px; height: 40px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; color: var(--text) !important; background: #fff; font-size: 14px; font-weight: 700 !important; text-decoration: none; transition: color .15s ease, background .15s ease, border-color .15s ease; }
 .pagination__link--prev,
 .pagination__link--next { padding-inline: 16px; }
-.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #eff6ff; }
+.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #FFF0F1; }
 .pagination__link.is-active,
-.pagination__link[aria-current="page"] { border-color: #006cc5; color: #fff !important; background: #006cc5; }
+.pagination__link[aria-current="page"] { border-color: #D82128; color: #fff !important; background: #D82128; }
 .pagination__link:focus-visible { outline: 3px solid var(--accent-dark); outline-offset: 3px; }
 
 .home-posts { width: 100%; max-width: 1280px; margin: 64px auto; padding: 0 24px; }
@@ -807,8 +818,8 @@ body .main .post-header .post-description {
 
 :root {
   --nav-height: 64px;
-  --nav-active-bg: #006CC5;
-  --nav-font: "Inter", "Be Vietnam Pro", system-ui, sans-serif;
+  --nav-active-bg: #D82128;
+  --nav-font: "Inter", "Be Vietnam Pro", system-ui, -apple-system, sans-serif;
   --nav-fw: 700;
   --nav-fs: 14px;
   --nav-ls: 0.06em;
@@ -830,8 +841,8 @@ body.article-body .blogco-header {
   height: var(--nav-height);
   min-height: var(--nav-height);
   border-bottom: 0;
-  background: #0B3B6F;
-  box-shadow: 0 2px 12px rgba(11, 59, 111, 0.25);
+  background: var(--dh-black);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.32);
 }
 
 body .blogco-header .header-nav {
@@ -873,6 +884,9 @@ body.article-body .blogco-header .header-nav {
   letter-spacing: -.04em;
   text-decoration: none;
 }
+
+.blogco-header .navbar__logo-mark { margin-right: 7px; color: var(--accent); font-size: .8em; }
+.blogco-header .navbar__logo-accent { color: var(--accent); }
 
 .blogco-header .navbar__menu {
   display: flex;
@@ -918,45 +932,56 @@ body.article-body .blogco-header .header-nav {
 
 .blogco-header .navbar__link:hover {
   color: #fff !important;
-  background: rgba(255, 255, 255, 0.12);
+  background: transparent;
 }
 
 .blogco-header .navbar__link.is-active,
 .blogco-header .navbar__link[aria-current="page"] {
   color: #fff !important;
-  background: var(--nav-active-bg);
+  background: transparent;
   box-shadow: none;
 }
 
-.blogco-header .navbar__link.is-active::after,
-.blogco-header .navbar__link[aria-current="page"]::after {
+.blogco-header .navbar__link::after {
   position: absolute;
   right: 10px;
-  bottom: -3px;
+  bottom: 2px;
   left: 10px;
   height: 3px;
   border-radius: 2px;
-  background: #fff;
+  background: var(--accent);
   content: "";
+  opacity: 0;
+  transform: scaleX(0.4);
+  transform-origin: center;
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.blogco-header .navbar__link:hover::after,
+.blogco-header .navbar__link:focus-visible::after,
+.blogco-header .navbar__link.is-active::after,
+.blogco-header .navbar__link[aria-current="page"]::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .blogco-header .navbar__link--cta {
   padding: 10px 18px;
   border-radius: 6px;
   color: #fff !important;
-  background: #006CC5;
+  background: var(--accent);
 }
 
 .blogco-header .navbar__link--cta,
 .blogco-header .navbar__link--cta.is-active,
 .blogco-header .navbar__link--cta[aria-current="page"] {
   color: #fff !important;
-  background: var(--nav-active-bg);
+  background: var(--accent);
   box-shadow: none;
 }
 
 .blogco-header .navbar__link--cta::after { display: none !important; }
-.blogco-header .navbar__link--cta:hover { background: #005FB8; }
+.blogco-header .navbar__link--cta:hover { background: var(--accent-dark); }
 
 .blogco-header .navbar__link:focus-visible,
 .blogco-header .navbar__toggle:focus-visible,
@@ -1013,8 +1038,8 @@ body.article-body .blogco-header .header-nav {
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 0 0 8px 8px;
-    background: #0B3B6F;
-    box-shadow: 0 8px 20px rgba(11, 59, 111, 0.25);
+    background: var(--dh-black);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
     white-space: normal;
   }
 
@@ -1030,6 +1055,8 @@ body.article-body .blogco-header .header-nav {
     letter-spacing: .04em;
   }
 
+  .blogco-header .navbar__link::after { display: none; }
+
   .blogco-header .navbar__link--cta { justify-content: center; }
 }
 
@@ -1039,3 +1066,25 @@ body.article-body .blogco-header .header-nav {
   .blogco-header .navbar__link { padding-inline: 11px; font-size: 13px; letter-spacing: .05em; }
   .blogco-header .navbar__logo { font-size: 19px; }
 }
+
+/* Footer — Delivery Hero black band ---------------------------------------- */
+body .footer,
+.footer {
+  color: rgba(255, 255, 255, 0.72) !important;
+  background: var(--dh-black);
+  border-top: 1px solid var(--dh-black-2);
+}
+
+.footer a,
+.footer span a {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+.footer a:hover,
+.footer a:focus-visible { color: var(--accent) !important; }
+
+.footer .gh-actions__heading { color: #fff !important; }
+.footer .gh-actions { border-top-color: rgba(255, 255, 255, 0.14); }
+.footer .gh-actions__link { color: var(--accent) !important; }
+.footer .gh-actions__link:hover { color: #fff !important; }

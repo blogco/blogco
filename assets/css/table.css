@@ -3,7 +3,7 @@
   --table-border-strong: #9CA3AF;
   --table-bg: #FFFFFF;
   --table-bg-alt: #F3F4F6;
-  --table-bg-hover: #EFF6FF;
+  --table-bg-hover: #FFF0F1;
   --table-header-bg: #FFFFFF;
   --table-header-text: #111111;
   --table-text: #1F2937;
@@ -29,7 +29,7 @@
 }
 
 .table-wrap:focus-visible {
-  outline: 3px solid #0082F0;
+  outline: 3px solid #D82128;
   outline-offset: 3px;
 }
 

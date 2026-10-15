@@ -21,7 +21,7 @@ body.stores-route .main {
 }
 
 .store-eyebrow {
-  color: #006cc5;
+  color: #D82128;
   letter-spacing: .08em;
   text-transform: uppercase;
   margin: 0 0 12px;
@@ -142,9 +142,9 @@ body.stores-route .main {
   gap: .4rem;
   min-height: 44px;
   padding: .5rem 1.1rem;
-  border: 1px solid #006cc5;
+  border: 1px solid #D82128;
   border-radius: 8px;
-  background: #006cc5;
+  background: #D82128;
   color: #fff;
   font: inherit;
   font-weight: 700;
@@ -152,7 +152,7 @@ body.stores-route .main {
 }
 
 .store-button:hover {
-  background: #005fb8;
+  background: #B51B21;
 }
 
 .store-button--ghost {
@@ -190,7 +190,7 @@ body.stores-route .main {
 }
 
 .store-card {
-  border-left: 4px solid var(--store-brand, #006cc5);
+  border-left: 4px solid var(--store-brand, #D82128);
   padding: 16px 18px;
 }
 
@@ -206,14 +206,14 @@ body.stores-route .main {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  color: var(--store-brand, #006cc5);
+  color: var(--store-brand, #D82128);
   font-weight: 800;
   letter-spacing: .02em;
 }
 
 .store-tag {
   background: #eef6ff;
-  color: #006cc5;
+  color: #D82128;
   border-radius: 999px;
   padding: .15rem .6rem;
   font-size: 12px;
@@ -335,7 +335,7 @@ body.stores-route .main {
   max-width: min(28rem, 100vw - 2rem);
   padding: .8rem 1rem;
   border-radius: 10px;
-  background: #0b3b6f;
+  background: #121212;
   color: #fff;
   opacity: 0;
   pointer-events: none;
@@ -408,8 +408,8 @@ body.stores-route .main {
 
 .navbar__submenu-link:hover,
 .navbar__submenu-link:focus-visible {
-  background: #eff6ff;
-  color: #0082f0 !important;
+  background: #FFF0F1;
+  color: #D82128 !important;
 }
 
 /* Desktop: rê chuột vào là mở, rời chuột là tự đóng (không dùng click nên

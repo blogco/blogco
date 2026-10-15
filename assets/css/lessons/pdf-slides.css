@@ -49,8 +49,8 @@
   gap: 16px;
   margin-bottom: 10mm;
   padding-bottom: 3mm;
-  border-bottom: 2px solid #0082f0;
-  color: #0082f0;
+  border-bottom: 2px solid #D82128;
+  color: #D82128;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -86,7 +86,7 @@
 
 .pdf-slide__subtitle {
   margin: 0 0 4mm;
-  color: #0082f0;
+  color: #D82128;
   font-size: 22px;
   font-weight: 700;
 }
@@ -123,7 +123,7 @@
   justify-content: center;
   padding: 24mm 26mm;
   color: #fff;
-  background: linear-gradient(135deg, #0082f0 0%, #0b3b6f 100%);
+  background: linear-gradient(135deg, #D82128 0%, #121212 100%);
 }
 
 .pdf-slide--cover .pdf-slide__header {
@@ -205,7 +205,7 @@
   content: "—";
   position: absolute;
   left: 0;
-  color: #0082f0;
+  color: #D82128;
   font-weight: 800;
 }
 
@@ -224,14 +224,14 @@
 }
 
 .pdf-panel--accent {
-  border-color: #0082f0;
-  background: #eff6ff;
+  border-color: #D82128;
+  background: #FFF0F1;
 }
 
 .pdf-panel__label {
   display: block;
   margin-bottom: 3mm;
-  color: #006cc5;
+  color: #D82128;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -269,23 +269,23 @@
 
 .pdf-vocab-table tr:nth-child(even) td { background: #fafafa; }
 .pdf-vocab-table .pdf-korean { font-size: 20px; font-weight: 700; }
-.pdf-vocab-table .pdf-roman { color: #006cc5; }
+.pdf-vocab-table .pdf-roman { color: #D82128; }
 .pdf-vocab-table .pdf-example { color: #4b5563; font-size: 15px; }
-.pdf-timeline-table td:first-child { width: 32mm; white-space: nowrap; font-weight: 700; color: #006cc5; }
+.pdf-timeline-table td:first-child { width: 32mm; white-space: nowrap; font-weight: 700; color: #D82128; }
 
 /* ---- Grammar ---- */
 .pdf-grammar-card {
   margin-bottom: 5mm;
   padding: 5mm 6mm;
   border: 1px solid #e5e7eb;
-  border-left: 4px solid #0082f0;
+  border-left: 4px solid #D82128;
   border-radius: 3mm;
   background: #fff;
 }
 
 .pdf-grammar-card__point {
   margin: 0 0 2mm;
-  color: #0b3b6f;
+  color: #121212;
   font-size: 21px;
   font-weight: 800;
 }
@@ -318,12 +318,12 @@
   height: 12mm;
   border-radius: 50%;
   color: #fff;
-  background: #0082f0;
+  background: #D82128;
   font-size: 16px;
   font-weight: 800;
 }
 
-.pdf-dialogue li:nth-child(even) .pdf-dialogue__who { background: #0b3b6f; }
+.pdf-dialogue li:nth-child(even) .pdf-dialogue__who { background: #121212; }
 .pdf-dialogue__korean { margin: 0; color: #111; font-size: 20px; font-weight: 700; }
 .pdf-dialogue__viet { margin: 0; color: #4b5563; font-size: 16px; }
 
@@ -342,7 +342,7 @@
   border-radius: 2mm;
   background: #f8fafc;
 }
-.pdf-keycap__hangul { color: #0b3b6f; font-size: 18px; font-weight: 800; }
+.pdf-keycap__hangul { color: #121212; font-size: 18px; font-weight: 800; }
 .pdf-keycap__key { color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; }
 .pdf-keyboard__legend { margin-top: 2mm; color: #6b7280; font-size: 14px; }
 
@@ -352,8 +352,8 @@
   padding: 3mm 5mm;
   border: 1px solid #dbeafe;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #0b3b6f;
+  background: #FFF0F1;
+  color: #121212;
   font-size: 16px;
   font-weight: 600;
 }

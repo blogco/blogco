@@ -74,7 +74,7 @@ export function estimateNutrition(name = '') {
 function limitTone(pct) {
   if (pct >= 100) return 'danger';
   if (pct >= 70) return 'warning';
-  return 'primary';
+  return 'success';
 }
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];

@@ -31,6 +31,10 @@ enableGitInfo = false
   ShowSearchButton = true
   githubRepo = 'blogco/blogco'
 
+  [params.footer]
+    hideCopyright = false
+    text = 'Delivery Hero Inspired Corporate Identity System'
+
   [params.homeInfoParams]
     Title = 'BlogCo'
     Content = 'Góc chia sẻ kiến thức, công nghệ và những ý tưởng đáng khám phá.'

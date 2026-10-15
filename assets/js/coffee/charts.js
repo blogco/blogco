@@ -3,33 +3,33 @@
 // Every builder is a PURE function that returns an HTML/SVG string (no DOM), so
 // the layouts can be unit-tested in Node and dropped straight into innerHTML.
 //
-// Design system palette (Samsung corporate blue / neutral), matching coffee.css.
+// Design system palette (Delivery Hero red / black / neutral), matching coffee.css.
 
 import { escapeHtml } from './store.js';
 
 export const PALETTE = Object.freeze({
-  primary: '#1428A0',
-  primaryAlt: '#2E4BD6',
-  primaryDark: '#0E1E78',
-  mint: '#7C93E8',
-  mintSoft: '#D5DBF0',
-  gray: '#C4CBD8',
-  grayText: '#5B6675',
-  bg: '#F4F6F9',
-  border: '#DDE2EA',
-  ink: '#0B1524',
-  warning: '#B26A00',
-  warningSoft: '#F2D6A6',
-  danger: '#C81E1E',
+  primary: '#D82128',
+  primaryAlt: '#B51B21',
+  primaryDark: '#8F1418',
+  mint: '#F28086',
+  mintSoft: '#FBD5D7',
+  gray: '#E5E7EB',
+  grayText: '#6B7280',
+  bg: '#FAFAFA',
+  border: '#E5E7EB',
+  ink: '#121212',
+  warning: '#C2740B',
+  warningSoft: '#FBE3C7',
+  danger: '#D82128',
   success: '#127A4B',
-  info: '#2E4BD6',
+  info: '#6B7280',
 });
 
-// Ordered palette for categorical series (brands, categories…). Blue-forward with
-// enough contrast between neighbouring slices/segments.
+// Ordered palette for categorical series (brands, categories…). Red-forward with
+// black / soft-red / neutral steps for strong contrast between neighbouring slices.
 export const SERIES_COLORS = [
-  '#1428A0', '#2E4BD6', '#5C78E6', '#7C93E8', '#0E1E78',
-  '#8FA0DA', '#B26A00', '#127A4B', '#8A94A6', '#A9B6DA',
+  '#D82128', '#121212', '#F28086', '#6B7280', '#8F1418',
+  '#B51B21', '#9CA3AF', '#F8B4B8', '#374151', '#E5E7EB',
 ];
 
 export function colorAt(index) {

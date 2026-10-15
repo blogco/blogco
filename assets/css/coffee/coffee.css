@@ -1,46 +1,46 @@
 /* ==========================================================================
    "Chi phí cà phê" — Expense Management
-   Rebranded to a Samsung-corporate design language: Samsung Blue (#1428A0),
+   Rebranded to a Delivery Hero design language: Red (#D82128), black (#121212),
    crisp enterprise surfaces, tabular data grids and voucher-style records.
    Only the `coffee-*` namespace is touched.
    ========================================================================== */
 
 :root {
-  /* Samsung corporate blues */
-  --coffee-primary: #1428A0;        /* Samsung Blue */
-  --coffee-primary-dark: #0E1E78;   /* hover / pressed */
-  --coffee-primary-deep: #0A1650;
-  --coffee-primary-alt: #2E4BD6;
-  --coffee-primary-soft: #E8EBF7;
-  --coffee-primary-soft-2: #F3F5FC;
-  --coffee-blue-line: #C9D2F0;
+  /* Delivery Hero corporate identity — red / black / neutral */
+  --coffee-primary: #D82128;        /* Delivery Hero Red */
+  --coffee-primary-dark: #B51B21;   /* hover / pressed */
+  --coffee-primary-deep: #121212;   /* deep ink for headings on soft bg */
+  --coffee-primary-alt: #F28086;    /* soft red for gradients */
+  --coffee-primary-soft: #FFF0F1;   /* soft pink surface */
+  --coffee-primary-soft-2: #FDF5F5;
+  --coffee-blue-line: #F7C9CC;      /* soft red hairline (legacy name) */
 
   /* Neutrals */
-  --coffee-ink: #0B1524;
-  --coffee-text: #1F2937;
-  --coffee-muted: #5B6675;
-  --coffee-border: #DDE2EA;
-  --coffee-border-strong: #C4CBD8;
-  --coffee-bg: #F4F6F9;
+  --coffee-ink: #121212;
+  --coffee-text: #333333;
+  --coffee-muted: #6B7280;
+  --coffee-border: #E5E7EB;
+  --coffee-border-strong: #D1D5DB;
+  --coffee-bg: #FAFAFA;
   --coffee-surface: #FFFFFF;
-  --coffee-surface-2: #F8FAFC;
+  --coffee-surface-2: #FAFAFA;
 
   /* Semantic */
   --coffee-success: #127A4B;
   --coffee-success-soft: #E7F4EC;
-  --coffee-warning: #B26A00;
+  --coffee-warning: #C2740B;
   --coffee-warning-soft: #FDF2E2;
-  --coffee-danger: #C81E1E;
-  --coffee-danger-soft: #FBEAEA;
+  --coffee-danger: #D82128;
+  --coffee-danger-soft: #FFEDEE;
 
   /* Shape + type */
   --coffee-radius: 12px;
   --coffee-radius-sm: 8px;
   --coffee-radius-xs: 6px;
-  --coffee-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 10px 26px rgba(16, 24, 40, .06);
-  --coffee-shadow-sm: 0 1px 2px rgba(16, 24, 40, .06);
-  --coffee-font: "SamsungOne", "Samsung Sharp Sans", "Inter", "Be Vietnam Pro",
-    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --coffee-shadow: 0 4px 12px rgba(0, 0, 0, .05);
+  --coffee-shadow-sm: 0 4px 12px rgba(0, 0, 0, .05);
+  --coffee-font: "Inter", "Be Vietnam Pro", system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
 
   /* Legacy aliases kept so older markup keeps inheriting the corporate palette. */
   --coffee-brown: var(--coffee-primary);
@@ -126,13 +126,14 @@ body.coffee-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .coffee-page-heading > p:last-child { margin: 0; color: var(--coffee-muted); max-width: 70ch; }
-/* Corporate hero band (list + stats landing) */
+/* Corporate hero band (list + stats landing) — Delivery Hero black/red */
 .coffee-page-heading--hero {
   border: 0;
+  border-left: 5px solid var(--coffee-primary);
   padding: 1.4rem 1.5rem;
   color: #fff;
-  background: linear-gradient(135deg, #1428A0 0%, #0E1E78 58%, #0A1650 100%);
-  box-shadow: 0 16px 34px rgba(20, 40, 160, .26);
+  background: linear-gradient(135deg, #121212 0%, #1F1F1F 55%, #3A1214 100%);
+  box-shadow: 0 16px 34px rgba(18, 18, 18, .28);
 }
 .coffee-page-heading--hero::after {
   position: absolute;
@@ -141,11 +142,11 @@ body.coffee-route .category-bar { display: none; }
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(216, 33, 40, .28), rgba(216, 33, 40, 0) 70%);
   content: "";
   pointer-events: none;
 }
-.coffee-page-heading--hero .coffee-eyebrow { color: #B9C6FF !important; }
+.coffee-page-heading--hero .coffee-eyebrow { color: #F2A0A5 !important; }
 .coffee-page-heading--hero h1 { color: #fff; }
 .coffee-page-heading--hero > p:last-child { color: rgba(255, 255, 255, .82); max-width: 100%; white-space: normal; }
 
@@ -195,7 +196,7 @@ body.coffee-route .category-bar { display: none; }
   text-decoration: none !important;
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
-.coffee-primary-button { border: 1px solid var(--coffee-primary); color: #fff !important; background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(20, 40, 160, .24); }
+.coffee-primary-button { border: 1px solid var(--coffee-primary); color: #fff !important; background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(216, 33, 40, .26); }
 .coffee-primary-button:hover { background: var(--coffee-primary-dark); border-color: var(--coffee-primary-dark); transform: translateY(-1px); }
 .coffee-secondary-button { border: 1px solid var(--coffee-border-strong); color: var(--coffee-primary) !important; background: #fff; }
 .coffee-secondary-button:hover { border-color: var(--coffee-primary); background: var(--coffee-primary-soft-2); transform: translateY(-1px); }
@@ -358,7 +359,7 @@ body.coffee-route .category-bar { display: none; }
 }
 .coffee-screen input:focus,
 .coffee-screen textarea:focus,
-.coffee-screen select:focus { outline: none; border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(20, 40, 160, .14); }
+.coffee-screen select:focus { outline: none; border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(216, 33, 40, .15); }
 .coffee-screen textarea { resize: vertical; }
 .coffee-screen input[readonly] { background: var(--coffee-surface-2); color: var(--coffee-muted); font-variant-numeric: tabular-nums; }
 
@@ -443,7 +444,7 @@ body.coffee-route .category-bar { display: none; }
 
 .coffee-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: var(--coffee-radius-xs); color: var(--coffee-ink); background: transparent; font-size: .86rem; font-weight: 500; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
 .coffee-manual-input:hover { border-color: var(--coffee-border); background: #fff; }
-.coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(20, 40, 160, .16); }
+.coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(216, 33, 40, .16); }
 .coffee-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-input--qty { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-total-cell { display: inline-block; min-width: 100%; color: var(--coffee-primary-deep); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
@@ -521,10 +522,14 @@ body.coffee-route .category-bar { display: none; }
 .coffee-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .3rem; }
 .coffee-meter__label { font-weight: 600; font-size: .84rem; }
 .coffee-meter__value { font-variant-numeric: tabular-nums; }
-.coffee-meter__track { height: 10px; border-radius: 999px; background: #E8EDF1; overflow: hidden; }
+.coffee-meter__track { height: 10px; border-radius: 999px; background: var(--coffee-border); overflow: hidden; }
 .coffee-meter__track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coffee-primary), var(--coffee-primary-alt)); transition: width .3s ease; }
-.coffee-meter.is-warning .coffee-meter__track > span { background: linear-gradient(90deg, #B26A00, #E8A33D); }
-.coffee-meter.is-danger .coffee-meter__track > span { background: linear-gradient(90deg, #A31212, var(--coffee-danger)); }
+.coffee-meter.is-warning .coffee-meter__track > span { background: linear-gradient(90deg, #C2740B, #E8A33D); }
+.coffee-meter.is-danger .coffee-meter__track > span { background: linear-gradient(90deg, #8F1418, var(--coffee-danger)); }
+.coffee-meter.is-success .coffee-meter__track > span { background: linear-gradient(90deg, #0F6B41, #22A76A); }
+.coffee-meter.is-success .coffee-meter__value { color: var(--coffee-success); }
+.coffee-meter.is-warning .coffee-meter__value { color: var(--coffee-warning); }
+.coffee-meter.is-danger .coffee-meter__value { color: var(--coffee-danger); }
 .coffee-meter__hint { margin: .25rem 0 0 !important; color: var(--coffee-muted); font-size: .74rem; }
 
 /* --------------------------------------------------------------------------
@@ -560,7 +565,7 @@ body.coffee-route .category-bar { display: none; }
 
 .coffee-insight-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
 
-.coffee-insight-health { border-color: #F2D6A6; }
+.coffee-insight-health { border-color: var(--coffee-blue-line); }
 .coffee-insight-alerts { display: grid; gap: .6rem; margin: .9rem 0 0; padding: 0; list-style: none; }
 .coffee-insight-alert {
   display: flex;
@@ -594,7 +599,7 @@ body.coffee-route .category-bar { display: none; }
 .coffee-hbar { display: grid; gap: .55rem; margin-top: .3rem; }
 .coffee-hbar__row { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) auto; align-items: center; gap: .7rem; }
 .coffee-hbar__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: .86rem; }
-.coffee-hbar__track { height: 12px; border-radius: 999px; background: #E8EDF1; overflow: hidden; }
+.coffee-hbar__track { height: 12px; border-radius: 999px; background: var(--coffee-border); overflow: hidden; }
 .coffee-hbar__fill { display: block; height: 100%; border-radius: inherit; transition: width .3s ease; }
 .coffee-hbar__value { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--coffee-primary); font-weight: 700; }
 

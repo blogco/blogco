@@ -67,7 +67,7 @@ body.lessons-route .main {
 
 .lessons-eyebrow {
   margin: 0 0 12px;
-  color: #006cc5;
+  color: #D82128;
   font-size: 13px !important;
   font-weight: 700 !important;
   letter-spacing: .08em;
@@ -146,7 +146,7 @@ body.lessons-route .main {
 .lessons-field input:focus-visible,
 .lessons-field select:focus-visible,
 .lessons-field textarea:focus-visible {
-  border-color: #006cc5;
+  border-color: #D82128;
   outline: 3px solid rgb(0 95 184 / 18%);
   outline-offset: 1px;
 }
@@ -188,10 +188,10 @@ body.lessons-route .main {
 
 .lessons-choice:hover { border-color: #94a3b8; }
 .lessons-choice:has(input:checked) {
-  border-color: #006cc5;
-  background: #eff6ff;
+  border-color: #D82128;
+  background: #FFF0F1;
 }
-.lessons-choice input { accent-color: #006cc5; }
+.lessons-choice input { accent-color: #D82128; }
 .lessons-choice span { font-size: 15px !important; font-weight: 600 !important; }
 
 /* ---- AI options ---- */
@@ -205,7 +205,7 @@ body.lessons-route .main {
 
 .lessons-ai summary {
   cursor: pointer;
-  color: #0b3b6f;
+  color: #121212;
   font-weight: 700;
   font-size: 15px;
 }
@@ -227,9 +227,9 @@ body.lessons-route .main {
   gap: 8px;
   min-height: 46px;
   padding: 10px 20px;
-  border: 1px solid #006cc5;
+  border: 1px solid #D82128;
   border-radius: 6px;
-  background: #006cc5;
+  background: #D82128;
   color: #fff !important;
   font: inherit;
   font-size: 15px !important;
@@ -239,7 +239,7 @@ body.lessons-route .main {
   transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 
-.lessons-button:hover { background: #005fb8; border-color: #005fb8; }
+.lessons-button:hover { background: #B51B21; border-color: #B51B21; }
 .lessons-button:disabled { opacity: .55; cursor: progress; }
 
 .lessons-button--ghost {
@@ -248,7 +248,7 @@ body.lessons-route .main {
   color: #111 !important;
 }
 
-.lessons-button--ghost:hover { border-color: #006cc5; color: #006cc5 !important; background: #eff6ff; }
+.lessons-button--ghost:hover { border-color: #D82128; color: #D82128 !important; background: #FFF0F1; }
 
 .lessons-file-input {
   position: absolute;
@@ -268,8 +268,8 @@ body.lessons-route .main {
   padding: 12px 16px;
   border: 1px solid #dbeafe;
   border-radius: 8px;
-  background: #eff6ff;
-  color: #0b3b6f !important;
+  background: #FFF0F1;
+  color: #121212 !important;
   font-size: 15px !important;
   font-weight: 600 !important;
 }
@@ -282,7 +282,7 @@ body.lessons-route .main {
   height: 18px;
   flex: 0 0 auto;
   border: 3px solid rgb(0 108 197 / 25%);
-  border-top-color: #006cc5;
+  border-top-color: #D82128;
   border-radius: 50%;
   animation: lessons-spin .8s linear infinite;
 }
@@ -306,8 +306,8 @@ body.lessons-route .main {
   padding: 4px 10px;
   border: 1px solid #dbeafe;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #0b3b6f;
+  background: #FFF0F1;
+  color: #121212;
   font-size: 12px !important;
   font-weight: 700 !important;
   text-transform: uppercase;
@@ -357,7 +357,7 @@ body.lessons-route .main {
   max-width: min(360px, calc(100vw - 32px));
   padding: 12px 16px;
   border-radius: 8px;
-  background: #0b3b6f;
+  background: #121212;
   color: #fff !important;
   font-size: 14px !important;
   font-weight: 600 !important;
