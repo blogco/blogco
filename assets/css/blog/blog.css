@@ -265,11 +265,15 @@ body.blog-drawer-open { overflow: hidden; }
 /* Preview drawer (slide-over) ---------------------------------------------- */
 .blog-preview-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 90;
   display: flex;
   justify-content: flex-end;
-  background: rgba(0, 26, 64, .42);
+  overflow: hidden;
+  background: rgba(0, 26, 64, .46);
   animation: blog-fade .16s ease;
 }
 .blog-preview-overlay[hidden] { display: none; }
@@ -277,7 +281,9 @@ body.blog-drawer-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   width: min(100%, 800px);
+  max-width: 100%;
   height: 100%;
+  max-height: 100%;
   background: #fff;
   box-shadow: -24px 0 60px rgba(0, 26, 64, .28);
   animation: blog-slide-in .22s cubic-bezier(.22, .61, .36, 1);
@@ -322,35 +328,11 @@ body.blog-drawer-open { overflow: hidden; }
 @keyframes blog-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes blog-slide-in { from { transform: translateX(24px); opacity: .4; } to { transform: translateX(0); opacity: 1; } }
 
-/* Split-screen preview (desktop) ------------------------------------------ */
-/* On wide screens the preview shares the page 50/50 with the editor instead of
-   dimming everything behind a full-screen modal — easier on the eyes. */
-@media (min-width: 1100px) {
-  .blog-screen.is-previewing .blog-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .blog-screen.is-previewing .blog-side { display: none; }
-  .blog-screen.is-previewing .blog-preview-overlay {
-    position: sticky;
-    inset: auto;
-    top: 1rem;
-    z-index: 5;
-    display: block;
-    height: calc(100vh - 2rem);
-    background: transparent;
-    animation: none;
-  }
-  .blog-screen.is-previewing .blog-preview-drawer {
-    width: 100%;
-    height: 100%;
-    border: 1px solid var(--blog-border);
-    border-radius: 14px;
-    box-shadow: 0 14px 34px rgba(0, 42, 107, .12);
-    animation: none;
-  }
-}
-
-/* Narrow screens keep the slide-over drawer, so lock the page behind it. */
-@media (max-width: 1099px) {
-  body.blog-drawer-open { overflow: hidden; }
+/* The preview is always a right slide-over drawer over a dimmed backdrop so it
+   never shifts or overflows the editor layout behind it. The page behind stays
+   locked while open (see body.blog-drawer-open). */
+@media (max-width: 560px) {
+  .blog-preview-drawer__body { padding: 1.1rem 1rem 2.5rem; }
 }
 
 /* AI scoring panel (floating card) ----------------------------------------- */

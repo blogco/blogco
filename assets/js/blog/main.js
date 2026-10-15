@@ -86,7 +86,7 @@ const TOOLBAR = [
   { action: 'quote', label: '❝', title: 'Trích dẫn', block: 'blockquote' },
   { action: 'link', label: '🔗', title: 'Chèn liên kết', link: true },
   { action: 'image', label: '🖼️', title: 'Chèn ảnh vào bài (chọn nhiều ảnh)', image: true },
-  { action: 'clear', label: '✨', title: 'Xoá định dạng', clear: true },
+  { action: 'wipe', label: '🧹 Xoá trắng', title: 'Xoá trắng khung soạn thảo (làm mới bài viết)', wipe: true },
 ];
 
 const BUBBLE = ['bold', 'italic', 'h2', 'quote', 'link'];
@@ -297,6 +297,46 @@ function readForm(root) {
 function persistDraft(root) {
   const form = readForm(root);
   saveDraft({ title: form.title, body: form.html, tags: form.tags });
+}
+
+// Wipe the whole working surface: title, body, staged inline images, the cover
+// thumbnail and any open preview/score panels. `tags` clears the tag field too
+// (used by the "Xoá nháp" action that also drops the saved draft).
+function resetEditor(root, state, { tags = false } = {}) {
+  const title = root.querySelector('[data-blog-title]');
+  if (title) title.value = '';
+  if (tags) {
+    const tagField = root.querySelector('[data-blog-tags]');
+    if (tagField) tagField.value = '';
+  }
+  const rich = richEl(root);
+  if (rich) rich.innerHTML = '';
+  clearDraft();
+
+  if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+  state.blobs.forEach((url) => URL.revokeObjectURL(url));
+  state.blobs.clear();
+  state.images.clear();
+  state.imageSeq = 0;
+  state.file = null;
+  state.thumb = null;
+
+  clearFigureSelection(root, state);
+  hideFigurebar(root, state);
+  hideBubble(root);
+  closePreview(root);
+  closeScore(root);
+  resetDropzone(root);
+  showThumb(root, null);
+  syncEmptyState(root);
+}
+
+// Toolbar "Xoá trắng": wipe everything after a quick confirmation.
+function wipeEditor(root, state) {
+  if (!window.confirm('Bạn có muốn xoá toàn bộ nội dung hiện tại để viết bài mới không?')) return;
+  resetEditor(root, state);
+  setStatus(root, 'Đã xoá trắng khung soạn thảo. Sẵn sàng cho bài mới.');
+  root.querySelector('#blog-title')?.focus({ preventScroll: true });
 }
 
 // Wrap legacy/plain images (e.g. from an older draft) in the managed <figure>
@@ -790,7 +830,10 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
 
     root.addEventListener('click', (event) => {
       const tool = event.target.closest('[data-blog-tool]');
-      if (tool) { applyTool(root, tool.dataset.blogTool); hideBubble(root); return; }
+      if (tool) {
+        if (tool.dataset.blogTool === 'wipe') { wipeEditor(root, state); return; }
+        applyTool(root, tool.dataset.blogTool); hideBubble(root); return;
+      }
 
       const align = event.target.closest('[data-blog-fig-align]');
       if (align) { setFigureAlign(root, state, state.activeFigure, align.dataset.blogFigAlign); return; }
@@ -819,22 +862,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       if (event.target.closest('[data-blog-score-close]')) { closeScore(root); return; }
       if (event.target.closest('[data-blog-clear]')) {
         if (window.confirm('Xoá bản nháp đang soạn trên thiết bị này?')) {
-          root.querySelector('[data-blog-title]').value = '';
-          root.querySelector('[data-blog-tags]').value = '';
-          const rich = richEl(root);
-          if (rich) rich.innerHTML = '';
-          clearDraft();
-          if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
-          state.blobs.forEach((url) => URL.revokeObjectURL(url));
-          state.blobs.clear();
-          state.images.clear();
-          state.file = null;
-          state.thumb = null;
-          clearFigureSelection(root, state);
-          hideFigurebar(root, state);
-          resetDropzone(root);
-          showThumb(root, null);
-          syncEmptyState(root);
+          resetEditor(root, state, { tags: true });
           setStatus(root, 'Đã xoá nháp.');
         }
         return;
