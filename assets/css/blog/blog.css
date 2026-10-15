@@ -474,3 +474,20 @@ body.blog-drawer-open { overflow: hidden; }
   .blog-manage__media { width: 64px; height: 48px; }
   .blog-manage__actions { grid-column: 1 / -1; justify-content: flex-end; }
 }
+
+/* Bộ đếm số từ / ký tự ------------------------------------------------------- */
+.blog-count { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: .12rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.blog-count__main { display: inline-flex; align-items: baseline; gap: .3rem; }
+.blog-count__num { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; color: var(--blog-primary); }
+.blog-count__sep { font-size: 1.15rem; font-weight: 800; color: var(--blog-muted); }
+.blog-count__max { font-size: .95rem; font-weight: 700; color: var(--blog-muted); }
+.blog-count__detail { font-size: .74rem; font-weight: 700; color: var(--blog-muted); }
+.blog-count.is-warn .blog-count__num,
+.blog-count.is-warn .blog-count__max,
+.blog-count.is-warn .blog-count__detail { color: #C77700; }
+.blog-count.is-over .blog-count__num,
+.blog-count.is-over .blog-count__max,
+.blog-count.is-over .blog-count__detail { color: #D9534F; }
+.blog-count.is-over .blog-count__main { animation: blog-count-pulse 1.2s ease-in-out infinite; }
+@keyframes blog-count-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .blog-count.is-over .blog-count__main { animation: none; } }

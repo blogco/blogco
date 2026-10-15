@@ -162,6 +162,14 @@ function renderEditor(root, state) {
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>Lưu &amp; đồng bộ GitHub</button>
           <button type="button" class="blog-ghost" data-blog-clear>🗑️ Xoá nháp</button>
+          <div class="blog-count" data-blog-count aria-live="polite" title="Số từ đã viết / giới hạn 50.000 từ">
+            <span class="blog-count__main">
+              <b class="blog-count__num" data-blog-count-words>0</b>
+              <span class="blog-count__sep">/</span>
+              <span class="blog-count__max">50.000 từ</span>
+            </span>
+            <span class="blog-count__detail" data-blog-count-detail>0 ký tự</span>
+          </div>
         </div>
         <p class="blog-status" data-blog-status></p>
       </div>
@@ -254,6 +262,7 @@ function renderEditor(root, state) {
   restoreBody(root, state);
   syncImageMode(root, state);
   syncEmptyState(root);
+  updateWordCount(root);
   root.querySelector('#blog-title')?.focus({ preventScroll: true });
 }
 
@@ -278,6 +287,42 @@ function syncEmptyState(root) {
   if (!rich) return;
   const empty = !rich.textContent?.trim() && !rich.querySelector('img');
   rich.classList.toggle('is-empty', empty);
+}
+
+// Word/character counter with a hard 50.000-word budget for the editor.
+const WORD_LIMIT = 50000;
+const WORD_WARN_AT = Math.floor(WORD_LIMIT * 0.9); // cảnh báo khi tới 90%
+
+function countWords(text = '') {
+  const trimmed = String(text).replace(/\s+/g, ' ').trim();
+  return trimmed ? trimmed.split(' ').length : 0;
+}
+
+function updateWordCount(root) {
+  const widget = root.querySelector('[data-blog-count]');
+  if (!widget) return;
+  const title = root.querySelector('[data-blog-title]')?.value || '';
+  const body = richEl(root)?.innerText || '';
+  const text = `${title} ${body}`.replace(/\s+/g, ' ').trim();
+  const words = countWords(text);
+  const chars = text.length;
+  const fmt = (n) => n.toLocaleString('vi-VN');
+
+  const numEl = widget.querySelector('[data-blog-count-words]');
+  const detailEl = widget.querySelector('[data-blog-count-detail]');
+  if (numEl) numEl.textContent = fmt(words);
+  if (detailEl) detailEl.textContent = `${fmt(chars)} ký tự`;
+
+  const over = words >= WORD_LIMIT;
+  const warn = !over && words >= WORD_WARN_AT;
+  widget.classList.toggle('is-warn', warn);
+  widget.classList.toggle('is-over', over);
+  widget.setAttribute(
+    'aria-label',
+    over
+      ? `Đã vượt giới hạn: ${fmt(words)} trên ${fmt(WORD_LIMIT)} từ`
+      : `Đã viết ${fmt(words)} trên ${fmt(WORD_LIMIT)} từ`,
+  );
 }
 
 function readForm(root) {
@@ -329,6 +374,7 @@ function resetEditor(root, state, { tags = false } = {}) {
   showThumb(root, null);
   syncImageMode(root, state);
   syncEmptyState(root);
+  updateWordCount(root);
 }
 
 // Toolbar "Xoá trắng": wipe everything after a quick confirmation.
@@ -935,6 +981,7 @@ async function loadPostIntoEditor(root, state, path) {
   enhanceFigures(root);
   syncImageMode(root, state);
   syncEmptyState(root);
+  updateWordCount(root);
   setStatus(root, `Đang sửa “${parsed.title || state.editSlug}”. Lưu sẽ cập nhật bài trên GitHub.`);
 }
 
@@ -1160,6 +1207,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       if (event.target.matches?.('input[name="blog-image-mode"]')) return;
       if (!richEl(root)) return; // manager view has no draft
       if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
+      updateWordCount(root);
       persistDraft(root);
     });
 
