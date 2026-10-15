@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyItem, normalizeName } from './menu.js';
-import { parseMoney, parseDate, parseItemLine, parseHighlandsInvoice } from './ocr.js';
+import {
+  parseMoney, parseDate, parseItemLine, parseHighlandsInvoice,
+  toGrayscale, stretchContrast, medianFilter, adaptiveThreshold, estimateSkewAngle,
+} from './ocr.js';
 import {
   computeReceiptTotals, toNumber, formatVnd,
   saveReceipt, getReceipts, getReceiptById, removeReceipt, importReceipts, validateReceipt,
@@ -157,6 +160,57 @@ test('computeCoffeeStats aggregates totals per month, store and category', () =>
   assert.equal(stats.byCategory.find((category) => category.category === 'coffee').total, 90000);
   assert.equal(stats.topItems[0].name, 'Phin sữa đá');
   assert.equal(stats.budget, 200000);
+});
+
+test('preprocess helpers clean a receipt image for OCR', () => {
+  // Grayscale: white stays bright, black stays dark.
+  const rgba = new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255]);
+  const gray = toGrayscale(rgba);
+  assert.equal(gray[0], 255);
+  assert.equal(gray[1], 0);
+
+  // Contrast stretch expands a narrow band towards the full range.
+  const flat = new Uint8ClampedArray([100, 110, 120, 130]);
+  const stretched = stretchContrast(flat);
+  assert.ok(stretched[3] > stretched[0]);
+  assert.equal(stretched[0], 0);
+  assert.equal(stretched[3], 255);
+
+  // Adaptive threshold keeps a small dark dot dark and background white.
+  const width = 30;
+  const height = 30;
+  const canvasGray = new Uint8ClampedArray(width * height).fill(200);
+  for (let y = 13; y <= 16; y += 1) for (let x = 13; x <= 16; x += 1) canvasGray[y * width + x] = 0;
+  const binary = adaptiveThreshold(canvasGray, width, height, { radius: 8, constant: 10 });
+  assert.equal(binary[15 * width + 15], 0);
+  assert.equal(binary[0], 255);
+
+  // Median filter removes an isolated speckle.
+  const noisy = new Uint8ClampedArray(width * height).fill(200);
+  noisy[15 * width + 15] = 0;
+  const denoised = medianFilter(noisy, width, height);
+  assert.equal(denoised[15 * width + 15], 200);
+});
+
+test('estimateSkewAngle reports horizontal text as 0 and tilts back into line', () => {
+  const width = 160;
+  const height = 160;
+  const horizontal = new Uint8ClampedArray(width * height).fill(255);
+  for (let y = 20; y < height; y += 12) for (let x = 10; x < width - 10; x += 1) horizontal[y * width + x] = 0;
+  assert.equal(estimateSkewAngle(horizontal, width, height), 0);
+
+  // Draw the same lines sloping down to the right by ~5 degrees.
+  const slope = Math.tan((5 * Math.PI) / 180);
+  const tilted = new Uint8ClampedArray(width * height).fill(255);
+  for (let base = 20; base < height; base += 12) {
+    for (let x = 10; x < width - 10; x += 1) {
+      const y = Math.round(base + (x - width / 2) * slope);
+      if (y >= 0 && y < height) tilted[y * width + x] = 0;
+    }
+  }
+  const angle = estimateSkewAngle(tilted, width, height);
+  // Rotating by this angle should undo the tilt.
+  assert.ok(Math.abs(angle - -5) <= 1, `expected ~-5°, got ${angle}`);
 });
 
 test('filterReceipts searches by store, order code and item name', () => {

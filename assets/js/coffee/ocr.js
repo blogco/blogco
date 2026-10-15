@@ -39,14 +39,257 @@ export async function loadTesseract() {
   return window.Tesseract;
 }
 
-export async function recognizeImage(file, { lang = 'vie+eng', onProgress } = {}) {
+export async function recognizeImage(file, { lang = 'vie+eng', onProgress, preprocess = true } = {}) {
   const Tesseract = await loadTesseract();
-  const { data } = await Tesseract.recognize(file, lang, {
+  let input = file;
+  if (preprocess) {
+    try {
+      input = await preprocessImage(file);
+    } catch {
+      // Preprocessing is best-effort: fall back to the raw image so OCR still runs.
+      input = file;
+    }
+  }
+  const { data } = await Tesseract.recognize(input, lang, {
     logger: (message) => {
       if (typeof onProgress === 'function') onProgress(message);
     },
   });
   return (data?.text || '').trim();
+}
+
+// ---------------------------------------------------------------------------
+// Tầng 1 — Image preprocessing (pure helpers are unit tested)
+// ---------------------------------------------------------------------------
+//
+// Thermal receipt prints are low-contrast and phone photos are noisy/skewed, so
+// Tesseract reads far better on a cleaned, binarised, upright image. The pure
+// functions below operate on a grayscale byte array (length = width * height)
+// which keeps them testable outside the browser; `preprocessImage` is the DOM
+// orchestrator that turns a File/Blob/dataURL into the final canvas.
+
+function loadImageElement(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Không đọc được ảnh.'));
+    if (typeof source === 'string') {
+      image.src = source;
+      return;
+    }
+    if (typeof Blob !== 'undefined' && source instanceof Blob) {
+      const reader = new FileReader();
+      reader.onload = () => { image.src = String(reader.result); };
+      reader.onerror = () => reject(new Error('Không đọc được file ảnh.'));
+      reader.readAsDataURL(source);
+      return;
+    }
+    if (source && (source.naturalWidth || source.width)) {
+      image.src = source.toDataURL ? source.toDataURL('image/png') : source.src;
+      return;
+    }
+    reject(new Error('Nguồn ảnh không hợp lệ.'));
+  });
+}
+
+// RGBA bytes -> one luma byte per pixel (BT.601 weights).
+export function toGrayscale(rgba) {
+  const out = new Uint8ClampedArray(rgba.length / 4);
+  for (let i = 0, p = 0; i < rgba.length; i += 4, p += 1) {
+    out[p] = 0.299 * rgba[i] + 0.587 * rgba[i + 1] + 0.114 * rgba[i + 2];
+  }
+  return out;
+}
+
+// Percentile contrast stretch: makes faded thermal ink legible before binarising.
+export function stretchContrast(gray, { lowPercentile = 0.02, highPercentile = 0.98 } = {}) {
+  const histogram = new Uint32Array(256);
+  for (let i = 0; i < gray.length; i += 1) histogram[gray[i]] += 1;
+  const total = gray.length || 1;
+  const findPercentile = (fraction) => {
+    const target = total * fraction;
+    let acc = 0;
+    for (let value = 0; value < 256; value += 1) {
+      acc += histogram[value];
+      if (acc >= target) return value;
+    }
+    return 255;
+  };
+  const low = findPercentile(lowPercentile);
+  const high = findPercentile(highPercentile);
+  if (high <= low) return gray;
+  const out = new Uint8ClampedArray(gray.length);
+  const range = high - low;
+  for (let i = 0; i < gray.length; i += 1) out[i] = ((gray[i] - low) * 255) / range;
+  return out;
+}
+
+// 3x3 median filter — removes speckle noise without smearing strokes.
+export function medianFilter(gray, width, height) {
+  const out = new Uint8ClampedArray(gray.length);
+  const window = new Uint8Array(9);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let count = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        const ny = Math.min(height - 1, Math.max(0, y + dy));
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const nx = Math.min(width - 1, Math.max(0, x + dx));
+          window[count] = gray[ny * width + nx];
+          count += 1;
+        }
+      }
+      for (let i = 1; i < 9; i += 1) {
+        const key = window[i];
+        let j = i - 1;
+        while (j >= 0 && window[j] > key) { window[j + 1] = window[j]; j -= 1; }
+        window[j + 1] = key;
+      }
+      out[y * width + x] = window[4];
+    }
+  }
+  return out;
+}
+
+// Adaptive (local-mean) threshold via a summed-area table. Better than a global
+// cutoff on uneven receipts (shadow, gradient light).
+export function adaptiveThreshold(gray, width, height, { radius = 8, constant = 10 } = {}) {
+  const stride = width + 1;
+  const integral = new Float64Array(stride * (height + 1));
+  for (let y = 0; y < height; y += 1) {
+    let rowSum = 0;
+    for (let x = 0; x < width; x += 1) {
+      rowSum += gray[y * width + x];
+      integral[(y + 1) * stride + (x + 1)] = integral[y * stride + (x + 1)] + rowSum;
+    }
+  }
+  const out = new Uint8ClampedArray(gray.length);
+  for (let y = 0; y < height; y += 1) {
+    const y0 = Math.max(0, y - radius);
+    const y1 = Math.min(height - 1, y + radius);
+    for (let x = 0; x < width; x += 1) {
+      const x0 = Math.max(0, x - radius);
+      const x1 = Math.min(width - 1, x + radius);
+      const area = (x1 - x0 + 1) * (y1 - y0 + 1);
+      const sum = integral[(y1 + 1) * stride + (x1 + 1)]
+        - integral[y0 * stride + (x1 + 1)]
+        - integral[(y1 + 1) * stride + x0]
+        + integral[y0 * stride + x0];
+      out[y * width + x] = gray[y * width + x] > (sum / area) - constant ? 255 : 0;
+    }
+  }
+  return out;
+}
+
+// Estimate receipt skew (degrees) with a projection-profile scan. Dark pixels
+// are rotated by each candidate angle and binned by row; the angle that makes
+// text lines sharpest (max summed squared bin-to-bin change) wins. Feed it the
+// binarised image.
+export function estimateSkewAngle(gray, width, height, { maxAngle = 8, step = 0.5 } = {}) {
+  const points = [];
+  const maxPoints = 20000;
+  const stride = Math.max(1, Math.floor(Math.sqrt((width * height) / maxPoints)));
+  for (let y = 0; y < height; y += stride) {
+    for (let x = 0; x < width; x += stride) {
+      if (gray[y * width + x] < 128) points.push(x, y);
+    }
+  }
+  if (points.length / 2 < 20) return 0;
+
+  const binSize = height + Math.ceil(width * Math.abs(Math.sin((maxAngle * Math.PI) / 180))) + 2;
+  const offset = binSize >> 1;
+  let bestAngle = 0;
+  let bestScore = -1;
+  for (let angle = -maxAngle; angle <= maxAngle + 1e-9; angle += step) {
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const rows = new Uint32Array(binSize);
+    for (let i = 0; i < points.length; i += 2) {
+      const index = Math.round(points[i] * sin + points[i + 1] * cos) + offset;
+      if (index >= 0 && index < binSize) rows[index] += 1;
+    }
+    let score = 0;
+    for (let i = 1; i < binSize; i += 1) {
+      const delta = rows[i] - rows[i - 1];
+      score += delta * delta;
+    }
+    if (score > bestScore) { bestScore = score; bestAngle = angle; }
+  }
+  return bestAngle;
+}
+
+function grayToCanvas(gray, width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(width, height);
+  for (let i = 0, p = 0; i < imageData.data.length; i += 4, p += 1) {
+    const value = gray[p];
+    imageData.data[i] = value;
+    imageData.data[i + 1] = value;
+    imageData.data[i + 2] = value;
+    imageData.data[i + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+function rotateCanvas(sourceCanvas, angleDeg) {
+  const { width, height } = sourceCanvas;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate((angleDeg * Math.PI) / 180);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(sourceCanvas, -width / 2, -height / 2);
+  return canvas;
+}
+
+// Full Tầng 1 pipeline: upscale 2x -> grayscale + contrast -> denoise ->
+// adaptive threshold -> deskew. Returns a canvas Tesseract can read directly.
+export async function preprocessImage(source, {
+  scale = 2,
+  maxDim = 2600,
+  denoise = true,
+  threshold = true,
+  deskew = true,
+} = {}) {
+  if (typeof document === 'undefined') throw new Error('Không có môi trường canvas để xử lý ảnh.');
+  const image = await loadImageElement(source);
+  const naturalWidth = image.naturalWidth || image.width;
+  const naturalHeight = image.naturalHeight || image.height;
+  if (!naturalWidth || !naturalHeight) throw new Error('Ảnh không hợp lệ.');
+
+  // Upscale small receipts 2x but cap the long edge so phone photos stay bounded.
+  const ratio = Math.min(scale, maxDim / Math.max(naturalWidth, naturalHeight));
+  const width = Math.max(1, Math.round(naturalWidth * ratio));
+  const height = Math.max(1, Math.round(naturalHeight * ratio));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(image, 0, 0, width, height);
+
+  let gray = toGrayscale(ctx.getImageData(0, 0, width, height).data);
+  gray = stretchContrast(gray);
+  if (denoise) gray = medianFilter(gray, width, height);
+  if (threshold) gray = adaptiveThreshold(gray, width, height);
+
+  let result = grayToCanvas(gray, width, height);
+  if (deskew) {
+    const angle = estimateSkewAngle(gray, width, height);
+    if (Math.abs(angle) >= 0.5) result = rotateCanvas(result, angle);
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------
