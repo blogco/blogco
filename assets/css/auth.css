@@ -1,0 +1,93 @@
+/* Privacy lock screen for the personalised SPA features.
+   Matches the Ericsson light identity: navy · sky · ice-blue. */
+
+body.auth-locked { overflow: hidden; }
+
+.auth-lock {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.auth-lock[hidden] { display: none; }
+
+.auth-lock__backdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(150deg, rgba(0, 37, 97, .92), rgba(0, 104, 191, .88));
+  backdrop-filter: blur(6px);
+}
+
+.auth-lock__card {
+  position: relative;
+  display: grid;
+  gap: .8rem;
+  width: min(100%, 420px);
+  padding: 2rem 1.75rem;
+  border: 1px solid #D5E3F0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 27, 70, .35);
+  text-align: center;
+  font-family: Inter, "Helvetica Neue", system-ui, sans-serif;
+}
+
+.auth-lock__badge {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #EAF3FE;
+  font-size: 1.7rem;
+}
+
+.auth-lock__title { margin: 0 !important; color: #002561 !important; font-size: 1.4rem; }
+.auth-lock__text { margin: 0 !important; color: #33475B !important; font-size: .92rem; line-height: 1.6; }
+.auth-lock__text strong { color: #002561; }
+
+.auth-lock__field {
+  display: grid;
+  gap: .4rem;
+  margin-top: .4rem;
+  color: #002561;
+  font-size: .82rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.auth-lock__field input {
+  width: 100%;
+  padding: .7rem .85rem;
+  border: 1px solid #D5E3F0;
+  border-radius: 6px;
+  color: #002561;
+  background: #F4F8FC;
+  font: inherit;
+  font-weight: 600;
+}
+.auth-lock__field input:focus-visible { outline: 2px solid #0082f0; outline-offset: 1px; border-color: #0082f0; }
+
+.auth-lock__error { min-height: 1.1rem; margin: 0 !important; color: #C81E1E !important; font-size: .84rem; font-weight: 700; }
+.auth-lock__remember { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; color: #5B6B7F; font-size: .82rem; font-weight: 600; }
+.auth-lock__button {
+  margin-top: .2rem;
+  padding: .75rem 1rem;
+  border: 1px solid #002561;
+  border-radius: 6px;
+  color: #fff;
+  background: #002561;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.auth-lock__button:hover { background: #001b46; }
+.auth-lock__home { color: #0068bf; font-size: .84rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Header "Khoá lại" control (hidden until authenticated). */
+.navbar__auth[hidden] { display: none; }
+.navbar__lock-button { border: 0; background: transparent; cursor: pointer; }

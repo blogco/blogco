@@ -5,6 +5,7 @@ const featureLoaders = {
 
 import './navigation.js';
 import './github-actions.js';
+import { requireAuth, hideAuthLock, isSensitiveRoute, mountAuthControl } from './auth.js';
 
 let waterAppPromise;
 let healthAppPromise;
@@ -20,6 +21,7 @@ function syncWaterRoute() {
   root.hidden = !active;
   document.body.classList.toggle('water-route', active);
   if (!active) return;
+  if (!requireAuth()) return;
   waterAppPromise ??= import('./water/main.js');
   void waterAppPromise.then(({ mountWaterApp }) => mountWaterApp(root));
 }
@@ -33,6 +35,7 @@ function syncHealthRoute() {
   root.hidden = !active;
   document.body.classList.toggle('health-route', active);
   if (!active) return;
+  if (!requireAuth()) return;
   healthAppPromise ??= import('./health/main.js');
   void healthAppPromise.then(({ mountHealthApp }) => mountHealthApp(root));
 }
@@ -46,6 +49,7 @@ function syncCoffeeRoute() {
   root.hidden = !active;
   document.body.classList.toggle('coffee-route', active);
   if (!active) return;
+  if (!requireAuth()) return;
   coffeeAppPromise ??= import('./coffee/main.js');
   void coffeeAppPromise.then(({ mountCoffeeApp }) => mountCoffeeApp(root));
 }
@@ -72,6 +76,19 @@ syncWaterRoute();
 syncHealthRoute();
 syncCoffeeRoute();
 syncBrandRoute();
+
+// Unlock/lock → re-evaluate the sensitive apps; leave the home/brand pages
+// without a lingering lock overlay when no personal route is active.
+window.addEventListener('blogco:auth-changed', () => {
+  syncWaterRoute();
+  syncHealthRoute();
+  syncCoffeeRoute();
+});
+window.addEventListener('hashchange', () => {
+  const dedicated = '[data-water-app][data-initial-route]:not([hidden]), [data-health-app][data-initial-route]:not([hidden]), [data-coffee-app][data-initial-route]:not([hidden])';
+  if (!isSensitiveRoute(location.hash) && !document.querySelector(dedicated)) hideAuthLock();
+});
+mountAuthControl();
 document.querySelectorAll('[data-blog-feature]').forEach((element) => {
   const feature = element.dataset.blogFeature;
   if (!(feature in featureLoaders)) return;

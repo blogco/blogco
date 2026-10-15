@@ -33,7 +33,13 @@ enableGitInfo = false
 
   [params.footer]
     hideCopyright = false
-    text = 'Delivery Hero Inspired Corporate Identity System'
+    text = 'Ericsson Inspired Corporate Identity System'
+
+  # Client-side lock for the personal SPA modules (#/water, #/health, #/coffee).
+  # Static site only: this is a convenience gate, not a server-enforced secret.
+  [params.security]
+    passcode = '123456'
+    disableLock = false
 
   [params.homeInfoParams]
     Title = 'BlogCo'

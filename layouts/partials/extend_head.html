@@ -1,3 +1,7 @@
+{{- /* Client-side privacy gate config (read by assets/js/auth.js). */ -}}
+<meta name="blogco-lock" content="{{ if site.Params.security.disableLock }}false{{ else }}true{{ end }}">
+<meta name="blogco-lock-code" content="{{ site.Params.security.passcode | default "123456" }}">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
