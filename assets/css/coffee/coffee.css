@@ -122,6 +122,7 @@ body.coffee-route .category-bar { display: none; }
 .coffee-chip.is-success { color: var(--coffee-success); border-color: #bbf7d0; background: #f0fdf4; }
 .coffee-chip.is-warning { color: var(--coffee-warning); border-color: #fde68a; background: #fffbeb; }
 .coffee-chip.is-danger { color: var(--coffee-danger); border-color: #fecaca; background: #fef2f2; }
+.coffee-chip.is-muted { color: #6b7280; border-color: #e5e7eb; background: #f9fafb; }
 
 /* Search -------------------------------------------------------------------- */
 .coffee-search { display: grid; gap: .8rem; }
@@ -330,15 +331,20 @@ body.coffee-route .category-bar { display: none; }
 .coffee-cell-name { min-width: 12rem; }
 .coffee-table__note { display: block; margin-top: .15rem; color: var(--coffee-muted); font-size: .74rem; font-weight: 500; }
 .coffee-cell-net { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.coffee-cell-verify { min-width: 12rem; }
 .coffee-item-delete { min-height: 38px; padding: .3rem .6rem; }
 
 .coffee-line-list { display: grid; gap: .35rem; margin: 0; padding: 0; list-style: none; }
-.coffee-line { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(9rem, auto); align-items: center; gap: .5rem; padding: .4rem .55rem; border: 1px solid var(--coffee-border); border-radius: 10px; background: #fff; }
+.coffee-line { display: grid; grid-template-columns: minmax(0, 1fr) auto auto minmax(9rem, auto); align-items: center; gap: .5rem; padding: .4rem .55rem; border: 1px solid var(--coffee-border); border-radius: 10px; background: #fff; }
 .coffee-line__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
 .coffee-line__amount { color: var(--coffee-muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
 .coffee-line select { min-height: 38px; padding: .3rem .4rem; font-size: .82rem; }
 .coffee-lines-all { margin-top: .5rem; }
 .coffee-lines-all summary { cursor: pointer; color: var(--coffee-amber); font-weight: 700; }
+
+.coffee-debug { margin-top: .3rem; }
+.coffee-debug summary { cursor: pointer; color: var(--coffee-amber); font-weight: 700; }
+.coffee-debug__pre { max-height: 22rem; overflow: auto; margin: .3rem 0 .8rem; padding: .6rem .7rem; border: 1px solid var(--coffee-border); border-radius: 10px; background: #f8f2ea; color: #4b3621; font-size: .74rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
 
 .coffee-reconcile-list { display: grid; gap: .35rem; margin: 0 0 .6rem; }
 .coffee-reconcile-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .6rem; padding-bottom: .35rem; border-bottom: 1px solid #efe4d6; }
@@ -373,6 +379,58 @@ body.coffee-route .category-bar { display: none; }
 
 .coffee-ocr-json__note { margin: .4rem 0 0 !important; color: var(--coffee-muted) !important; font-size: .82rem; }
 .coffee-ocr-json__pre { max-height: 320px; overflow: auto; }
+
+/* Manual expense input table (#/coffee/manual-add) -------------------------- */
+.coffee-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.coffee-manual { display: grid; gap: 1rem; }
+.coffee-manual-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.coffee-manual-total { margin-left: auto; font-weight: 700; color: var(--coffee-ink); }
+.coffee-manual-total strong { color: var(--coffee-brown-dark); font-variant-numeric: tabular-nums; }
+
+.coffee-manual-wrap { overflow-x: auto; border: 1px solid var(--coffee-border); border-radius: 14px; background: #fff; box-shadow: 0 10px 26px rgba(111, 78, 55, .08); }
+.coffee-manual-table { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; }
+.coffee-manual-table th,
+.coffee-manual-table td { padding: .35rem .5rem; text-align: left; }
+
+.coffee-manual-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: .6rem .7rem;
+  border-bottom: 2px solid #22c55e;
+  color: #052e16;
+  background: linear-gradient(180deg, #86efac 0%, #4ade80 100%);
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, .25);
+}
+.coffee-manual-th-sub { display: block; color: #166534; font-size: .68rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+.coffee-manual-row td { border-bottom: 1px solid #eef1ee; vertical-align: middle; background: #fff; }
+.coffee-manual-row:nth-child(even) td { background: #f8fdf9; }
+.coffee-manual-row:hover td { background: #f1fdf4; }
+.coffee-manual-row:last-child td { border-bottom: 0; }
+
+.coffee-manual-cell--index { width: 3rem; color: #166534; font-weight: 800; text-align: center; }
+.coffee-manual-cell--amount { width: 11rem; }
+.coffee-manual-cell--season { width: 8.5rem; white-space: nowrap; }
+.coffee-manual-cell--action { width: 3.5rem; text-align: right; }
+
+.coffee-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: 9px; color: var(--coffee-ink); background: transparent; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.coffee-manual-input:hover { border-color: var(--coffee-border); background: #fff; }
+.coffee-manual-input:focus { outline: none; border-color: #22c55e; background: #fff; box-shadow: 0 0 0 3px rgba(34, 197, 94, .22); }
+.coffee-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.coffee-manual-cell--amount { position: relative; }
+.coffee-manual-currency { position: absolute; top: 50%; right: .7rem; transform: translateY(-50%); color: var(--coffee-muted); font-size: .82rem; pointer-events: none; }
+
+.coffee-season-chip { display: inline-flex; align-items: center; gap: .25rem; padding: .3rem .6rem; border: 1px solid #bbf7d0; border-radius: 99px; color: #166534; background: #f0fdf4; font-size: .8rem; font-weight: 700; cursor: default; }
+.coffee-season-chip.is-empty { color: var(--coffee-muted); border-color: #e5e7eb; background: #f9fafb; }
+.coffee-manual-remove { min-height: 36px; min-width: 36px; padding: .25rem .5rem; }
+.coffee-manual-hint { margin: 0 !important; color: var(--coffee-muted) !important; font-size: .86rem; }
 
 /* Responsive ---------------------------------------------------------------- */
 @media (max-width: 1023px) {

@@ -32,7 +32,12 @@ export function moneyTokens(line) {
 }
 
 const PAYMENT_RE = /payoo|master\s*card|mastercard|visa|jcb|momo|zalo\s*pay|zalopay|vnpay|shopeepay|shopee\s*pay|napas|qr\s*pay|qr\s*code|chuyen khoan|ngan hang|\bbank\b|transfer|tien mat|\bcash\b|\bthe\b|credit|debit|\bcard\b/;
-const METADATA_RE = /^(check\b|creck\b|pos\d*|ngay\b|may\b|thu\s*ngan|thu\s*rean|pager|shop\s*id|sdt\b|dien thoai|dia chi|address|receipt|in store|hoa don|so hd|so hoa don|ma don|hoadon|quay\b|branch|chi nhanh|#)/;
+// Nhãn metadata (vùng B/C/D): check/creck/checks (Tesseract hay đọc dấu ":" thành
+// "s"), POS, ngày/máy, thu ngân, pager, shop id, SĐT/số điện thoại/điện thoại…
+// "SOT" là cách OCR hay đọc nhầm "SĐT" → phải nhận ra để KHÔNG thành món.
+const METADATA_RE = /^(check\b|check[s]?\b|cheque|creck\b|pos\d*|ngay\b|may\b|thu\s*ngan|thu\s*rean|pager|shop\s*id|sdt\b|sot\b|so\s*dt|dien thoai|\bdt\b|tel\b|phone\b|mobile\b|dia chi|address|receipt|in store|hoa don|so hd|so hoa don|ma don|hoadon|quay\b|branch|chi nhanh|stt\b|#)/;
+// Một dòng chỉ toàn số điện thoại (không nhãn) cũng không bao giờ là món.
+const PHONE_NUMBER_RE = /^(?:\+?84|0)\d{1,3}(?:[.\s-]?\d{3,4}){2,}$/;
 const SUBTOTAL_RE = /tong tien hang|thanh tien|tien hang|tien truoc thue|sub\s*total|subtotal|tam tinh/;
 const TOTAL_RE = /tong thanh toan|phai thanh toan|grand total|\btotal\b|^tong\b|^cong\b|can thanh toan/;
 const TAX_RE = /(\bvat\b|\bthue\b|gtgt|\btax\b)/;
@@ -59,20 +64,43 @@ export const LINE_TYPES = [
 
 export const LINE_TYPE_LABELS = Object.fromEntries(LINE_TYPES);
 
+// Dấu hiệu chắc chắn của một DÒNG SẢN PHẨM: có chỉ báo số lượng ("2 x", "x2",
+// "2 Tên"). Dùng để không nâng một dòng mơ hồ thành sản phẩm chỉ vì nó có số.
+function hasQuantityMarker(text) {
+  if (/^\s*\d{1,3}\s*[x×*]\s+\S/i.test(text)) return true;
+  if (/[x×*]\s*\d{1,3}(?![\d.,])/i.test(text)) return true;
+  if (/^\s*\d{1,3}\s+(?=[^\d])/.test(text)) return true;
+  return false;
+}
+
 // Phân loại một dòng theo đúng tập nhãn của spec.
+//
+// Quan trọng: KHÔNG tự nâng một dòng có chữ + số thành "product". Một dòng chỉ
+// được coi là sản phẩm khi có BẰNG CHỨNG: chỉ báo số lượng, tên khớp nhóm món đã
+// biết, hoặc có ≥ 2 mốc tiền (đơn giá + thành tiền). Dòng mơ hồ → "unknown" để
+// người dùng xác nhận, tránh biến SĐT/check/tổng tiền thành món.
 export function classifyLine(line) {
   const raw = String(line || '');
   const norm = normalizeName(raw);
   if (!norm || !/[a-z0-9]/.test(norm)) return 'unknown';
   if (PAYMENT_RE.test(norm)) return 'payment';
   if (METADATA_RE.test(norm)) return 'metadata';
+  if (PHONE_NUMBER_RE.test(norm.replace(/[.\s-]+/g, '')) || PHONE_NUMBER_RE.test(norm)) return 'metadata';
   if (DISCOUNT_RE.test(norm) || /^\s*[-–—]/.test(raw)) return 'discount';
   if (SUBTOTAL_RE.test(norm)) return 'subtotal';
   if (TOTAL_RE.test(norm)) return 'total';
   if (TAX_RE.test(norm)) return 'tax';
   if (FEE_RE.test(norm)) return 'fee';
   if (/^\s*\+\s*/.test(raw) || MODIFIER_RE.test(norm)) return 'modifier';
-  if (moneyTokens(raw).length && /[a-zà-ỹ]/i.test(norm)) return 'product';
+  const stripped = stripDateTimes(raw);
+  const values = moneyTokens(stripped);
+  if (values.length && /[a-zà-ỹ]/i.test(norm)) {
+    const name = cleanName(stripped);
+    const knownMenu = name.length >= 2 && classifyItem(name) !== 'other';
+    if (hasQuantityMarker(stripped) || knownMenu || values.length >= 2) return 'product';
+    // Có số nhưng không đủ bằng chứng là món → để người dùng phân loại.
+    return 'unknown';
+  }
   return 'unknown';
 }
 
@@ -235,7 +263,8 @@ export function extractReceipt(rawText) {
   let lastProductIndex = null;
   let receiptLevelDiscount = 0;
 
-  for (const line of scan) {
+  for (let scanIndex = 0; scanIndex < scan.length; scanIndex += 1) {
+    const line = scan[scanIndex];
     const type = classifyLine(line);
     const values = moneyTokens(line);
     const amount = values.length ? values[values.length - 1] : null;
@@ -245,6 +274,8 @@ export function extractReceipt(rawText) {
       if (item) {
         item.modifiers = [];
         item.source_text = line;
+        // Nguồn gốc: dòng OCR sinh ra giá trị này (để truy vết khi sai số).
+        item.source_line_index = scanIndex;
         items.push(item);
         lastProductIndex = items.length - 1;
       }
@@ -288,7 +319,7 @@ export function extractReceipt(rawText) {
       continue;
     }
     if (type === 'metadata') {
-      const checkMatch = line.match(/check\s*[:：]?\s*(\d+)/i);
+      const checkMatch = line.match(/check[s]?\s*[:：]?\s*(\d+)/i);
       const receiptMatch = line.match(/(?:so\s*hd|so hoa don|receipt)\s*[:：]?\s*([A-Za-z0-9._\-/]{3,})/i);
       if (checkMatch && receipt.check_number === null) receipt.check_number = checkMatch[1];
       if (receiptMatch && receipt.receipt_number === null) receipt.receipt_number = receiptMatch[1];

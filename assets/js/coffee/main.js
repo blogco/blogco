@@ -15,10 +15,13 @@ import {
 import { CATEGORY_LABELS, categoryLabel } from './menu.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats } from './stats.js';
-import { recognizeImage, parseHighlandsInvoice, isPdf, pdfToPreviewDataUrl } from './ocr.js';
-import { extractReceipt } from './extract.js';
+import { recognizeImage, isPdf, pdfToPreviewDataUrl } from './ocr.js';
+import { buildReceiptJson, receiptJsonToForm } from './receipt-json.js';
 import { renderTrainingPage, mountTraining } from './training-view.js';
 import { loadPatterns, applyLearnedFixes } from './training.js';
+import {
+  renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf,
+} from './manual.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -193,6 +196,7 @@ function renderHistory(root) {
 
     <div class="coffee-toolbar">
       <a class="coffee-primary-button" href="#/coffee/add">＋ Thêm hoá đơn (OCR)</a>
+      <a class="coffee-secondary-button" href="#/coffee/manual-add">🧾 Nhập chi phí thủ công</a>
       <a class="coffee-secondary-button" href="#/coffee/stats">📊 Thống kê chi phí</a>
       <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
       <button type="button" class="coffee-secondary-button" data-import-trigger>⬆ Import</button>
@@ -465,23 +469,24 @@ function setSelectIfEmpty(form, name, value) {
   return true;
 }
 
-function applyOcrResult(form, result) {
+function applyOcrResult(form, mapped) {
   const filled = [];
   const mark = (label, changed) => { if (changed) filled.push(label); };
-  mark('quán', fillFieldIfEmpty(form, 'store', result.store));
-  mark('địa chỉ', fillFieldIfEmpty(form, 'address', result.address));
-  mark('ngày', fillFieldIfEmpty(form, 'date', result.date));
-  mark('giờ', fillFieldIfEmpty(form, 'time', result.time));
-  mark('mã hoá đơn', fillFieldIfEmpty(form, 'orderCode', result.orderCode));
-  mark('thanh toán', setSelectIfEmpty(form, 'paymentMethod', result.paymentMethod));
-  if (result.discount) { const field = form.querySelector('[name="discount"]'); if (field && !field.value) { field.value = result.discount; mark('giảm giá', true); } }
-  if (result.vat) { const field = form.querySelector('[name="vat"]'); if (field && !field.value) { field.value = result.vat; mark('VAT', true); } }
+  mark('quán', fillFieldIfEmpty(form, 'store', mapped.store));
+  mark('địa chỉ', fillFieldIfEmpty(form, 'address', mapped.address));
+  mark('ngày', fillFieldIfEmpty(form, 'date', mapped.date));
+  mark('giờ', fillFieldIfEmpty(form, 'time', mapped.time));
+  mark('mã hoá đơn', fillFieldIfEmpty(form, 'orderCode', mapped.orderCode));
+  mark('khách hàng', fillFieldIfEmpty(form, 'customer', mapped.customer));
+  mark('thanh toán', setSelectIfEmpty(form, 'paymentMethod', mapped.paymentMethod));
+  if (mapped.discount) { const field = form.querySelector('[name="discount"]'); if (field && !field.value) { field.value = mapped.discount; mark('giảm giá', true); } }
+  if (mapped.vat) { const field = form.querySelector('[name="vat"]'); if (field && !field.value) { field.value = mapped.vat; mark('VAT', true); } }
 
-  if (Array.isArray(result.items) && result.items.length) {
+  if (Array.isArray(mapped.items) && mapped.items.length) {
     const list = form.querySelector('[data-item-list]');
     if (list) {
-      list.innerHTML = result.items.map((item, index) => renderItemRow(item, index)).join('');
-      filled.push(`${result.items.length} món`);
+      list.innerHTML = mapped.items.map((item, index) => renderItemRow(item, index)).join('');
+      filled.push(`${mapped.items.length} món`);
     }
   }
 
@@ -489,11 +494,11 @@ function applyOcrResult(form, result) {
   updateCostDisplays(form);
 
   // When OCR saw a receipt total we prefer it over the derived sum.
-  if (result.total) {
+  if (mapped.total) {
     const totalInput = form.querySelector('[name="totalValue"]');
     const totalDisplay = form.querySelector('[data-total-display]');
-    if (totalInput) totalInput.value = result.total;
-    if (totalDisplay) totalDisplay.value = `${Number(result.total).toLocaleString('vi-VN')} đ`;
+    if (totalInput) totalInput.value = mapped.total;
+    if (totalDisplay) totalDisplay.value = `${Number(mapped.total).toLocaleString('vi-VN')} đ`;
     filled.push('tổng tiền');
   }
   return filled;
@@ -648,13 +653,58 @@ function renderExtractPanel(block, text) {
 }
 
 // ---------------------------------------------------------------------------
+// Manual expense input (#/coffee/manual-add)
+// ---------------------------------------------------------------------------
+
+function reindexManualRows(form) {
+  form.querySelectorAll('[data-manual-row]').forEach((row, index) => {
+    const cell = row.querySelector('[data-row-index]');
+    if (cell) cell.textContent = index + 1;
+    row.querySelector('[data-manual-remove]')?.setAttribute('aria-label', `Xoá dòng ${index + 1}`);
+  });
+}
+
+function refreshManualSeason(row) {
+  const cell = row.querySelector('[data-season-cell]');
+  if (!cell) return;
+  const season = seasonOf(row.querySelector('[name="date"]')?.value || '');
+  cell.textContent = season ? `${season.emoji} ${season.label}` : '—';
+  cell.classList.toggle('is-empty', !season);
+}
+
+function updateManualTotal(form) {
+  if (!form) return;
+  const total = readManualRows(form).reduce((sum, row) => sum + row.amount, 0);
+  const value = form.querySelector('[data-manual-total] strong');
+  if (value) value.textContent = formatVnd(total);
+}
+
+function renderManualPage(root) {
+  root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
+    ${pageHeader('Nhập chi phí thủ công', 'Nhập nhanh nhiều giao dịch cà phê theo dạng bảng. Cột Seasons tự động điền theo ngày giao dịch.')}
+    ${renderManualForm()}
+  </section>${toastMarkup()}`;
+  updateManualTotal(root.querySelector('#coffee-manual-form'));
+  root.querySelector('h1')?.focus?.({ preventScroll: true });
+}
+
+function appendManualRow(root, form) {
+  const body = form.querySelector('[data-manual-body]');
+  if (!body) return;
+  const index = body.querySelectorAll('[data-manual-row]').length;
+  body.insertAdjacentHTML('beforeend', renderManualRow({}, index));
+  refreshManualSeason(body.querySelector('[data-manual-row]:last-of-type'));
+  body.querySelector('[data-manual-row]:last-of-type [name="brand"]')?.focus();
+}
+
+// ---------------------------------------------------------------------------
 // Routing
 // ---------------------------------------------------------------------------
 
 function routeName(root) {
   if (location.hash.startsWith('#/coffee')) return location.hash.slice(1).replace(/\/$/, '') || '/coffee';
   const initial = root.dataset.initialRoute;
-  const map = { list: '/coffee', dashboard: '/coffee', history: '/coffee', add: '/coffee/add', stats: '/coffee/stats', training: '/coffee/training' };
+  const map = { list: '/coffee', dashboard: '/coffee', history: '/coffee', add: '/coffee/add', stats: '/coffee/stats', training: '/coffee/training', 'manual-add': '/coffee/manual-add' };
   return map[initial] || '/coffee';
 }
 
@@ -666,7 +716,7 @@ function renderTraining(root) {
 function showRoute(root) {
   const route = routeName(root);
   const [, , action = '', param = ''] = route.split('/');
-  const titles = { '': 'Chi phí đi cà phê', add: 'Thêm hoá đơn cà phê', edit: 'Sửa hoá đơn cà phê', detail: 'Chi tiết hoá đơn', stats: 'Thống kê chi phí cà phê', training: 'AI Training — dạy OCR hoá đơn' };
+  const titles = { '': 'Chi phí đi cà phê', add: 'Thêm hoá đơn cà phê', edit: 'Sửa hoá đơn cà phê', detail: 'Chi tiết hoá đơn', stats: 'Thống kê chi phí cà phê', training: 'AI Training — dạy OCR hoá đơn', 'manual-add': 'Nhập chi phí thủ công' };
   document.title = `${titles[action] || titles['']} | BlogCo`;
 
   if (action === 'add') renderFormPage(root, '');
@@ -674,6 +724,7 @@ function showRoute(root) {
   else if (action === 'detail') renderDetail(root, decodeURIComponent(param));
   else if (action === 'stats') renderStats(root);
   else if (action === 'training') renderTraining(root);
+  else if (action === 'manual-add') renderManualPage(root);
   else renderHistory(root);
 
   if (pendingToast) {
@@ -706,6 +757,12 @@ export function mountCoffeeApp(root) {
   root.addEventListener('input', (event) => {
     const form = event.target.closest('#coffee-receipt-form');
     if (form && ['itemQty', 'itemUnitPrice', 'itemAmount', 'discount', 'vat'].includes(event.target.name)) updateCostDisplays(form);
+    const manualForm = event.target.closest('#coffee-manual-form');
+    if (manualForm && event.target.name === 'amount') {
+      const formatted = formatAmountInput(event.target.value);
+      if (formatted !== event.target.value) event.target.value = formatted;
+      updateManualTotal(manualForm);
+    }
     if (event.target.matches('[data-search-input]')) {
       searchState.query = event.target.value;
       searchState.page = 1;
@@ -715,12 +772,26 @@ export function mountCoffeeApp(root) {
 
   root.addEventListener('change', async (event) => {
     const target = event.target;
+    const manualForm = target.closest('#coffee-manual-form');
+    if (manualForm && target.name === 'date') {
+      refreshManualSeason(target.closest('[data-manual-row]'));
+      updateManualTotal(manualForm);
+    }
+    if (manualForm && target.name === 'amount') {
+      target.value = formatAmountInput(target.value);
+      updateManualTotal(manualForm);
+    }
     if (target.matches('[data-filter-month]')) { searchState.month = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-filter-store]')) { searchState.store = target.value; searchState.page = 1; refreshHistoryResults(root); }
-    if (target.matches('[data-invoice-input]')) {
+    if (target.matches('[data-invoice-input]') || target.matches('[data-invoice-camera-input]')) {
       const block = target.closest('[data-invoice-block]');
       const file = target.files?.[0];
       if (block && file) await handleInvoiceFile(block, file);
+      if (target.matches('[data-invoice-camera-input]')) {
+        const form = target.closest('#coffee-receipt-form');
+        if (block && form && file) await runOcr(root, form, block);
+      }
+      target.value = '';
     }
     if (target.matches('[data-import-input]')) {
       const file = target.files?.[0];
@@ -758,6 +829,33 @@ export function mountCoffeeApp(root) {
 
   root.addEventListener('click', async (event) => {
     const target = event.target;
+
+    if (target.closest('[data-manual-add]')) {
+      const form = target.closest('#coffee-manual-form');
+      if (form) appendManualRow(root, form);
+      return;
+    }
+    const manualRemove = target.closest('[data-manual-remove]');
+    if (manualRemove) {
+      const form = manualRemove.closest('#coffee-manual-form');
+      const body = form?.querySelector('[data-manual-body]');
+      manualRemove.closest('[data-manual-row]')?.remove();
+      if (form) {
+        if (body && !body.querySelector('[data-manual-row]')) appendManualRow(root, form);
+        reindexManualRows(form);
+        updateManualTotal(form);
+      }
+      return;
+    }
+    if (target.closest('[data-manual-clear]')) {
+      const form = target.closest('#coffee-manual-form');
+      if (form && window.confirm('Xoá toàn bộ nội dung đang nhập?')) {
+        const body = form.querySelector('[data-manual-body]');
+        if (body) body.innerHTML = renderManualRow({}, 0);
+        updateManualTotal(form);
+      }
+      return;
+    }
 
     if (target.closest('[data-add-item]')) {
       const form = target.closest('#coffee-receipt-form');
@@ -812,6 +910,31 @@ export function mountCoffeeApp(root) {
   root.addEventListener('submit', (event) => {
     const form = event.target;
     event.preventDefault();
+    if (form.id === 'coffee-manual-form') {
+      try {
+        const rows = readManualRows(form);
+        if (!rows.length) throw new Error('Hãy nhập ít nhất một giao dịch (thương hiệu và số tiền).');
+        const problems = [];
+        rows.forEach((row, index) => {
+          if (!row.brand) problems.push(`Dòng ${index + 1}: thiếu thương hiệu`);
+          else if (!row.amount) problems.push(`Dòng ${index + 1}: số tiền phải lớn hơn 0`);
+          else if (!/^\d{4}-\d{2}-\d{2}$/.test(row.date)) problems.push(`Dòng ${index + 1}: ngày giao dịch chưa hợp lệ`);
+        });
+        if (problems.length) throw new Error(problems.join(' · '));
+        let total = 0;
+        rows.forEach((row) => {
+          saveReceipt({ store: row.brand, date: row.date, subtotal: row.amount, total: row.amount, items: [] });
+          total += row.amount;
+        });
+        pendingToast = `Đã lưu ${rows.length} giao dịch (${formatVnd(total)}). Đang cập nhật trang thống kê…`;
+        searchState = { query: '', month: '', store: '', page: 1 };
+        location.hash = '#/coffee/stats';
+        if (routeName(root) === '/coffee/stats') showRoute(root);
+      } catch (error) {
+        showToast(root, error.message || 'Không lưu được dữ liệu.', true);
+      }
+      return;
+    }
     if (form.id === 'coffee-receipt-form') {
       try {
         if (!form.reportValidity()) return;

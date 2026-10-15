@@ -55,7 +55,7 @@ export function renderOcrBlock(receipt = {}) {
   return `<div class="coffee-invoice" data-invoice-block>
     <div class="coffee-invoice__head">
       <strong>📷 Ảnh hoá đơn</strong>
-      <span class="coffee-badge coffee-badge--muted">OCR hoặc nhập tay</span>
+      <span class="coffee-badge coffee-badge--muted">OCR → JSON → điền form</span>
     </div>
     <label class="coffee-dropzone${hasImage ? ' has-image' : ''}" data-dropzone>
       <input type="file" accept="image/*,application/pdf,.pdf" data-invoice-input hidden aria-label="Chọn ảnh hoặc PDF hoá đơn Highlands Coffee">
@@ -63,14 +63,21 @@ export function renderOcrBlock(receipt = {}) {
       <span class="coffee-dropzone__hint"${hasImage ? ' hidden' : ''}>
         <span aria-hidden="true">☕</span>
         <span>Kéo ảnh/PDF hoá đơn vào đây hoặc bấm để chọn</span>
-        <small>JPG · PNG · WEBP · PDF · hoá đơn Highlands Coffee</small>
+        <small>JPG · PNG · WEBP · PDF · hoặc chụp trực tiếp bằng camera</small>
+      </span>
+      <span class="coffee-invoice__loading" data-invoice-loading hidden>
+        <span class="coffee-spinner" aria-hidden="true"></span>
+        <span data-invoice-loading-text>Đang phân tích hoá đơn…</span>
       </span>
     </label>
     <div class="coffee-invoice__actions">
       <button type="button" class="coffee-secondary-button" data-invoice-ocr>🔍 OCR tự động</button>
+      <button type="button" class="coffee-secondary-button" data-invoice-camera>📷 Chụp ảnh</button>
       <button type="button" class="coffee-ghost-button" data-invoice-clear${hasImage ? '' : ' hidden'}>Xoá ảnh</button>
+      <input type="file" accept="image/*" capture="environment" data-invoice-camera-input hidden aria-label="Chụp ảnh hoá đơn bằng camera">
     </div>
     <p class="coffee-invoice__status" data-invoice-status role="status" aria-live="polite"></p>
+    <p class="coffee-ocr-result" data-ocr-result role="status" aria-live="polite" hidden></p>
     <textarea class="coffee-invoice__text" name="ocrText" rows="3" placeholder="Nội dung OCR sẽ hiện ở đây (bạn có thể sửa hoặc dán tay)">${value(receipt.ocrText)}</textarea>
     <details class="coffee-ocr-json" data-ocr-json hidden>
       <summary>🧪 Kết quả trích xuất chuẩn (JSON)</summary>
@@ -119,6 +126,9 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
           <select name="paymentMethod">
             ${paymentOptions.map(([key, label]) => `<option value="${key}"${selected(receipt.paymentMethod || '', key)}>${label}</option>`).join('')}
           </select>
+        </label>
+        <label class="coffee-field">Khách hàng
+          <input name="customer" type="text" maxlength="120" value="${value(receipt.customer)}" placeholder="Nguyễn Duy Khang">
         </label>
       </div>
     </fieldset>
@@ -184,6 +194,7 @@ export function readReceiptForm(form) {
     date: scalar('date'),
     time: scalar('time'),
     orderCode: scalar('orderCode'),
+    customer: scalar('customer'),
     paymentMethod: scalar('paymentMethod'),
     note: scalar('note'),
     subtotal: scalar('subtotalValue'),

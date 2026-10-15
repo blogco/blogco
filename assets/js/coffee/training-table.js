@@ -3,6 +3,7 @@
 
 import { escapeHtml } from './store.js';
 import { CATEGORY_LABELS } from './menu.js';
+import { verifyItem } from './verify.js';
 
 export function formatMoneyInput(value) {
   if (value === null || value === undefined || value === '') return '';
@@ -23,6 +24,16 @@ function confidenceBadge(confidence) {
   const percent = Math.round((Number(confidence) || 0) * 100);
   const tone = percent >= 80 ? 'is-success' : percent >= 55 ? 'is-warning' : 'is-danger';
   return `<span class="coffee-chip ${tone}" title="Độ tin cậy do hệ thống ước lượng">${percent}%</span>`;
+}
+
+// Đối chiếu số học của dòng: hiển thị biểu thức (đơn giá − giảm = thành tiền)
+// HOẶC số tiền in trên dòng, kèm chip trạng thái. Không tự sửa số liệu gốc.
+function verifyCell(item) {
+  const v = item.verification || verifyItem(item);
+  const expression = v.expression
+    ? `<small class="coffee-table__note" data-verify-expr>${escapeHtml(v.expression)}</small>`
+    : '<small class="coffee-table__note" data-verify-expr>Chưa đủ dữ liệu để đối chiếu</small>';
+  return `${expression}<span class="coffee-chip is-${escapeHtml(v.tone)}" data-verify-status>${escapeHtml(v.label)}</span>`;
 }
 
 function categoryOptions(current) {
@@ -53,6 +64,7 @@ export function renderItemsTable(items = []) {
       <td><input class="coffee-num" type="text" inputmode="numeric" data-item-field="unitPrice" value="${formatMoneyInput(item.unitPrice)}" placeholder="?" aria-label="Đơn giá gốc dòng ${index + 1}"></td>
       <td><input class="coffee-num" type="text" inputmode="numeric" data-item-field="discountAmount" value="${formatMoneyInput(item.discountAmount)}" aria-label="Giảm giá dòng ${index + 1}"></td>
       <td class="coffee-num coffee-cell-net" data-net-for="${escapeHtml(item.id)}">${item.netAmount === null ? '—' : item.netAmount.toLocaleString('vi-VN')}</td>
+      <td class="coffee-cell-verify">${verifyCell(item)}</td>
       <td><select data-item-field="category" aria-label="Nhóm sản phẩm dòng ${index + 1}">${categoryOptions(item.category)}</select></td>
       <td>${confidenceBadge(item.confidence)}</td>
       <td>${status} ${manual}</td>
@@ -65,7 +77,7 @@ export function renderItemsTable(items = []) {
       <thead><tr>
         <th>STT</th><th>Tên sản phẩm</th><th class="coffee-num">SL</th>
         <th class="coffee-num">Đơn giá gốc</th><th class="coffee-num">Giảm giá</th>
-        <th class="coffee-num">Thành tiền sau giảm</th><th>Nhóm</th><th>Độ tin cậy</th>
+        <th class="coffee-num">Thành tiền sau giảm</th><th>Đối chiếu tiền</th><th>Nhóm</th><th>Độ tin cậy</th>
         <th>Trạng thái</th><th>Thao tác</th>
       </tr></thead>
       <tbody>${rows}</tbody>

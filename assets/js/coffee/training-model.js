@@ -5,7 +5,7 @@
 // tác (thêm/sửa/xoá dòng, đổi loại dòng) đều trả về phiên mới; UI chỉ hiển thị.
 
 import { extractReceipt, extractProduct, LINE_TYPE_LABELS } from './extract.js';
-import { reconcile } from './verify.js';
+import { reconcile, verifyItem } from './verify.js';
 import { classifyItem, CATEGORY_LABELS } from './menu.js';
 
 export function clone(value) {
@@ -20,7 +20,8 @@ function categoryKey(name) {
 function mapExtractedItem(item, id) {
   return {
     id,
-    sourceLineIndex: null,
+    sourceLineIndex: item.source_line_index ?? null,
+    sourceText: item.source_text || '',
     name: item.name_original || '',
     quantity: item.quantity ?? null,
     unitPrice: item.unit_price ?? null,
@@ -72,6 +73,14 @@ export function createSession(rawText, meta = {}) {
       receipt: { ...extraction.receipt },
       items: extraction.items.map((item) => ({ ...item })),
       rawText: String(rawText || ''),
+      // Giữ toàn bộ kết quả trích xuất ban đầu (chưa qua UI) để debug:
+      // dòng đã phân loại, dòng đã gộp, điều chỉnh và kết quả kiểm tra số học.
+      extraction: {
+        lines: extraction.lines,
+        scan: extraction.scan,
+        adjustments: extraction.adjustments,
+        validation: extraction.validation,
+      },
     },
     meta: { nextItemId: counter + 1 },
   });
@@ -93,6 +102,8 @@ export function recompute(session) {
     if (unit === null) missing.push('đơn giá');
     item.needsReview = missing.length > 0;
     item.reviewReason = missing.length ? `Chưa rõ ${missing.join(' và ')}` : null;
+    // Trạng thái xác minh + biểu thức số học cho từng dòng (hiển thị cạnh dòng).
+    item.verification = verifyItem(item);
   });
   next.verification = reconcile({ items: next.items, receipt: next.receipt });
   return next;

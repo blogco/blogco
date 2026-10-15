@@ -5,6 +5,7 @@
 // form.js / main.js; everything here is pure data handling.
 
 import { CATEGORY_LABELS, classifyItem } from './menu.js';
+import { seasonOf } from './season.js';
 
 const STORAGE_KEY = 'blogco.coffee.receipts.v1';
 const BACKUP_KEY = 'blogco.coffee.receipts.backup.v1';
@@ -104,7 +105,9 @@ function normalizeReceipt(input = {}, existing = {}) {
     address: text(input.address, 240),
     date: text(input.date, 20),
     time: text(input.time, 10),
+    season: seasonOf(text(input.date, 20))?.key || '',
     orderCode: text(input.orderCode, 80),
+    customer: text(input.customer, 120),
     items,
     subtotal: totals.subtotal,
     discount: totals.discount,
@@ -285,12 +288,12 @@ export function readJsonFile(file) {
 // produce a single row.
 export function downloadCsv(receipts = readState().receipts) {
   const escapeCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-  const rows = [['ID', 'Ngày', 'Giờ', 'Quán', 'Mã hoá đơn', 'Món', 'SL', 'Đơn giá', 'Thành tiền', 'Tổng hoá đơn', 'Thanh toán', 'Nhóm', 'Ghi chú']];
+  const rows = [['ID', 'Ngày', 'Giờ', 'Quán', 'Mã hoá đơn', 'Khách hàng', 'Món', 'SL', 'Đơn giá', 'Thành tiền', 'Tổng hoá đơn', 'Thanh toán', 'Nhóm', 'Ghi chú']];
   receipts.forEach((receipt) => {
     const items = receipt.items?.length ? receipt.items : [null];
     items.forEach((item) => {
       rows.push([
-        receipt.id, receipt.date, receipt.time, receipt.store, receipt.orderCode,
+        receipt.id, receipt.date, receipt.time, receipt.store, receipt.orderCode, receipt.customer || '',
         item?.name || '', item?.qty ?? '', item?.unitPrice ?? '', item?.amount ?? '',
         receipt.total, PAYMENT_LABELS[receipt.paymentMethod] || '', CATEGORY_LABELS[item?.category] || '', receipt.note,
       ]);
