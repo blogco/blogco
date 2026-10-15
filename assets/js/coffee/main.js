@@ -14,6 +14,10 @@ import {
   escapeHtml, formatVnd, toNumber, PAYMENT_LABELS,
 } from './store.js';
 import { categoryLabel } from './menu.js';
+import {
+  EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORIES, buildExpenseReview, classifyExpense,
+  expenseCategoryMeta, normalizeExpenseCategory, receiptExpenseCategory,
+} from './expense.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats } from './stats.js';
 import {
@@ -25,7 +29,7 @@ import { renderDashboard } from './dashboard.js';
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
 let pendingToast = '';
-let searchState = { query: '', month: '', store: '', page: 1 };
+let searchState = { query: '', month: '', store: '', category: '', page: 1 };
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -80,14 +84,16 @@ function sortReceipts(receipts) {
   });
 }
 
-export function filterReceipts(receipts, { query = '', month = '', store = '' } = {}) {
+export function filterReceipts(receipts, { query = '', month = '', store = '', category = '' } = {}) {
   const needle = query.trim().toLowerCase();
   return sortReceipts(receipts).filter((receipt) => {
     if (month && !String(receipt.date || '').startsWith(month)) return false;
     if (store && receipt.store !== store) return false;
+    if (category && receiptExpenseCategory(receipt) !== category) return false;
     if (!needle) return true;
     const haystack = [
       receipt.store, receipt.address, receipt.orderCode, receipt.note,
+      EXPENSE_CATEGORY_LABELS[receiptExpenseCategory(receipt)],
       PAYMENT_LABELS[receipt.paymentMethod],
       (receipt.items || []).map((item) => `${item.name} ${categoryLabel(item.category)}`).join(' '),
     ].join(' ').toLowerCase();
@@ -98,14 +104,17 @@ export function filterReceipts(receipts, { query = '', month = '', store = '' } 
 function filterOptions(receipts) {
   const months = new Set();
   const stores = new Set();
+  const categories = new Set();
   receipts.forEach((receipt) => {
     const month = String(receipt.date || '').slice(0, 7);
     if (month) months.add(month);
     if (receipt.store) stores.add(receipt.store);
+    categories.add(receiptExpenseCategory(receipt));
   });
   return {
     months: [...months].sort().reverse(),
     stores: [...stores].sort((a, b) => a.localeCompare(b, 'vi')),
+    categories: EXPENSE_CATEGORIES.filter((category) => categories.has(category.key)),
   };
 }
 
@@ -130,9 +139,10 @@ function renderReceiptRow(receipt) {
   const items = receipt.items || [];
   const qty = items.reduce((sum, item) => sum + Math.max(1, Math.round(toNumber(item.qty) || 1)), 0);
   const discount = Math.round(toNumber(receipt.discount) || 0);
+  const meta = expenseCategoryMeta(receiptExpenseCategory(receipt));
   return `<tr>
     <td><span class="coffee-datatable__date">${escapeHtml(formatDate(receipt.date))}</span>${receipt.time ? `<span class="coffee-datatable__time">${escapeHtml(receipt.time)}</span>` : ''}</td>
-    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : ''}</td>
+    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span><span class="coffee-cat-chip">${meta.emoji} ${escapeHtml(meta.label)}</span>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : ''}</td>
     <td><span class="coffee-datatable__items">${escapeHtml(itemSummary(receipt))}</span></td>
     <td class="coffee-num">${qty}</td>
     <td class="coffee-num">${escapeHtml(formatVnd(receipt.subtotal))}</td>
@@ -152,11 +162,13 @@ function renderRecordCard(receipt) {
   const id = escapeHtml(receipt.id);
   const items = receipt.items || [];
   const discount = Math.round(toNumber(receipt.discount) || 0);
+  const meta = expenseCategoryMeta(receiptExpenseCategory(receipt));
   return `<li class="coffee-record-card">
     <div class="coffee-record-card__top">
       <span class="coffee-record-card__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span>
       <strong class="coffee-record-card__total">${escapeHtml(formatVnd(receipt.total))}</strong>
     </div>
+    <p class="coffee-record-card__meta"><span class="coffee-cat-chip">${meta.emoji} ${escapeHtml(meta.label)}</span></p>
     <p class="coffee-record-card__meta">📅 ${escapeHtml(formatDate(receipt.date))}${receipt.time ? ` · ${escapeHtml(receipt.time)}` : ''} · ${items.length} món${receipt.paymentMethod ? ` · ${escapeHtml(PAYMENT_LABELS[receipt.paymentMethod])}` : ''}${receipt.orderCode ? ` · ${escapeHtml(receipt.orderCode)}` : ''}</p>
     <p class="coffee-record-card__meta">${escapeHtml(itemSummary(receipt))}</p>
     ${discount ? `<p class="coffee-record-card__meta">Thành tiền ${escapeHtml(formatVnd(receipt.subtotal))} · Giảm giá −${escapeHtml(formatVnd(discount))} · Thanh toán ${escapeHtml(formatVnd(receipt.total))}</p>` : ''}
@@ -219,7 +231,7 @@ function renderHistoryResults(state) {
 function renderHistory(root) {
   const state = getCoffeeState();
   const stats = computeCoffeeStats(state.receipts, { budget: state.profile.monthlyBudget });
-  const { months, stores } = filterOptions(state.receipts);
+  const { months, stores, categories } = filterOptions(state.receipts);
   const budget = stats.budget;
   const monthPct = budget ? Math.min(100, Math.round((stats.currentMonthTotal / budget) * 100)) : 0;
   const budgetClass = !budget ? '' : monthPct >= 100 ? 'is-danger' : monthPct >= 80 ? 'is-warning' : 'is-success';
@@ -270,6 +282,12 @@ function renderHistory(root) {
           <select data-filter-store>
             <option value="">Tất cả</option>
             ${stores.map((store) => `<option value="${escapeHtml(store)}"${searchState.store === store ? ' selected' : ''}>${escapeHtml(store)}</option>`).join('')}
+          </select>
+        </label>
+        <label class="coffee-field">Danh mục chi phí
+          <select data-filter-category>
+            <option value="">Tất cả</option>
+            ${categories.map((category) => `<option value="${category.key}"${searchState.category === category.key ? ' selected' : ''}>${category.emoji} ${escapeHtml(category.label)}</option>`).join('')}
           </select>
         </label>
       </div>
@@ -479,6 +497,21 @@ function refreshManualSeason(row) {
   cell.classList.toggle('is-empty', !season);
 }
 
+// Keep the auto-category badge in sync while the user types brand/items.
+function refreshManualExpenseChip(row) {
+  if (!row) return;
+  const chip = row.querySelector('[data-expense-chip]');
+  if (!chip) return;
+  const explicit = normalizeExpenseCategory(row.querySelector('[name="category"]')?.value);
+  const meta = expenseCategoryMeta(explicit || classifyExpense(
+    row.querySelector('[name="brand"]')?.value || '',
+    row.querySelector('[name="items"]')?.value || '',
+  ));
+  chip.textContent = `${meta.emoji} ${meta.label}`;
+  chip.dataset.auto = explicit ? 'false' : 'true';
+  chip.title = explicit ? 'Danh mục bạn chọn' : 'Danh mục AI tự phân loại';
+}
+
 function refreshManualRowTotal(row) {
   const cell = row?.querySelector('[data-manual-total-cell]');
   if (!cell) return;
@@ -510,6 +543,74 @@ function appendManualRow(root, form) {
   body.insertAdjacentHTML('beforeend', renderManualRow({}, index));
   refreshManualSeason(body.querySelector('[data-manual-row]:last-of-type'));
   body.querySelector('[data-manual-row]:last-of-type [name="brand"]')?.focus();
+}
+
+// ---------------------------------------------------------------------------
+// AI expense review (shown right after "Lưu giao dịch")
+// ---------------------------------------------------------------------------
+
+function expenseContext() {
+  const state = getCoffeeState();
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const byCategory = new Map();
+  let monthTotal = 0;
+  let totalSpend = 0;
+  state.receipts.forEach((receipt) => {
+    const total = toNumber(receipt.total);
+    totalSpend += total;
+    const key = receiptExpenseCategory(receipt);
+    const entry = byCategory.get(key) || { total: 0, count: 0 };
+    entry.total += total;
+    entry.count += 1;
+    byCategory.set(key, entry);
+    if (String(receipt.date || '').startsWith(monthKey)) monthTotal += total;
+  });
+  return { monthTotal, budget: state.profile.monthlyBudget || 0, totalSpend, count: state.receipts.length, byCategory };
+}
+
+function renderExpenseReview(review) {
+  const cards = review.advices.map((advice) => `<article class="coffee-review-cat is-${advice.tone}">
+      <div class="coffee-review-cat__head">
+        <span class="coffee-review-cat__emoji" aria-hidden="true">${advice.emoji}</span>
+        <div>
+          <h3 class="coffee-review-cat__title">${escapeHtml(advice.headline)}</h3>
+          <p class="coffee-review-cat__sub">${advice.count} giao dịch · ${escapeHtml(formatVnd(advice.total))}${advice.stores.length ? ` · ${escapeHtml(advice.stores.slice(0, 3).join(', '))}` : ''}</p>
+        </div>
+      </div>
+      <p class="coffee-review-cat__message">${escapeHtml(advice.message)}</p>
+      ${advice.notes.length ? `<ul class="coffee-review-notes">${advice.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+      <p class="coffee-review-cat__tips-label">💡 Gợi ý cho bạn</p>
+      <ul class="coffee-review-tips">${advice.tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}</ul>
+    </article>`).join('');
+
+  return `<div class="coffee-review-overlay" data-expense-review-overlay>
+    <div class="coffee-review-modal" role="dialog" aria-modal="true" aria-labelledby="coffee-review-title">
+      <div class="coffee-review-modal__head">
+        <span id="coffee-review-title">🤖 AI phân tích chi tiêu</span>
+        <button type="button" class="coffee-ghost-button" data-expense-review-close>✖ Đóng</button>
+      </div>
+      <div class="coffee-review-modal__body">
+        <div class="coffee-review-hero">
+          <div><span class="coffee-review-hero__label">Đã lưu</span><strong>${review.count} giao dịch</strong></div>
+          <div><span class="coffee-review-hero__label">Tổng cộng</span><strong>${escapeHtml(formatVnd(review.total))}</strong></div>
+        </div>
+        <p class="coffee-muted">AI đã đọc từng khoản chi và phản hồi theo đúng loại chi phí bạn vừa nhập.</p>
+        <div class="coffee-review-cats">${cards || '<p class="coffee-empty">Không có giao dịch nào để phân tích.</p>'}</div>
+        <div class="coffee-review-actions">
+          <a class="coffee-primary-button" href="#/coffee/stats" data-expense-review-stats>📊 Xem thống kê</a>
+          <a class="coffee-secondary-button" href="#/coffee" data-expense-review-list>🧾 Danh sách chi phí</a>
+          <button type="button" class="coffee-ghost-button" data-expense-review-close>Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function showExpenseReview(root, records) {
+  root.querySelector('[data-expense-review-overlay]')?.remove();
+  const review = buildExpenseReview(records, expenseContext());
+  root.insertAdjacentHTML('beforeend', renderExpenseReview(review));
+  showToast(root, `Đã lưu ${review.count} giao dịch (${formatVnd(review.total)}). AI đã phân tích xong.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -572,6 +673,9 @@ export function mountCoffeeApp(root) {
       refreshManualRowTotal(event.target.closest('[data-manual-row]'));
       updateManualTotal(manualForm);
     }
+    if (manualForm && (event.target.name === 'brand' || event.target.name === 'items')) {
+      refreshManualExpenseChip(event.target.closest('[data-manual-row]'));
+    }
     if (event.target.matches('[data-search-input]')) {
       searchState.query = event.target.value;
       searchState.page = 1;
@@ -591,8 +695,12 @@ export function mountCoffeeApp(root) {
       refreshManualRowTotal(target.closest('[data-manual-row]'));
       updateManualTotal(manualForm);
     }
+    if (manualForm && target.name === 'category') {
+      refreshManualExpenseChip(target.closest('[data-manual-row]'));
+    }
     if (target.matches('[data-filter-month]')) { searchState.month = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-filter-store]')) { searchState.store = target.value; searchState.page = 1; refreshHistoryResults(root); }
+    if (target.matches('[data-filter-category]')) { searchState.category = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-import-input]')) {
       const file = target.files?.[0];
       if (!file) return;
@@ -600,7 +708,7 @@ export function mountCoffeeApp(root) {
         const payload = await readJsonFile(file);
         const result = importReceipts(payload);
         pendingToast = `Đã nhập ${result.added} hoá đơn mới, cập nhật ${result.updated}. Tổng ${result.total}.`;
-        searchState = { query: '', month: '', store: '', page: 1 };
+        searchState = { query: '', month: '', store: '', category: '', page: 1 };
         showRoute(root);
       } catch (error) {
         showToast(root, error.message, true);
@@ -612,6 +720,19 @@ export function mountCoffeeApp(root) {
 
   root.addEventListener('click', async (event) => {
     const target = event.target;
+
+    if (target.closest('[data-expense-review-close]')) {
+      root.querySelector('[data-expense-review-overlay]')?.remove();
+      return;
+    }
+    if (target.matches('[data-expense-review-overlay]')) {
+      target.remove();
+      return;
+    }
+    if (target.closest('[data-expense-review-stats]') || target.closest('[data-expense-review-list]')) {
+      root.querySelector('[data-expense-review-overlay]')?.remove();
+      return;
+    }
 
     if (target.closest('[data-manual-add]')) {
       const form = target.closest('#coffee-manual-form');
@@ -636,6 +757,20 @@ export function mountCoffeeApp(root) {
         const body = form.querySelector('[data-manual-body]');
         if (body) body.innerHTML = renderManualRow({}, 0);
         updateManualTotal(form);
+      }
+      return;
+    }
+
+    const quickTag = target.closest('[data-quick-category]');
+    if (quickTag) {
+      const form = quickTag.closest('#coffee-manual-form');
+      if (form) {
+        form.querySelectorAll('[data-manual-row]').forEach((row) => {
+          const select = row.querySelector('[name="category"]');
+          if (select) select.value = quickTag.dataset.quickCategory;
+          refreshManualExpenseChip(row);
+        });
+        quickTag.closest('.coffee-manual-quicktags')?.querySelectorAll('[data-quick-category]').forEach((chip) => chip.classList.toggle('is-active', chip === quickTag));
       }
       return;
     }
@@ -701,22 +836,20 @@ export function mountCoffeeApp(root) {
           else if (!/^\d{4}-\d{2}-\d{2}$/.test(row.date)) problems.push(`Dòng ${index + 1}: ngày giao dịch chưa hợp lệ`);
         });
         if (problems.length) throw new Error(problems.join(' · '));
-        let total = 0;
+        const saved = [];
         rows.forEach((row) => {
-          saveReceipt({
+          saved.push(saveReceipt({
             store: row.brand,
             date: row.date,
             subtotal: row.subtotal,
             discount: row.discount,
             total: row.total,
+            expenseCategory: row.expenseCategory,
             items: rowToItems(row.itemsText, row.subtotal, row.quantity),
-          });
-          total += row.total;
+          }));
         });
-        pendingToast = `Đã lưu ${rows.length} giao dịch (${formatVnd(total)}). Đang cập nhật trang thống kê…`;
-        searchState = { query: '', month: '', store: '', page: 1 };
-        location.hash = '#/coffee/stats';
-        if (routeName(root) === '/coffee/stats') showRoute(root);
+        searchState = { query: '', month: '', store: '', category: '', page: 1 };
+        showExpenseReview(root, saved);
       } catch (error) {
         showToast(root, error.message || 'Không lưu được dữ liệu.', true);
       }
@@ -728,7 +861,7 @@ export function mountCoffeeApp(root) {
         const input = readReceiptForm(form);
         const record = saveReceipt(input, input.id);
         pendingToast = `Đã lưu giao dịch ${record.id} · ${record.store || 'cà phê'} · ${formatVnd(record.total)}.`;
-        searchState = { query: '', month: '', store: '', page: 1 };
+        searchState = { query: '', month: '', store: '', category: '', page: 1 };
         location.hash = '#/coffee';
         if (routeName(root) === '/coffee') showRoute(root);
       } catch (error) {

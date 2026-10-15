@@ -10,6 +10,9 @@
 import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { seasonOf, seasonLabel } from './season.js';
 import { POPULAR_ITEMS, classifyItem } from './menu.js';
+import {
+  EXPENSE_CATEGORIES, classifyExpense, normalizeExpenseCategory, expenseCategoryMeta,
+} from './expense.js';
 
 export const BRAND_SUGGESTIONS = [
   'Highlands Coffee', 'Starbucks', 'Phúc Long', 'The Coffee House',
@@ -94,6 +97,22 @@ export function rowToItems(itemsText, subtotal, quantity = 0) {
   });
 }
 
+export function expenseCategoryOptions(selected = '') {
+  const current = normalizeExpenseCategory(selected);
+  const auto = `<option value=""${current ? '' : ' selected'}>✨ Tự động (AI phân loại)</option>`;
+  return auto + EXPENSE_CATEGORIES
+    .map((category) => `<option value="${category.key}"${current === category.key ? ' selected' : ''}>${category.emoji} ${escapeHtml(category.label)}</option>`)
+    .join('');
+}
+
+// Resolve the spending category for a manual row: an explicit pick wins, else
+// the AI auto-classifies from the brand + items + note text.
+export function resolveRowExpenseCategory(row = {}) {
+  const explicit = normalizeExpenseCategory(row.expenseCategory ?? row.category);
+  if (explicit) return explicit;
+  return classifyExpense(row.brand, row.itemsText ?? row.items, row.note);
+}
+
 export function renderManualRow(row = {}, index = 0) {
   const date = row.date || todayKey();
   const subtotalRaw = row.subtotal ?? row.amount ?? '';
@@ -104,10 +123,18 @@ export function renderManualRow(row = {}, index = 0) {
   const total = Math.max(0, toNumber(subtotalRaw) - toNumber(discountRaw));
   const season = seasonOf(date);
   const itemsText = row.itemsText ?? row.items ?? '';
+  const pickedCategory = normalizeExpenseCategory(row.expenseCategory ?? row.category);
+  const categoryMeta = expenseCategoryMeta(resolveRowExpenseCategory({ ...row, brand: row.brand ?? '', itemsText }));
   return `<tr class="coffee-manual-row" data-manual-row>
     <td class="coffee-manual-cell--index"><span data-row-index>${index + 1}</span></td>
     <td>
       <input class="coffee-manual-input" name="brand" type="text" list="coffee-brand-suggest" maxlength="160" autocomplete="off" value="${escapeHtml(row.brand ?? '')}" placeholder="Highlands Coffee" aria-label="Brand (quán) dòng ${index + 1}">
+    </td>
+    <td class="coffee-manual-cell--category">
+      <select class="coffee-manual-select" name="category" data-manual-category aria-label="Danh mục chi phí dòng ${index + 1}">
+        ${expenseCategoryOptions(pickedCategory)}
+      </select>
+      <span class="coffee-expense-chip" data-expense-chip data-auto="${pickedCategory ? 'false' : 'true'}" title="${pickedCategory ? 'Danh mục bạn chọn' : 'Danh mục AI tự phân loại'}">${categoryMeta.emoji} ${escapeHtml(categoryMeta.label)}</span>
     </td>
     <td class="coffee-manual-cell--items">
       <input class="coffee-manual-input" name="items" type="text" list="coffee-manual-item-suggest" maxlength="300" autocomplete="off" value="${escapeHtml(itemsText)}" placeholder="Matcha Latte, Bánh dừa" aria-label="Items (tên món) dòng ${index + 1}, nhiều món phân cách bằng dấu phẩy">
@@ -146,6 +173,7 @@ export function renderManualTable(rows = [{}]) {
         <tr>
           <th class="coffee-manual-cell--index" scope="col">STT</th>
           <th scope="col">Quán <span class="coffee-manual-th-sub">brand</span></th>
+          <th class="coffee-manual-cell--category" scope="col">Danh mục chi phí <span class="coffee-manual-th-sub">AI tự phân loại · hoặc chọn nhanh</span></th>
           <th class="coffee-manual-cell--items" scope="col">Items <span class="coffee-manual-th-sub">tên món, cách nhau dấu phẩy</span></th>
           <th class="coffee-manual-cell--qty" scope="col">Số món</th>
           <th scope="col">Ngày giao dịch</th>
@@ -173,9 +201,14 @@ export function renderManualForm() {
       <span class="coffee-manual-total" data-manual-total>Tổng cộng: <strong>0 đ</strong></span>
     </div>
 
+    <div class="coffee-manual-quicktags" data-manual-quicktags>
+      <span class="coffee-manual-quicktags__label">🏷️ Gán nhanh danh mục cho tất cả dòng:</span>
+      ${EXPENSE_CATEGORIES.map((category) => `<button type="button" class="coffee-tag" data-quick-category="${category.key}">${category.emoji} ${escapeHtml(category.label)}</button>`).join('')}
+    </div>
+
     ${renderManualTable([{}])}
 
-    <p class="coffee-manual-hint">Cột <strong>Mùa</strong> được khoá và tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy (ví dụ: “Matcha Latte, Bánh dừa”). Cột <strong>Thanh toán</strong> tự động tính bằng <strong>Thành tiền − Giảm giá</strong>.</p>
+    <p class="coffee-manual-hint">Cột <strong>Danh mục chi phí</strong> mặc định <strong>✨ Tự động</strong> — AI sẽ đọc tên quán + món để phân loại (siêu thị, ăn uống, cà phê, du lịch, giải trí, di chuyển…). Bạn cũng có thể chọn tay hoặc dùng nút gán nhanh ở trên. Cột <strong>Mùa</strong> tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy. Cột <strong>Thanh toán</strong> tự động tính bằng <strong>Thành tiền − Giảm giá</strong>.</p>
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
@@ -190,11 +223,13 @@ export function readManualRows(form) {
   return [...form.querySelectorAll('[data-manual-row]')].map((row) => {
     const date = row.querySelector('[name="date"]')?.value || '';
     const itemsText = (row.querySelector('[name="items"]')?.value || '').trim();
+    const brand = (row.querySelector('[name="brand"]')?.value || '').trim();
     const subtotal = toNumber(row.querySelector('[name="subtotal"]')?.value);
     const discount = maxZero(toNumber(row.querySelector('[name="discount"]')?.value));
     const quantity = Math.max(1, Math.round(toNumber(row.querySelector('[name="quantity"]')?.value) || 1));
+    const categoryRaw = normalizeExpenseCategory(row.querySelector('[name="category"]')?.value);
     return {
-      brand: (row.querySelector('[name="brand"]')?.value || '').trim(),
+      brand,
       itemsText,
       itemNames: parseItemNames(itemsText),
       quantity,
@@ -203,6 +238,8 @@ export function readManualRows(form) {
       total: Math.max(0, subtotal - discount),
       date,
       season: seasonOf(date)?.key || '',
+      expenseCategory: categoryRaw || classifyExpense(brand, itemsText),
+      expenseCategoryRaw: categoryRaw,
     };
   }).filter((row) => row.brand || row.itemsText || row.subtotal || row.discount || row.date !== todayKey());
 }

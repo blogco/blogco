@@ -6,6 +6,7 @@
 
 import { CATEGORY_LABELS, classifyItem } from './menu.js';
 import { seasonOf } from './season.js';
+import { classifyExpense, normalizeExpenseCategory, EXPENSE_CATEGORY_LABELS } from './expense.js';
 
 const STORAGE_KEY = 'blogco.coffee.receipts.v1';
 const BACKUP_KEY = 'blogco.coffee.receipts.backup.v1';
@@ -99,22 +100,27 @@ function normalizeReceipt(input = {}, existing = {}) {
     vat: input.vat,
     total: input.total,
   });
+  const date = text(input.date, 20);
+  const note = multiline(input.note, 600);
+  const expenseCategory = normalizeExpenseCategory(input.expenseCategory)
+    || classifyExpense(input.store, note, input.customer, items.map((item) => item.name).join(' '));
   return {
     id: existing.id || text(input.id, 80),
     store: text(input.store, 160),
     address: text(input.address, 240),
-    date: text(input.date, 20),
+    date,
     time: text(input.time, 10),
-    season: seasonOf(text(input.date, 20))?.key || '',
+    season: seasonOf(date)?.key || '',
     orderCode: text(input.orderCode, 80),
     customer: text(input.customer, 120),
+    expenseCategory,
     items,
     subtotal: totals.subtotal,
     discount: totals.discount,
     vat: totals.vat,
     total: totals.total,
     paymentMethod: Object.prototype.hasOwnProperty.call(PAYMENT_LABELS, input.paymentMethod) ? input.paymentMethod : '',
-    note: multiline(input.note, 600),
+    note,
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -286,12 +292,13 @@ export function readJsonFile(file) {
 // produce a single row.
 export function downloadCsv(receipts = readState().receipts) {
   const escapeCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-  const rows = [['ID', 'Ngày', 'Giờ', 'Quán', 'Mã hoá đơn', 'Khách hàng', 'Món', 'SL', 'Đơn giá', 'Thành tiền', 'Tổng hoá đơn', 'Thanh toán', 'Nhóm', 'Ghi chú']];
+  const rows = [['ID', 'Ngày', 'Giờ', 'Quán', 'Mã hoá đơn', 'Khách hàng', 'Danh mục chi phí', 'Món', 'SL', 'Đơn giá', 'Thành tiền', 'Tổng hoá đơn', 'Thanh toán', 'Nhóm', 'Ghi chú']];
   receipts.forEach((receipt) => {
     const items = receipt.items?.length ? receipt.items : [null];
     items.forEach((item) => {
       rows.push([
         receipt.id, receipt.date, receipt.time, receipt.store, receipt.orderCode, receipt.customer || '',
+        EXPENSE_CATEGORY_LABELS[receipt.expenseCategory] || '',
         item?.name || '', item?.qty ?? '', item?.unitPrice ?? '', item?.amount ?? '',
         receipt.total, PAYMENT_LABELS[receipt.paymentMethod] || '', CATEGORY_LABELS[item?.category] || '', receipt.note,
       ]);

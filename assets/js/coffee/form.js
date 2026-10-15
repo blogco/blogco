@@ -3,6 +3,7 @@
 
 import { escapeHtml, toNumber } from './store.js';
 import { CATEGORY_LABELS, POPULAR_ITEMS } from './menu.js';
+import { EXPENSE_CATEGORIES } from './expense.js';
 
 function value(field, fallback = '') {
   return field === null || field === undefined ? fallback : escapeHtml(field);
@@ -76,6 +77,12 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
             ${paymentOptions.map(([key, label]) => `<option value="${key}"${selected(receipt.paymentMethod || '', key)}>${label}</option>`).join('')}
           </select>
         </label>
+        <label class="coffee-field">Danh mục chi phí
+          <select name="expenseCategory">
+            <option value=""${receipt.expenseCategory ? '' : ' selected'}>✨ Tự động (AI phân loại)</option>
+            ${EXPENSE_CATEGORIES.map((category) => `<option value="${category.key}"${selected(receipt.expenseCategory || '', category.key)}>${category.emoji} ${escapeHtml(category.label)}</option>`).join('')}
+          </select>
+        </label>
         <label class="coffee-field">Khách hàng
           <input name="customer" type="text" maxlength="120" value="${value(receipt.customer)}" placeholder="Nguyễn Duy Khang">
         </label>
@@ -145,6 +152,7 @@ export function readReceiptForm(form) {
     orderCode: scalar('orderCode'),
     customer: scalar('customer'),
     paymentMethod: scalar('paymentMethod'),
+    expenseCategory: scalar('expenseCategory'),
     note: scalar('note'),
     subtotal: scalar('subtotalValue'),
     discount: scalar('discount'),

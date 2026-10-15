@@ -639,6 +639,149 @@ body.coffee-route .category-bar { display: none; }
 }
 
 /* --------------------------------------------------------------------------
+   Life-expense categories & AI review (#/coffee/manual-add)
+   -------------------------------------------------------------------------- */
+.coffee-manual-quicktags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  padding: .6rem .7rem;
+  border: 1px dashed var(--coffee-border-strong);
+  border-radius: var(--coffee-radius);
+  background: var(--coffee-primary-soft-2);
+}
+.coffee-manual-quicktags__label { color: var(--coffee-muted); font-size: .8rem; font-weight: 700; margin-right: .2rem; }
+.coffee-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .28rem .6rem;
+  border: 1px solid var(--coffee-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--coffee-text);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.coffee-tag:hover { border-color: var(--coffee-primary); color: var(--coffee-primary); }
+.coffee-tag.is-active { border-color: var(--coffee-primary); background: var(--coffee-primary); color: #fff; }
+
+.coffee-manual-cell--category { width: 13.5rem; min-width: 13.5rem; }
+.coffee-manual-select {
+  width: 100%;
+  min-height: 40px;
+  padding: .45rem .5rem;
+  border: 1px solid transparent;
+  border-radius: var(--coffee-radius-xs);
+  color: var(--coffee-ink);
+  background: transparent;
+  font-family: inherit;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.coffee-manual-select:hover { border-color: var(--coffee-border); background: #fff; }
+.coffee-manual-select:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(0, 104, 191, .16); }
+.coffee-expense-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  margin-top: .15rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.coffee-expense-chip[data-auto="true"] { color: var(--coffee-primary); background: var(--coffee-primary-soft); border: 1px dashed var(--coffee-border-strong); }
+.coffee-expense-chip[data-auto="false"] { color: var(--coffee-success); background: var(--coffee-success-soft); border: 1px solid #B9E2CB; }
+
+.coffee-cat-chip {
+  display: inline-block;
+  margin-top: .25rem;
+  padding: .1rem .5rem;
+  border: 1px solid var(--coffee-border);
+  border-radius: 999px;
+  background: var(--coffee-primary-soft);
+  color: var(--coffee-primary);
+  font-size: .7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* A touch more width now that a category column was added. */
+.coffee-manual-table { min-width: 1380px; }
+
+/* --- AI review modal ------------------------------------------------------ */
+.coffee-review-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(0, 37, 97, .5);
+}
+.coffee-review-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(100%, 760px);
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 37, 97, .3);
+}
+.coffee-review-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .7rem .9rem;
+  border-bottom: 1px solid var(--coffee-border);
+  background: var(--coffee-primary-soft);
+  color: var(--coffee-primary);
+  font-weight: 800;
+}
+.coffee-review-modal__body { overflow: auto; padding: 1.1rem 1.3rem 1.6rem; }
+.coffee-review-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem 1.6rem;
+  margin-bottom: .5rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--coffee-border);
+  border-radius: var(--coffee-radius);
+  background: var(--coffee-surface-2);
+}
+.coffee-review-hero > div { display: grid; gap: .1rem; }
+.coffee-review-hero__label { color: var(--coffee-muted); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.coffee-review-hero strong { color: var(--coffee-primary); font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.coffee-review-cats { display: grid; gap: .8rem; margin-top: .4rem; }
+.coffee-review-cat {
+  padding: .8rem .9rem;
+  border: 1px solid var(--coffee-border);
+  border-left: 4px solid var(--coffee-primary);
+  border-radius: var(--coffee-radius);
+  background: #fff;
+}
+.coffee-review-cat.is-good { border-left-color: var(--coffee-success); }
+.coffee-review-cat.is-warning { border-left-color: var(--coffee-warning); }
+.coffee-review-cat.is-info { border-left-color: var(--coffee-sky); }
+.coffee-review-cat__head { display: flex; align-items: flex-start; gap: .55rem; }
+.coffee-review-cat__emoji { font-size: 1.4rem; line-height: 1.1; }
+.coffee-review-cat__title { margin: 0; color: var(--coffee-ink); font-size: .98rem; font-weight: 800; }
+.coffee-review-cat__sub { margin: .1rem 0 0; color: var(--coffee-muted); font-size: .76rem; font-weight: 600; }
+.coffee-review-cat__message { margin: .6rem 0 0; color: var(--coffee-text); font-size: .88rem; font-weight: 500; }
+.coffee-review-notes { display: grid; gap: .25rem; margin: .5rem 0 0; padding-left: 1.1rem; color: var(--coffee-primary); font-size: .8rem; font-weight: 600; }
+.coffee-review-cat__tips-label { margin: .6rem 0 .25rem; color: var(--coffee-muted); font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.coffee-review-tips { display: grid; gap: .25rem; margin: 0; padding-left: 1.15rem; color: var(--coffee-text); font-size: .84rem; font-weight: 500; }
+.coffee-review-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.1rem; }
+
+/* --------------------------------------------------------------------------
    Print — clean expense voucher
    -------------------------------------------------------------------------- */
 @media print {

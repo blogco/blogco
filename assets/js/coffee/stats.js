@@ -3,6 +3,7 @@
 
 import { toNumber } from './store.js';
 import { CATEGORY_LABELS, CATEGORY_ORDER, normalizeName } from './menu.js';
+import { receiptExpenseCategory, EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_EMOJI } from './expense.js';
 
 function monthLabel(key) {
   const [year, month] = key.split('-');
@@ -21,6 +22,7 @@ export function computeCoffeeStats(receipts = [], { budget = 0 } = {}) {
   const byMonthMap = new Map();
   const byStoreMap = new Map();
   const byCategoryMap = new Map();
+  const byExpenseMap = new Map();
   const byItemMap = new Map();
   let itemCount = 0;
 
@@ -44,6 +46,18 @@ export function computeCoffeeStats(receipts = [], { budget = 0 } = {}) {
     })());
     byStoreMap.set(store, (() => {
       const entry = byStoreMap.get(store) || { store, count: 0, total: 0 };
+      entry.count += 1; entry.total += total; return entry;
+    })());
+
+    const expenseKey = receiptExpenseCategory(receipt);
+    byExpenseMap.set(expenseKey, (() => {
+      const entry = byExpenseMap.get(expenseKey) || {
+        category: expenseKey,
+        label: EXPENSE_CATEGORY_LABELS[expenseKey] || EXPENSE_CATEGORY_LABELS.other,
+        emoji: EXPENSE_CATEGORY_EMOJI[expenseKey] || '📦',
+        count: 0,
+        total: 0,
+      };
       entry.count += 1; entry.total += total; return entry;
     })());
 
@@ -76,6 +90,7 @@ export function computeCoffeeStats(receipts = [], { budget = 0 } = {}) {
   const byMonth = [...byMonthMap.values()].sort((a, b) => b.key.localeCompare(a.key));
   const byYear = [...byYearMap.values()].sort((a, b) => b.year.localeCompare(a.year));
   const byStore = [...byStoreMap.values()].sort((a, b) => b.total - a.total || b.count - a.count);
+  const byExpenseCategory = [...byExpenseMap.values()].sort((a, b) => b.total - a.total || b.count - a.count);
   const byCategory = CATEGORY_ORDER
     .map((category) => byCategoryMap.get(category))
     .filter(Boolean);
@@ -100,6 +115,7 @@ export function computeCoffeeStats(receipts = [], { budget = 0 } = {}) {
     byYear,
     byMonth,
     byStore,
+    byExpenseCategory,
     byCategory,
     topItems,
     maxMonthTotal: byMonth.reduce((max, month) => Math.max(max, month.total), 0),

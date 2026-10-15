@@ -13,6 +13,7 @@ import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { CATEGORY_LABELS, classifyItem } from './menu.js';
 import { SEASONS } from './season.js';
 import { classifyHealth } from './insights.js';
+import { receiptExpenseCategory, EXPENSE_CATEGORY_LABELS } from './expense.js';
 import {
   PALETTE, colorAt, formatShort, stackedColumnChart, donutChart, barChart, legend,
 } from './charts.js';
@@ -158,6 +159,25 @@ export function computeDashboard(receipts = [], { now = new Date() } = {}) {
       .map(([key, count]) => ({ label: `T${Number(key.slice(5, 7))}`, value: count, caption: `${count}`, color: PALETTE.primary })),
   };
 
+  // --- Expense categories (life expenses: grocery, dining, travel…) --------
+  const expenseMap = new Map();
+  list.forEach((receipt) => {
+    const key = receiptExpenseCategory(receipt);
+    const entry = expenseMap.get(key) || { key, label: EXPENSE_CATEGORY_LABELS[key] || 'Khác', total: 0, count: 0 };
+    entry.total += toNumber(receipt?.total);
+    entry.count += 1;
+    expenseMap.set(key, entry);
+  });
+  const expenseRows = [...expenseMap.values()].sort((a, b) => b.total - a.total || b.count - a.count);
+  const expenseTotal = expenseRows.reduce((sum, row) => sum + row.total, 0);
+  const expenseProfile = {
+    total: expenseTotal,
+    rows: expenseRows,
+    segments: expenseRows
+      .filter((row) => row.total > 0)
+      .map((row, index) => ({ name: row.label, value: row.total, color: colorAt(index) })),
+  };
+
   // --- Meta ----------------------------------------------------------------
   const latest = list.map((receipt) => receipt?.date || '').filter(Boolean).sort().pop() || '';
   const latestQuarter = quarterOf(latest);
@@ -171,6 +191,7 @@ export function computeDashboard(receipts = [], { now = new Date() } = {}) {
     seasons,
     brandProfile,
     drinkProfile,
+    expenseProfile,
     avgCost,
     frequency,
     categoryTotals: CATEGORY_LABELS,
@@ -218,6 +239,13 @@ export function renderDashboard(receipts = [], options = {}) {
     thickness: 34,
   });
 
+  const expenseDonut = donutChart(data.expenseProfile.segments, {
+    ariaLabel: 'Cơ cấu chi tiêu theo danh mục',
+    centerValue: formatShort(data.expenseProfile.total),
+    centerLabel: 'Tổng chi',
+    size: 240,
+  });
+
   const avgChart = barChart(data.avgCost, {
     ariaLabel: 'Chi phí trung bình mỗi hoá đơn theo quý',
     height: 230,
@@ -259,6 +287,13 @@ export function renderDashboard(receipts = [], options = {}) {
           ${legend(data.drinkProfile.segments, { valueFormatter: (v) => `${v} ly`, percentOf: data.drinkProfile.total })}
         </div>
         <p class="coffee-dash-foot">${data.drinkProfile.total} lượt món được phân loại theo tên.</p>`,
+      { className: 'coffee-dash-panel--donut' })}
+
+      ${panel('Cơ cấu chi tiêu theo danh mục', 'EXPENSE CATEGORIES', `
+        <div class="coffee-donut-wrap">${expenseDonut}
+          ${legend(data.expenseProfile.segments, { valueFormatter: formatVnd, percentOf: data.expenseProfile.total })}
+        </div>
+        <p class="coffee-dash-foot">${data.expenseProfile.rows.length} danh mục chi tiêu · tổng <strong>${escapeHtml(formatVnd(data.expenseProfile.total))}</strong></p>`,
       { className: 'coffee-dash-panel--donut' })}
 
       ${panel('Chi phí trung bình / hoá đơn', 'COST BREAKDOWN', `

@@ -65,9 +65,11 @@ test('readManualRows parses formatted amounts and drops blank rows', () => {
   assert.deepEqual(parsed[0], {
     brand: 'Highlands Coffee', itemsText: 'Matcha Latte, Bánh dừa', itemNames: ['Matcha Latte', 'Bánh dừa'],
     quantity: 2, subtotal: 100200, discount: 20000, total: 80200, date: '2026-05-10', season: 'summer',
+    expenseCategory: 'coffee', expenseCategoryRaw: '',
   });
   assert.equal(parsed[1].subtotal, 50000);
   assert.equal(parsed[1].total, 50000);
+  assert.equal(parsed[1].expenseCategory, 'other');
 });
 
 test('parseItemNames splits on commas/semicolons and de-dupes', () => {
