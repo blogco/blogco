@@ -1123,6 +1123,23 @@ body.article-body .blogco-header .header-nav {
   text-transform: none;
 }
 
+/* Health menu: compact two-column layout for a more focused dropdown. */
+.blogco-header .navbar__mega--health {
+  width: min(600px, calc(100vw - 32px));
+  padding: 12px;
+}
+
+.blogco-header .navbar__mega--health .navbar__mega-eyebrow { margin-bottom: 8px !important; }
+.blogco-header .navbar__mega--health .navbar__mega-grid { gap: 4px; }
+.blogco-header .navbar__mega--health .navbar__mega-item {
+  gap: 8px;
+  padding: 8px 9px;
+}
+.blogco-header .navbar__mega--health .navbar__mega-icon { font-size: 16px; }
+.blogco-header .navbar__mega--health .navbar__mega-text { gap: 1px; }
+.blogco-header .navbar__mega--health .navbar__mega-title { font-size: 12px; }
+.blogco-header .navbar__mega--health .navbar__mega-desc { font-size: 10.5px; }
+
 .blogco-header .navbar__link:focus-visible,
 .blogco-header .navbar__toggle:focus-visible,
 .blogco-header #theme-toggle:focus-visible {
