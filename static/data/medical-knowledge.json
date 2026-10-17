@@ -1,0 +1,19 @@
+{
+  "app": "BlogCo",
+  "feature": "medical-knowledge",
+  "version": 1,
+  "updatedAt": "2026-10-18T00:00:00.000Z",
+  "items": [
+    {
+      "id": "medical-cum-mua",
+      "title": "Cúm mùa",
+      "category": "Bệnh lý",
+      "symptoms": ["Sốt", "Ho", "Đau họng", "Đau mỏi người"],
+      "treatment": "Nghỉ ngơi, uống đủ nước, theo dõi dấu hiệu nặng và dùng thuốc theo hướng dẫn của nhân viên y tế.",
+      "relatedMedications": ["Paracetamol — giảm đau, hạ sốt", "Oseltamivir — thuốc kháng virus, cần được kê đơn"],
+      "rawContent": "Cúm mùa\nTriệu chứng: sốt, ho, đau họng, đau mỏi người.\nĐiều trị: nghỉ ngơi, uống đủ nước, dùng thuốc theo hướng dẫn.\nThuốc liên quan: Paracetamol, Oseltamivir.",
+      "createdAt": "2026-10-18T00:00:00.000Z",
+      "updatedAt": "2026-10-18T00:00:00.000Z"
+    }
+  ]
+}

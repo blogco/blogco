@@ -20,7 +20,8 @@ import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
 import {
   extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
-  saveMedicalKnowledge, searchMedicalKnowledge, seedMedicalKnowledge,
+  loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
+  searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
 } from './medical.js';
 
 const mountedRoots = new WeakSet();
@@ -28,6 +29,8 @@ const PAGE_SIZE = 6;
 let pendingToast = '';
 let searchState = { query: '', year: '', facility: '', page: 1 };
 let medicalSearchQuery = '';
+let medicalRemoteEntries = null;
+let medicalRemotePromise = null;
 const medicalDrafts = new WeakMap();
 
 // ---------------------------------------------------------------------------
@@ -231,7 +234,7 @@ function renderMedicalPreview(root, entry) {
       <div><strong>Thuốc liên quan</strong><p>${escapeHtml(entry.relatedMedications.join(', ') || 'Chưa nhận diện được')}</p></div>
       <div class="medical-preview__full"><strong>Điều trị</strong><p>${escapeHtml(entry.treatment || 'Chưa nhận diện được')}</p></div>
     </div>
-    <div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu vào thiết bị</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>`;
+    <div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>`;
   preview.hidden = false;
 }
 
@@ -251,7 +254,7 @@ function renderMedicalInput(root) {
       <label class="health-field medical-raw-field">Dữ liệu thô (Text / Markdown)
         <textarea name="rawContent" rows="12" placeholder="Ví dụ:\nTên bệnh: Cúm mùa\nTriệu chứng: Sốt, ho, đau họng\nĐiều trị: Nghỉ ngơi, uống đủ nước\nThuốc liên quan: Paracetamol, Oseltamivir" required></textarea>
       </label>
-      <p class="medical-offline-note">ⓘ Bộ phân tích offline nhận diện các nhãn như “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”.</p>
+      <p class="medical-offline-note">ⓘ Bộ phân tích offline nhận diện các nhãn như “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”. Khi xác nhận, dữ liệu sẽ sync lên GitHub nếu bạn đã <a href="#/blog/new">kết nối token</a>.</p>
       <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>✦ Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
     </form>
     <section class="health-card medical-preview" data-medical-preview hidden aria-live="polite"></section>
@@ -259,9 +262,26 @@ function renderMedicalInput(root) {
   root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
 
+function ensureMedicalRemote(root) {
+  if (medicalRemoteEntries !== null || medicalRemotePromise) return;
+  medicalRemotePromise = loadRemoteMedicalKnowledge()
+    .then((entries) => {
+      medicalRemoteEntries = entries;
+      medicalRemotePromise = null;
+      if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
+    })
+    .catch(() => {
+      medicalRemoteEntries = [];
+      medicalRemotePromise = null;
+    });
+}
+
 function renderMedicalSearch(root) {
   seedMedicalKnowledge();
-  const results = searchMedicalKnowledge(medicalSearchQuery);
+  const source = medicalRemoteEntries === null
+    ? getMedicalEntries()
+    : mergeMedicalEntries(getMedicalEntries(), medicalRemoteEntries);
+  const results = searchMedicalKnowledge(medicalSearchQuery, source);
   root.innerHTML = `<section class="health-screen medical-screen" aria-labelledby="medical-title">
     <div class="health-page-heading health-page-heading--hero">
       <a class="health-back" href="#/health/history">← Sức Khoẻ</a>
@@ -273,7 +293,7 @@ function renderMedicalSearch(root) {
       <label class="health-field health-field--full">Từ khoá hoặc câu hỏi
         <input type="search" name="query" data-medical-search-input value="${escapeHtml(medicalSearchQuery)}" placeholder="Ví dụ: thuốc điều trị cúm mùa...">
       </label>
-      <div class="health-actions"><button type="submit" class="health-primary-button">⌕ Tìm kiếm</button><a class="health-secondary-button" href="#/health/medical/input">＋ Nhập tri thức</a></div>
+      <div class="health-actions"><button type="submit" class="health-primary-button">⌕ Tìm kiếm</button><button type="button" class="health-secondary-button" data-medical-refresh>↻ Làm mới online</button><a class="health-secondary-button" href="#/health/medical/input">＋ Nhập tri thức</a></div>
     </form>
     <section class="medical-results" aria-live="polite">
       <div class="medical-results__head"><h2>Kết quả</h2><span class="health-muted">${results.length} mục</span></div>
@@ -282,6 +302,7 @@ function renderMedicalSearch(root) {
     <p class="health-disclaimer">Kho tri thức cá nhân chạy offline; nội dung y khoa chỉ mang tính tham khảo, không thay thế tư vấn của nhân viên y tế.</p>
   </section>${toastMarkup()}`;
   root.querySelector('h1')?.focus?.({ preventScroll: true });
+  ensureMedicalRemote(root);
 }
 
 // ---------------------------------------------------------------------------
@@ -865,12 +886,26 @@ export function mountHealthApp(root) {
       if (!draft) return;
       try {
         const saved = saveMedicalKnowledge(draft);
+        medicalSave.disabled = true;
+        medicalSave.textContent = 'Đang đồng bộ GitHub…';
+        const synced = await syncMedicalKnowledge();
+        medicalRemoteEntries = synced.items;
+        medicalRemotePromise = null;
         medicalDrafts.delete(root);
-        pendingToast = `Đã lưu tri thức “${saved.title}” trên thiết bị.`;
+        pendingToast = `Đã lưu và đồng bộ “${saved.title}” lên GitHub (${synced.count} mục).`;
         location.hash = '#/health/medical/search';
       } catch (error) {
-        showToast(root, error.message || 'Không lưu được tri thức.', true);
+        showToast(root, `Đã lưu offline nhưng chưa sync được. ${error.message || ''}`.trim(), true);
+      } finally {
+        medicalSave.disabled = false;
+        medicalSave.textContent = '✓ Xác nhận lưu & đồng bộ GitHub';
       }
+      return;
+    }
+    if (target.closest('[data-medical-refresh]')) {
+      medicalRemoteEntries = null;
+      medicalRemotePromise = null;
+      renderMedicalSearch(root);
       return;
     }
     if (target.closest('[data-medical-clear]')) {

@@ -3,9 +3,12 @@
 // keywords instead of a paid LLM/API.
 
 import { escapeHtml } from './medicine.js';
+import { commitAsset, getSettings } from '../blog/store.js';
+import { rawFileUrl, toBase64 } from '../blog/lib.js';
 
 const STORAGE_KEY = 'blogco.health.medical.v1';
 const BACKUP_KEY = 'blogco.health.medical.backup.v1';
+export const MEDICAL_REPO_PATH = 'static/data/medical-knowledge.json';
 
 const SAMPLE_ENTRY = {
   id: 'medical-cum-mua',
@@ -57,7 +60,7 @@ export function normalizeMedicalEntry(input = {}, existing = {}) {
     relatedMedications: normalizeList(input.relatedMedications || input.related_medications),
     rawContent: multiline(input.rawContent || input.raw_content, 8000),
     createdAt: existing.createdAt || input.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    updatedAt: input.updatedAt || existing.updatedAt || new Date().toISOString(),
   };
 }
 
@@ -122,8 +125,8 @@ function tokens(value) {
   return [...new Set(fold(value).split(/[^a-z0-9]+/).filter((token) => token.length > 1))];
 }
 
-export function searchMedicalKnowledge(query = '') {
-  const entries = getMedicalEntries();
+export function searchMedicalKnowledge(query = '', source = getMedicalEntries()) {
+  const entries = source;
   const needle = tokens(query);
   if (!needle.length) return entries;
   return entries.map((entry) => {
@@ -144,6 +147,56 @@ export function searchMedicalKnowledge(query = '') {
       + (fields.raw.includes(token) ? 1 : 0), 0);
     return { entry, score };
   }).filter((result) => result.score > 0).sort((a, b) => b.score - a.score).map((result) => result.entry);
+}
+
+export function mergeMedicalEntries(...collections) {
+  const byId = new Map();
+  collections.flat().filter(Boolean).forEach((item) => {
+    const entry = normalizeMedicalEntry(item, item);
+    const current = byId.get(entry.id);
+    if (!current || new Date(entry.updatedAt || 0) >= new Date(current.updatedAt || 0)) byId.set(entry.id, entry);
+  });
+  return [...byId.values()].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+}
+
+async function fetchRemotePayload(settings = getSettings()) {
+  const repo = settings.repo || 'blogco/blogco';
+  const branch = settings.branch || 'main';
+  const url = `${rawFileUrl(repo, branch, MEDICAL_REPO_PATH)}?t=${Date.now()}`;
+  const response = await fetch(url, { cache: 'no-store' });
+  if (response.status === 404) return { items: [] };
+  if (!response.ok) throw new Error(`Không tải được kho tri thức online (${response.status}).`);
+  const payload = await response.json();
+  return { ...payload, items: Array.isArray(payload) ? payload : (payload.items || []) };
+}
+
+export async function loadRemoteMedicalKnowledge(settings = getSettings()) {
+  const payload = await fetchRemotePayload(settings);
+  return mergeMedicalEntries(payload.items);
+}
+
+export async function syncMedicalKnowledge() {
+  const settings = getSettings();
+  if (!settings.token) throw new Error('Chưa có GitHub token. Mở “Viết blog” → Kết nối GitHub để nhập token có quyền contents:write.');
+  const localItems = getMedicalEntries();
+  const remotePayload = await fetchRemotePayload(settings);
+  const items = mergeMedicalEntries(remotePayload.items, localItems);
+  const payload = {
+    app: 'BlogCo',
+    feature: 'medical-knowledge',
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    items,
+  };
+  const result = await commitAsset({
+    repo: settings.repo,
+    branch: settings.branch || 'main',
+    path: MEDICAL_REPO_PATH,
+    base64: toBase64(JSON.stringify(payload, null, 2)),
+    message: 'feat: sync medical knowledge',
+    token: settings.token,
+  });
+  return { ...result, items, count: items.length };
 }
 
 function sectionText(lines, patterns) {
