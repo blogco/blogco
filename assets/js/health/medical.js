@@ -1,0 +1,189 @@
+// Local-first medical knowledge store and offline extractor.
+// Raw text never leaves the device: extraction uses labels and common medical
+// keywords instead of a paid LLM/API.
+
+import { escapeHtml } from './medicine.js';
+
+const STORAGE_KEY = 'blogco.health.medical.v1';
+const BACKUP_KEY = 'blogco.health.medical.backup.v1';
+
+const SAMPLE_ENTRY = {
+  id: 'medical-cum-mua',
+  title: 'Cúm mùa',
+  category: 'Bệnh lý',
+  symptoms: ['Sốt', 'Ho', 'Đau họng', 'Đau mỏi người'],
+  treatment: 'Nghỉ ngơi, uống đủ nước, theo dõi dấu hiệu nặng và dùng thuốc theo hướng dẫn của nhân viên y tế.',
+  relatedMedications: ['Paracetamol — giảm đau, hạ sốt', 'Oseltamivir — thuốc kháng virus, cần được kê đơn'],
+  rawContent: 'Cúm mùa\nTriệu chứng: sốt, ho, đau họng, đau mỏi người.\nĐiều trị: nghỉ ngơi, uống đủ nước, dùng thuốc theo hướng dẫn.\nThuốc liên quan: Paracetamol, Oseltamivir.',
+};
+
+let memoryCache;
+
+function text(value, max = 500) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function multiline(value, max = 6000) {
+  return String(value ?? '').replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim().slice(0, max);
+}
+
+function clone(value) {
+  return typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value));
+}
+
+function blankState() {
+  return { version: 1, nextId: 1, items: [] };
+}
+
+function slugify(value) {
+  return String(value || 'tri-thuc-y-khoa')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'tri-thuc-y-khoa';
+}
+
+function normalizeList(value, maxItems = 24) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => text(typeof item === 'string' ? item : `${item?.name || ''}${item?.note ? ` — ${item.note}` : ''}`, 240)).filter(Boolean).slice(0, maxItems);
+}
+
+export function normalizeMedicalEntry(input = {}, existing = {}) {
+  const title = text(input.title, 240) || 'Tri thức y khoa chưa đặt tên';
+  return {
+    id: existing.id || text(input.id, 100) || `medical-${slugify(title)}-${Date.now()}`,
+    title,
+    category: ['Bệnh lý', 'Thuốc', 'Dinh dưỡng'].includes(input.category) ? input.category : 'Bệnh lý',
+    symptoms: normalizeList(input.symptoms),
+    treatment: multiline(input.treatment, 2400),
+    relatedMedications: normalizeList(input.relatedMedications || input.related_medications),
+    rawContent: multiline(input.rawContent || input.raw_content, 8000),
+    createdAt: existing.createdAt || input.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function readState() {
+  if (memoryCache) return clone(memoryCache);
+  let parsed = null;
+  try { parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { parsed = null; }
+  memoryCache = parsed && parsed.version === 1 && Array.isArray(parsed.items) ? { ...blankState(), ...parsed } : blankState();
+  if (!parsed && typeof localStorage !== 'undefined') {
+    memoryCache.items = [normalizeMedicalEntry(SAMPLE_ENTRY, SAMPLE_ENTRY)];
+    memoryCache.nextId = 2;
+    writeState(memoryCache);
+  }
+  return clone(memoryCache);
+}
+
+function writeState(state) {
+  const serialized = JSON.stringify(state);
+  try {
+    localStorage.setItem(BACKUP_KEY, serialized);
+    localStorage.setItem(STORAGE_KEY, serialized);
+  } catch {
+    throw new Error('Không thể lưu tri thức y khoa trên thiết bị này.');
+  }
+  memoryCache = clone(state);
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('health:data-changed'));
+}
+
+export function getMedicalEntries() {
+  return readState().items;
+}
+
+export function saveMedicalKnowledge(input = {}) {
+  const state = readState();
+  const existingIndex = state.items.findIndex((item) => item.id === input.id);
+  const existing = existingIndex >= 0 ? state.items[existingIndex] : {};
+  const entry = normalizeMedicalEntry(input, existing);
+  if (existingIndex >= 0) state.items[existingIndex] = entry;
+  else {
+    state.items.unshift(entry);
+    state.nextId += 1;
+  }
+  writeState(state);
+  return clone(entry);
+}
+
+export function seedMedicalKnowledge() {
+  const state = readState();
+  if (!state.items.length) {
+    state.items = [normalizeMedicalEntry(SAMPLE_ENTRY, SAMPLE_ENTRY)];
+    state.nextId = 2;
+    writeState(state);
+  }
+  return state.items;
+}
+
+function fold(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function tokens(value) {
+  return [...new Set(fold(value).split(/[^a-z0-9]+/).filter((token) => token.length > 1))];
+}
+
+export function searchMedicalKnowledge(query = '') {
+  const entries = getMedicalEntries();
+  const needle = tokens(query);
+  if (!needle.length) return entries;
+  return entries.map((entry) => {
+    const fields = {
+      title: fold(entry.title),
+      category: fold(entry.category),
+      symptoms: fold(entry.symptoms.join(' ')),
+      treatment: fold(entry.treatment),
+      medication: fold(entry.relatedMedications.join(' ')),
+      raw: fold(entry.rawContent),
+    };
+    const score = needle.reduce((total, token) => total
+      + (fields.title.includes(token) ? 12 : 0)
+      + (fields.medication.includes(token) ? 8 : 0)
+      + (fields.symptoms.includes(token) ? 6 : 0)
+      + (fields.treatment.includes(token) ? 4 : 0)
+      + (fields.category.includes(token) ? 3 : 0)
+      + (fields.raw.includes(token) ? 1 : 0), 0);
+    return { entry, score };
+  }).filter((result) => result.score > 0).sort((a, b) => b.score - a.score).map((result) => result.entry);
+}
+
+function sectionText(lines, patterns) {
+  const index = lines.findIndex((line) => patterns.some((pattern) => pattern.test(line)));
+  if (index < 0) return '';
+  const first = lines[index].replace(/^[^:：]+[:：]\s*/, '').trim();
+  const values = first ? [first] : [];
+  for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+    if (/^\s*(?:tên|title|danh mục|category|triệu chứng|symptoms|điều trị|treatment|thuốc liên quan|related medications?)\s*[:：]/i.test(lines[cursor])) break;
+    if (lines[cursor]) values.push(lines[cursor]);
+  }
+  return values.join(' ').trim();
+}
+
+function parseList(value) {
+  return [...new Set(String(value || '').split(/[,;•\n]|\s+-\s+/).map((item) => text(item, 240)).filter(Boolean))].slice(0, 24);
+}
+
+const MEDICATION_NAMES = ['Paracetamol', 'Oseltamivir', 'Ibuprofen', 'Amoxicillin', 'Cetirizine', 'Vitamin C'];
+
+export function extractMedicalKnowledge(rawContent, category = 'Bệnh lý') {
+  const raw = multiline(rawContent, 8000);
+  if (!raw) throw new Error('Hãy dán dữ liệu thô trước khi phân tích.');
+  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+  const titleLine = lines.find((line) => /^(?:tên bệnh|tên thuốc|tiêu đề|title)\s*[:：]/i.test(line));
+  const title = text(titleLine?.replace(/^[^:：]+[:：]\s*/, '') || lines.find((line) => /^#\s+/.test(line))?.replace(/^#+\s*/, '') || lines[0], 240);
+  const symptomText = sectionText(lines, [/^(?:triệu chứng|symptoms?)\s*[:：]/i]);
+  const treatment = sectionText(lines, [/^(?:điều trị|treatment)\s*[:：]/i]) || lines.filter((line) => /(?:điều trị|nghỉ ngơi|uống đủ|dùng thuốc|theo dõi)/i.test(line)).join(' ');
+  const medicationText = sectionText(lines, [/^(?:thuốc liên quan|related medications?)\s*[:：]/i]);
+  const knownMedications = MEDICATION_NAMES.filter((name) => fold(raw).includes(fold(name)));
+  const symptoms = parseList(symptomText || (/(?:sốt|ho|đau họng|đau đầu|buồn nôn|tiêu chảy|phát ban)/i.test(raw) ? raw.match(/(?:sốt|ho|đau họng|đau đầu|buồn nôn|tiêu chảy|phát ban)/gi) : []));
+  const relatedMedications = [...new Set([...parseList(medicationText), ...knownMedications])];
+  return normalizeMedicalEntry({ title, category, symptoms, treatment, relatedMedications, rawContent: raw });
+}
+
+export function renderMedicalEntry(entry) {
+  return `<article class="medical-result-card">
+    <div class="medical-result-card__top"><div><span class="health-badge">${escapeHtml(entry.category)}</span><h2>${escapeHtml(entry.title)}</h2></div></div>
+    ${entry.symptoms.length ? `<div class="medical-result-card__section"><strong>Triệu chứng</strong><div class="medical-chip-list">${entry.symptoms.map((item) => `<span class="medical-chip">${escapeHtml(item)}</span>`).join('')}</div></div>` : ''}
+    ${entry.treatment ? `<div class="medical-result-card__section"><strong>Điều trị</strong><p>${escapeHtml(entry.treatment)}</p></div>` : ''}
+    ${entry.relatedMedications.length ? `<div class="medical-result-card__section"><strong>Thuốc liên quan</strong><ul>${entry.relatedMedications.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>` : ''}
+  </article>`;
+}

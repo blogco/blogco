@@ -18,11 +18,17 @@ import { getICD, searchICD } from './icd.js';
 import { computeStats } from './stats.js';
 import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
+import {
+  extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
+  saveMedicalKnowledge, searchMedicalKnowledge, seedMedicalKnowledge,
+} from './medical.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
 let pendingToast = '';
 let searchState = { query: '', year: '', facility: '', page: 1 };
+let medicalSearchQuery = '';
+const medicalDrafts = new WeakMap();
 
 // ---------------------------------------------------------------------------
 // Small formatting helpers
@@ -210,6 +216,72 @@ function renderHistory(root) {
   </section>${toastMarkup()}`;
   const heading = root.querySelector('h1');
   if (heading && document.title) heading.focus?.({ preventScroll: true });
+}
+
+// ---------------------------------------------------------------------------
+// Medical knowledge (offline/local-first)
+// ---------------------------------------------------------------------------
+
+function renderMedicalPreview(root, entry) {
+  const preview = root.querySelector('[data-medical-preview]');
+  if (!preview) return;
+  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>${escapeHtml(entry.title)}</h2></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
+    <div class="medical-preview__grid">
+      <div><strong>Triệu chứng</strong><p>${escapeHtml(entry.symptoms.join(', ') || 'Chưa nhận diện được')}</p></div>
+      <div><strong>Thuốc liên quan</strong><p>${escapeHtml(entry.relatedMedications.join(', ') || 'Chưa nhận diện được')}</p></div>
+      <div class="medical-preview__full"><strong>Điều trị</strong><p>${escapeHtml(entry.treatment || 'Chưa nhận diện được')}</p></div>
+    </div>
+    <div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu vào thiết bị</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>`;
+  preview.hidden = false;
+}
+
+function renderMedicalInput(root) {
+  seedMedicalKnowledge();
+  root.innerHTML = `<section class="health-screen medical-screen" aria-labelledby="medical-title">
+    <div class="health-page-heading health-page-heading--hero">
+      <a class="health-back" href="#/health/medical/search">← Tra cứu Y Học</a>
+      <p class="health-eyebrow">Y HỌC · NHẬP LIỆU KIẾN THỨC</p>
+      <h1 id="medical-title" tabindex="-1">Nhập liệu tri thức</h1>
+      <p>Dán văn bản y khoa để phân tích offline. Dữ liệu chỉ lưu trên thiết bị này, không gửi tới API trả phí.</p>
+    </div>
+    <form class="health-card medical-input-form" data-medical-input-form>
+      <label class="health-field">Danh mục
+        <select name="category"><option>Bệnh lý</option><option>Thuốc</option><option>Dinh dưỡng</option></select>
+      </label>
+      <label class="health-field medical-raw-field">Dữ liệu thô (Text / Markdown)
+        <textarea name="rawContent" rows="12" placeholder="Ví dụ:\nTên bệnh: Cúm mùa\nTriệu chứng: Sốt, ho, đau họng\nĐiều trị: Nghỉ ngơi, uống đủ nước\nThuốc liên quan: Paracetamol, Oseltamivir" required></textarea>
+      </label>
+      <p class="medical-offline-note">ⓘ Bộ phân tích offline nhận diện các nhãn như “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”.</p>
+      <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>✦ Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
+    </form>
+    <section class="health-card medical-preview" data-medical-preview hidden aria-live="polite"></section>
+  </section>${toastMarkup()}`;
+  root.querySelector('h1')?.focus?.({ preventScroll: true });
+}
+
+function renderMedicalSearch(root) {
+  seedMedicalKnowledge();
+  const results = searchMedicalKnowledge(medicalSearchQuery);
+  root.innerHTML = `<section class="health-screen medical-screen" aria-labelledby="medical-title">
+    <div class="health-page-heading health-page-heading--hero">
+      <a class="health-back" href="#/health/history">← Sức Khoẻ</a>
+      <p class="health-eyebrow">Y HỌC · TRA CỨU TRI THỨC</p>
+      <h1 id="medical-title" tabindex="-1">Tra cứu Y Học</h1>
+      <p>Tìm nhanh theo tên bệnh, triệu chứng, hướng điều trị hoặc thuốc liên quan trong kho cục bộ.</p>
+    </div>
+    <form class="health-card medical-search-form" data-medical-search-form role="search">
+      <label class="health-field health-field--full">Từ khoá hoặc câu hỏi
+        <input type="search" name="query" data-medical-search-input value="${escapeHtml(medicalSearchQuery)}" placeholder="Ví dụ: thuốc điều trị cúm mùa...">
+      </label>
+      <div class="health-actions"><button type="submit" class="health-primary-button">⌕ Tìm kiếm</button><a class="health-secondary-button" href="#/health/medical/input">＋ Nhập tri thức</a></div>
+    </form>
+    <section class="medical-results" aria-live="polite">
+      <div class="medical-results__head"><h2>Kết quả</h2><span class="health-muted">${results.length} mục</span></div>
+      ${results.length ? results.map(renderMedicalEntry).join('') : '<p class="health-empty">Không tìm thấy tri thức phù hợp. Thử từ khoá khác hoặc nhập dữ liệu mới.</p>'}
+    </section>
+    <p class="health-disclaimer">Kho tri thức cá nhân chạy offline; nội dung y khoa chỉ mang tính tham khảo, không thay thế tư vấn của nhân viên y tế.</p>
+  </section>${toastMarkup()}`;
+  root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -616,7 +688,7 @@ function routeName(root) {
   if (location.hash.startsWith('#/health')) return location.hash.slice(1).replace(/\/$/, '') || '/health';
   const initial = root.dataset.initialRoute;
   if (initial) {
-    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine' };
+    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine', 'medical-input': '/health/medical/input', 'medical-search': '/health/medical/search' };
     return map[initial] || '/health/history';
   }
   return '/health/history';
@@ -625,10 +697,13 @@ function routeName(root) {
 function showRoute(root) {
   const route = routeName(root);
   const [, , action = 'history', param = ''] = route.split('/');
-  const titles = { history: 'Lịch sử khám bệnh', add: 'Thêm lần khám bệnh', edit: 'Sửa lần khám bệnh', detail: 'Chi tiết lần khám', stats: 'Thống kê chi phí', vaccine: 'Nhật ký tiêm ngừa' };
+  const titles = { history: 'Lịch sử khám bệnh', add: 'Thêm lần khám bệnh', edit: 'Sửa lần khám bệnh', detail: 'Chi tiết lần khám', stats: 'Thống kê chi phí', vaccine: 'Nhật ký tiêm ngừa', medical: 'Y Học' };
   document.title = `${titles[action] || 'Lịch sử khám bệnh'} | BlogCo`;
 
-  if (action === 'add') renderFormPage(root, '');
+  if (action === 'medical') {
+    if (param === 'input') renderMedicalInput(root);
+    else renderMedicalSearch(root);
+  } else if (action === 'add') renderFormPage(root, '');
   else if (action === 'edit') renderFormPage(root, decodeURIComponent(param));
   else if (action === 'detail') renderDetail(root, decodeURIComponent(param));
   else if (action === 'stats') renderStats(root);
@@ -784,6 +859,28 @@ export function mountHealthApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    const medicalSave = target.closest('[data-medical-save]');
+    if (medicalSave) {
+      const draft = medicalDrafts.get(root);
+      if (!draft) return;
+      try {
+        const saved = saveMedicalKnowledge(draft);
+        medicalDrafts.delete(root);
+        pendingToast = `Đã lưu tri thức “${saved.title}” trên thiết bị.`;
+        location.hash = '#/health/medical/search';
+      } catch (error) {
+        showToast(root, error.message || 'Không lưu được tri thức.', true);
+      }
+      return;
+    }
+    if (target.closest('[data-medical-clear]')) {
+      medicalDrafts.delete(root);
+      root.querySelector('[data-medical-input-form]')?.reset();
+      const preview = root.querySelector('[data-medical-preview]');
+      if (preview) preview.hidden = true;
+      return;
+    }
+
     const icdOption = target.closest('[data-icd-option]');
     if (icdOption) {
       chooseIcd(icdOption.closest('#health-visit-form'), icdOption);
@@ -880,6 +977,23 @@ export function mountHealthApp(root) {
 
   root.addEventListener('submit', (event) => {
     const form = event.target;
+    if (form.matches('[data-medical-input-form]')) {
+      event.preventDefault();
+      try {
+        const entry = extractMedicalKnowledge(form.elements.rawContent.value, form.elements.category.value);
+        medicalDrafts.set(root, entry);
+        renderMedicalPreview(root, entry);
+      } catch (error) {
+        showToast(root, error.message || 'Không phân tích được dữ liệu.', true);
+      }
+      return;
+    }
+    if (form.matches('[data-medical-search-form]')) {
+      event.preventDefault();
+      medicalSearchQuery = form.elements.query.value.trim();
+      showRoute(root);
+      return;
+    }
     if (form.id !== 'health-visit-form') return;
     event.preventDefault();
     try {

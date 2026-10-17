@@ -337,6 +337,43 @@ body.health-route .category-bar { display: none; }
   .health-screen *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
+/* Medical knowledge -------------------------------------------------------- */
+.medical-screen .health-page-heading--hero { background: linear-gradient(120deg, #eef2ff, #fff); }
+.medical-screen .health-back,
+.medical-screen a { color: var(--blogco-primary-hover); }
+.medical-screen .health-eyebrow { color: var(--blogco-primary-hover) !important; }
+.medical-input-form,
+.medical-search-form { display: grid; gap: 1rem; }
+.medical-raw-field textarea { min-height: 260px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; line-height: 1.55; }
+.medical-offline-note { margin: 0 !important; color: var(--health-muted) !important; font-size: .86rem; }
+.medical-preview { display: grid; gap: 1rem; margin-top: 1rem; }
+.medical-preview[hidden] { display: none; }
+.medical-preview__head,
+.medical-results__head,
+.medical-result-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.medical-preview__head h2,
+.medical-results__head h2,
+.medical-result-card h2 { margin: 0; color: var(--health-ink); }
+.medical-preview__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+.medical-preview__grid > div { padding: .75rem; border: 1px solid var(--health-border); border-radius: 10px; background: #fff; }
+.medical-preview__grid p { margin: .35rem 0 0; color: var(--health-muted) !important; line-height: 1.55; }
+.medical-preview__full { grid-column: 1 / -1; }
+.medical-results { display: grid; gap: .8rem; margin-top: 1.25rem; }
+.medical-results__head { align-items: baseline; }
+.medical-results__head h2 { font-size: 1.15rem; }
+.medical-result-card { display: grid; gap: .8rem; padding: 1rem 1.1rem; border: 1px solid var(--health-border); border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(15, 23, 42, .05); }
+.medical-result-card h2 { margin-top: .45rem; font-size: 1.2rem; }
+.medical-result-card__section { display: grid; gap: .35rem; }
+.medical-result-card__section p { margin: 0; color: var(--blogco-text-body) !important; line-height: 1.6; }
+.medical-result-card__section ul { display: grid; gap: .3rem; margin: 0; padding-left: 1.2rem; color: var(--blogco-text-body); }
+.medical-chip-list { display: flex; flex-wrap: wrap; gap: .35rem; }
+.medical-chip { padding: .25rem .55rem; border: 1px solid var(--health-teal-soft); border-radius: 99px; color: var(--health-teal-dark); background: #f0fdfa; font-size: .84rem; }
+
+@media (max-width: 767px) {
+  .medical-preview__grid { grid-template-columns: 1fr; }
+  .medical-preview__full { grid-column: auto; }
+}
+
 /* Vaccination tracker (#/health/vaccine) ------------------------------------ */
 .vaccine-screen {
   --vaccine-blue: var(--blogco-primary);
