@@ -23,6 +23,7 @@ import {
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
 } from './medical.js';
+import { getSessionGitHubSettings, saveSessionGitHubSettings } from './github-sync.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -230,6 +231,7 @@ function medicalTabs(active) {
   return `<nav class="medical-tabs" aria-label="Điều hướng Y Học">
     ${tab('input', '▣ Nhập liệu', '#/health/medical/input')}
     ${tab('search', '⌕ Tra cứu', '#/health/medical/search')}
+    ${tab('sync', '⇅ Đồng bộ', '#/health/medical/sync')}
     <button type="button" class="medical-tab" data-medical-refresh>↻ Làm mới online</button>
   </nav>`;
 }
@@ -289,9 +291,43 @@ function renderMedicalInput(root) {
   root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
 
+function renderMedicalSync(root) {
+  const settings = getSessionGitHubSettings();
+  root.innerHTML = `<section class="health-screen medical-screen" aria-labelledby="medical-title">
+    <div class="health-page-heading health-page-heading--hero">
+      <a class="health-back" href="#/health/medical/search">← Tra cứu Y Học</a>
+      <p class="health-eyebrow">Y HỌC · ĐỒNG BỘ</p>
+      <h1 id="medical-title" tabindex="-1">Đồng bộ lên GitHub</h1>
+      <p>Đẩy ${getMedicalEntries().length} mục tri thức đang lưu offline lên kho JSON chung để tra cứu online.</p>
+    </div>
+    ${medicalTabs('sync')}
+    <form class="health-card medical-sync-form" data-medical-sync-form>
+      <label class="health-field">GitHub Personal Access Token (PAT)
+        <input type="password" name="token" data-medical-sync-token value="${escapeHtml(settings.token)}" placeholder="github_pat_…" autocomplete="off">
+      </label>
+      <div class="medical-sync-grid">
+        <label class="health-field">Repository (owner/repo)
+          <input type="text" name="repo" data-medical-sync-repo value="${escapeHtml(settings.repo)}" placeholder="username/repo-name" required>
+        </label>
+        <label class="health-field">Branch
+          <input type="text" name="branch" data-medical-sync-branch value="${escapeHtml(settings.branch || 'main')}" placeholder="main" required>
+        </label>
+      </div>
+      <label class="health-field">Đường dẫn file JSON
+        <input type="text" name="filePath" data-medical-sync-path value="${escapeHtml(settings.filePath)}" placeholder="static/data/medical-knowledge.json" required>
+      </label>
+      <p class="medical-security-warning">⚠️ PAT chỉ được giữ trong <code>sessionStorage</code> của tab này và sẽ mất khi đóng tab. Không chia sẻ token hoặc dùng token có quyền rộng hơn cần thiết; nếu token bị lộ, hãy revoke ngay.</p>
+      <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-sync-submit>⇅ Đồng bộ lên GitHub</button><a class="health-secondary-button" href="#/health/medical/search">← Tra cứu</a></div>
+      <div class="medical-sync-status" data-medical-sync-status role="status" aria-live="polite">Chưa đồng bộ</div>
+      <pre class="medical-sync-log" data-medical-sync-log>Log sẽ hiển thị tại đây. Token không được ghi vào log.</pre>
+    </form>
+  </section>${toastMarkup()}`;
+  root.querySelector('h1')?.focus?.({ preventScroll: true });
+}
+
 function ensureMedicalRemote(root) {
   if (medicalRemoteEntries !== null || medicalRemotePromise) return;
-  medicalRemotePromise = loadRemoteMedicalKnowledge()
+  medicalRemotePromise = loadRemoteMedicalKnowledge(getSessionGitHubSettings())
     .then((entries) => {
       medicalRemoteEntries = entries;
       medicalRemotePromise = null;
@@ -737,7 +773,7 @@ function routeName(root) {
   if (location.hash.startsWith('#/health')) return location.hash.slice(1).replace(/\/$/, '') || '/health';
   const initial = root.dataset.initialRoute;
   if (initial) {
-    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine', 'medical-input': '/health/medical/input', 'medical-search': '/health/medical/search' };
+    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine', 'medical-input': '/health/medical/input', 'medical-search': '/health/medical/search', 'medical-sync': '/health/medical/sync' };
     return map[initial] || '/health/history';
   }
   return '/health/history';
@@ -751,6 +787,7 @@ function showRoute(root) {
 
   if (action === 'medical') {
     if (param === 'input') renderMedicalInput(root);
+    else if (param === 'sync') renderMedicalSync(root);
     else renderMedicalSearch(root);
   } else if (action === 'add') renderFormPage(root, '');
   else if (action === 'edit') renderFormPage(root, decodeURIComponent(param));
@@ -913,6 +950,7 @@ export function mountHealthApp(root) {
       const draft = medicalDrafts.get(root);
       if (!draft) return;
       try {
+        setMedicalProgress(root, true);
         const saved = saveMedicalKnowledge(draft);
         medicalSave.disabled = true;
         medicalSave.textContent = 'Đang đồng bộ GitHub…';
@@ -925,6 +963,7 @@ export function mountHealthApp(root) {
       } catch (error) {
         showToast(root, `Đã lưu offline nhưng chưa sync được. ${error.message || ''}`.trim(), true);
       } finally {
+        setMedicalProgress(root, false);
         medicalSave.disabled = false;
         medicalSave.textContent = '✓ Xác nhận lưu & đồng bộ GitHub';
       }
@@ -1056,6 +1095,58 @@ export function mountHealthApp(root) {
 
   root.addEventListener('submit', (event) => {
     const form = event.target;
+    if (form.matches('[data-medical-sync-form]')) {
+      event.preventDefault();
+      const button = form.querySelector('[data-medical-sync-submit]');
+      const status = form.querySelector('[data-medical-sync-status]');
+      const log = form.querySelector('[data-medical-sync-log]');
+      const setSyncFeedback = (state, message, lines) => {
+        status.className = `medical-sync-status${state ? ` is-${state}` : ''}`;
+        status.textContent = message;
+        log.textContent = lines.join('\n');
+      };
+      const token = form.elements.token.value.trim();
+      const settings = {
+        token,
+        repo: form.elements.repo.value.trim(),
+        branch: form.elements.branch.value.trim(),
+        filePath: form.elements.filePath.value.trim(),
+      };
+      button.disabled = true;
+      button.textContent = 'Đang đồng bộ…';
+      setSyncFeedback('syncing', 'Đang đồng bộ', [
+        '[1/4] Đọc Structured Data từ localStorage…',
+        `[2/4] Kiểm tra file ${settings.filePath} trên GitHub…`,
+        '[3/4] Mã hoá JSON Base64 và cập nhật bằng PUT…',
+      ]);
+      try {
+        saveSessionGitHubSettings(settings);
+        syncMedicalKnowledge(settings).then((result) => {
+          medicalRemoteEntries = result.items;
+          medicalRemotePromise = null;
+          setSyncFeedback('success', 'Đồng bộ thành công', [
+            '[1/4] Đã đọc dữ liệu local.',
+            `[2/4] Đã xử lý SHA file ${result.created ? '(tạo file mới)' : '(cập nhật file cũ)'}.`,
+            `[3/4] Đã gửi ${result.count} mục JSON lên GitHub.`,
+            `[4/4] Commit hoàn tất${result.commit ? `: ${result.commit}` : '.'}`,
+          ]);
+        }).catch((error) => {
+          setSyncFeedback('error', 'Đồng bộ lỗi', [
+            '[1/4] Đã đọc dữ liệu local.',
+            '[2/4] GitHub từ chối hoặc không thể truy cập file.',
+            `[Lỗi] ${error.message || 'Không rõ nguyên nhân.'}`,
+          ]);
+        }).finally(() => {
+          button.disabled = false;
+          button.textContent = '⇅ Đồng bộ lên GitHub';
+        });
+      } catch (error) {
+        setSyncFeedback('error', 'Đồng bộ lỗi', [`[Lỗi] ${error.message || 'Không lưu được cấu hình phiên.'}`]);
+        button.disabled = false;
+        button.textContent = '⇅ Đồng bộ lên GitHub';
+      }
+      return;
+    }
     if (form.matches('[data-medical-input-form]')) {
       event.preventDefault();
       const button = form.querySelector('[data-medical-analyze]');

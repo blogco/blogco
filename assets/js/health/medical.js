@@ -3,8 +3,8 @@
 // keywords instead of a paid LLM/API.
 
 import { escapeHtml } from './medicine.js';
-import { commitAsset, getSettings } from '../blog/store.js';
-import { rawFileUrl, toBase64 } from '../blog/lib.js';
+import { getDefaultGitHubSettings, getSessionGitHubSettings, parseRepo, syncToGitHub } from './github-sync.js';
+import { rawFileUrl } from '../blog/lib.js';
 
 const STORAGE_KEY = 'blogco.health.medical.v1';
 const BACKUP_KEY = 'blogco.health.medical.backup.v1';
@@ -159,10 +159,11 @@ export function mergeMedicalEntries(...collections) {
   return [...byId.values()].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 }
 
-async function fetchRemotePayload(settings = getSettings()) {
+async function fetchRemotePayload(settings = getDefaultGitHubSettings()) {
   const repo = settings.repo || 'blogco/blogco';
   const branch = settings.branch || 'main';
-  const url = `${rawFileUrl(repo, branch, MEDICAL_REPO_PATH)}?t=${Date.now()}`;
+  const filePath = settings.filePath || MEDICAL_REPO_PATH;
+  const url = `${rawFileUrl(repo, branch, filePath)}?t=${Date.now()}`;
   const response = await fetch(url, { cache: 'no-store' });
   if (response.status === 404) return { items: [] };
   if (!response.ok) throw new Error(`Không tải được kho tri thức online (${response.status}).`);
@@ -170,14 +171,14 @@ async function fetchRemotePayload(settings = getSettings()) {
   return { ...payload, items: Array.isArray(payload) ? payload : (payload.items || []) };
 }
 
-export async function loadRemoteMedicalKnowledge(settings = getSettings()) {
+export async function loadRemoteMedicalKnowledge(settings = getDefaultGitHubSettings()) {
   const payload = await fetchRemotePayload(settings);
   return mergeMedicalEntries(payload.items);
 }
 
-export async function syncMedicalKnowledge() {
-  const settings = getSettings();
-  if (!settings.token) throw new Error('Chưa có GitHub token. Mở “Viết blog” → Kết nối GitHub để nhập token có quyền contents:write.');
+export async function syncMedicalKnowledge(syncSettings = getSessionGitHubSettings()) {
+  const settings = { ...getSessionGitHubSettings(), ...syncSettings };
+  if (!settings.token) throw new Error('Chưa có GitHub PAT. Mở tab “Đồng bộ” để nhập token trong phiên này.');
   const localItems = getMedicalEntries();
   const remotePayload = await fetchRemotePayload(settings);
   const items = mergeMedicalEntries(remotePayload.items, localItems);
@@ -188,14 +189,8 @@ export async function syncMedicalKnowledge() {
     updatedAt: new Date().toISOString(),
     items,
   };
-  const result = await commitAsset({
-    repo: settings.repo,
-    branch: settings.branch || 'main',
-    path: MEDICAL_REPO_PATH,
-    base64: toBase64(JSON.stringify(payload, null, 2)),
-    message: 'feat: sync medical knowledge',
-    token: settings.token,
-  });
+  const { owner, name } = parseRepo(settings.repo);
+  const result = await syncToGitHub(settings.token, owner, name, settings.branch || 'main', settings.filePath || MEDICAL_REPO_PATH, JSON.stringify(payload, null, 2));
   return { ...result, items, count: items.length };
 }
 

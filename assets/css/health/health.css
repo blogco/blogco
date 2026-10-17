@@ -348,7 +348,16 @@ body.health-route .category-bar { display: none; }
 .medical-tab:focus-visible { color: var(--health-teal-dark) !important; background: #f0fdfa; }
 .medical-tab.is-active { border-color: var(--health-teal-soft); color: var(--health-teal-dark) !important; background: #ccfbf1; }
 .medical-input-form,
-.medical-search-form { display: grid; gap: 1rem; }
+.medical-search-form,
+.medical-sync-form { display: grid; gap: 1rem; }
+.medical-sync-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(10rem, 1fr); gap: 1rem; }
+.medical-security-warning { margin: 0 !important; padding: .8rem .9rem; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; color: #713f12 !important; background: #fffbeb; font-size: .86rem; line-height: 1.55; }
+.medical-security-warning code { padding: .1rem .25rem; border-radius: 4px; background: rgba(146, 64, 14, .1); }
+.medical-sync-status { min-height: 1.3rem; color: var(--health-muted); font-weight: 800; }
+.medical-sync-status.is-syncing { color: var(--blogco-primary-hover); }
+.medical-sync-status.is-success { color: #127a4b; }
+.medical-sync-status.is-error { color: var(--health-danger); }
+.medical-sync-log { overflow: auto; min-height: 7rem; margin: 0; padding: .8rem .9rem; border: 1px solid var(--health-border); border-radius: 10px; color: var(--health-muted); background: #f8fafc; font: .78rem/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre-wrap; }
 .medical-raw-field textarea { min-height: 260px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; line-height: 1.55; }
 .medical-offline-note { margin: 0 !important; color: var(--health-muted) !important; font-size: .86rem; }
 .medical-progress { overflow: hidden; height: 7px; margin-top: -.4rem; border-radius: 99px; background: #dbeafe; }
@@ -388,6 +397,7 @@ body.health-route .category-bar { display: none; }
 @media (max-width: 767px) {
   .medical-tabs { margin-top: 1rem; }
   .medical-tab { flex: 1 1 auto; }
+  .medical-sync-grid { grid-template-columns: 1fr; }
   .medical-preview__grid { grid-template-columns: 1fr; }
   .medical-preview__full { grid-column: auto; }
 }
