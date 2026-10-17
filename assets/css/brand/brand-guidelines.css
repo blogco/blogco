@@ -1,81 +1,61 @@
 /* BlogCo — Corporate Identity & Brand Guidelines (#/brand-guidelines · #/ci)
-   Nhận diện tham chiếu MỚI: Samsung Corporate — Immersive · Dynamic · Distinctive
+   Nhận diện tham chiếu: Samsung Corporate — Immersive · Dynamic · Distinctive
    (Đắm chìm · Năng động · Khác biệt)
 
    ═══ ROLLBACK ═══
-   Nếu cần quay lại phong cách Ericsson, khôi phục khối :root cũ sau đây
-   và xóa khối :root Samsung:
-
-   :root {
-     --blogco-primary: #002561;
-     --blogco-primary-hover: #001b46;
-     --blogco-accent-sky: #0082f0;
-     --blogco-accent-bg: #EAF3FE;
-     --blogco-dark-neutral: #002561;
-     --blogco-bg: #F4F8FC;
-     --blogco-card-bg: #FFFFFF;
-     --blogco-text-main: #002561;
-     --blogco-text-body: #33475B;
-     --blogco-text-muted: #5B6B7F;
-     --blogco-border: #D5E3F0;
-     --blogco-font-family: 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
-     --blogco-shadow: 0 4px 12px rgb(0 0 0 / 5%);
-   }
+   Hướng dẫn khôi phục phong cách cũ (nếu cần) nằm tại:
+   docs/brand-rollback.md — xem trước khi revert để không mất tham chiếu.
    ════════════════ */
 
 :root {
-  /* ── Samsung Brand Tokens (design tokens mới, prefix --samsung-) ────────── */
+  /* ── BlogCo Brand Tokens — SINGLE SOURCE OF TRUTH ─────────────────────────
+     Toàn bộ site (brand.css, module water/health/coffee/thuoc/blog/auth...)
+     đều dẫn xuất từ khối này. Chỉ cần sửa ở đây là đổi branding toàn blog.
+
+     Giá trị HEX hiển thị trong mục "CSS Global Variables" của trang
+     #/brand-guidelines — phải luôn khớp với assets/js/brand/main.js.
+     ──────────────────────────────────────────────────────────────────────── */
 
   /* Màu thương hiệu chính: logo, CTA chính, tiêu đề H1/H2 */
-  --samsung-primary: #1428A0;
+  --blogco-primary: #1428A0;
   /* Hover/pressed state của nút chính */
-  --samsung-primary-hover: #0F1F7A;
-  /* Điểm nhấn: link decor, active state, icon nhấn (dùng cho UI element ≥3:1) */
-  --samsung-accent-sky: #0689D8;
-  /* Nền badge/tag, hover nhẹ trên nền trắng */
-  --samsung-accent-bg: #E8F0FE;
+  --blogco-primary-hover: #0F1F7A;
+  /* Điểm nhấn: active state, border nổi bật, thanh tiến trình */
+  --blogco-accent-sky: #0689D8;
+  /* Nền badge/tag, hover nhẹ trên bàn/table */
+  --blogco-accent-bg: #E8F0FE;
   /* Nền trang chính */
-  --samsung-bg: #FFFFFF;
-  /* Nền card, vùng phân cách nội dung */
-  --samsung-surface: #F7F7F7;
-  /* Tiêu đề, text quan trọng (trên nền trắng: 21:1 — AAA) */
-  --samsung-text-main: #000000;
-  /* Nội dung bài viết (trên nền trắng: 4.5:1 — đạt WCAG AA) */
-  --samsung-text-body: #75787B;
-  /* Ghi chú, metadata không thiết yếu / placeholder / disabled */
-  --samsung-text-muted: #A6A6A6;
-  /* Viền phân cách nhẹ nhàng */
-  --samsung-border: #E6E6E6;
+  --blogco-bg: #FFFFFF;
+  /* Nền card, nền bảng biểu dữ liệu */
+  --blogco-card-bg: #F7F7F7;
+  /* Tiêu đề, nhãn quan trọng (trắng: 21:1 — AAA) */
+  --blogco-text-main: #000000;
+  /* Nội dung bài viết (trắng: 4.5:1 — WCAG AA) */
+  --blogco-text-body: #75787B;
+  /* Ngày tháng, ghi chú phụ, placeholder (không dùng cho text thiết yếu) */
+  --blogco-text-muted: #A6A6A6;
+  /* Viền mảnh phân tách card, bảng */
+  --blogco-border: #E6E6E6;
+  /* Font body + display (proprietary, fallback system) */
+  --blogco-font-family: 'SamsungOne', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-font-display: 'Samsung Sharp Sans', 'Helvetica Neue', Arial, sans-serif;
 
-  /* ── Typography ─────────────────────────────────────────────────────────── */
-  /* Font display (tiêu đề) — propietary, fallback system nếu không cài */
-  --samsung-font-display: 'Samsung Sharp Sans', 'Helvetica Neue', Arial, sans-serif;
-  /* Font body (nội dung) — propietary, fallback system nếu không cài */
-  --samsung-font-body: 'SamsungOne', 'Helvetica Neue', Arial, sans-serif;
-
-  /* ── Elevation & shape ──────────────────────────────────────────────────── */
-  /* Shadow tinh tế, không quá đậm (tinh thần Samsung: phẳng, sạch) */
+  /* ── Aliases nội bộ (--samsung-* + hình khối/shadow) ────────────────────── */
+  --samsung-primary: var(--blogco-primary);
+  --samsung-primary-hover: var(--blogco-primary-hover);
+  --samsung-accent-sky: var(--blogco-accent-sky);
+  --samsung-accent-bg: var(--blogco-accent-bg);
+  --samsung-bg: var(--blogco-bg);
+  --samsung-surface: var(--blogco-card-bg);
+  --samsung-text-main: var(--blogco-text-main);
+  --samsung-text-body: var(--blogco-text-body);
+  --samsung-text-muted: var(--blogco-text-muted);
+  --samsung-border: var(--blogco-border);
+  --samsung-font-display: var(--blogco-font-display);
+  --samsung-font-body: var(--blogco-font-family);
   --samsung-shadow: 0 2px 8px rgb(0 0 0 / 6%);
   --samsung-radius-card: 12px;
   --samsung-radius-btn: 6px;
-
-  /* ═══ KHỐI DỌN DẸP (legacy aliases) ═══
-     Giữ tên biến --blogco-* trỏ sang token Samsung để các file cũ
-     (brand.css, module water/health/coffee) không cần sửa hàng loạt.
-     Xóa các dòng này khi đã migrate xong 100%. */
-  --blogco-primary: var(--samsung-primary);
-  --blogco-primary-hover: var(--samsung-primary-hover);
-  --blogco-accent-sky: var(--samsung-accent-sky);
-  --blogco-accent-bg: var(--samsung-accent-bg);
-  --blogco-dark-neutral: var(--samsung-primary-hover);
-  --blogco-bg: var(--samsung-bg);
-  --blogco-card-bg: var(--samsung-surface);
-  --blogco-text-main: var(--samsung-text-main);
-  --blogco-text-body: var(--samsung-text-body);
-  --blogco-text-muted: var(--samsung-text-muted);
-  --blogco-border: var(--samsung-border);
-  --blogco-font-family: var(--samsung-font-body);
-  --blogco-shadow: var(--samsung-shadow);
 }
 
 /* Route: ẩn mọi thứ khác trên trang chủ khi mở #/brand-guidelines --------- */

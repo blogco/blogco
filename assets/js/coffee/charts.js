@@ -3,33 +3,33 @@
 // Every builder is a PURE function that returns an HTML/SVG string (no DOM), so
 // the layouts can be unit-tested in Node and dropped straight into innerHTML.
 //
-// Design system palette (Ericsson blue / neutral), matching coffee.css.
+// Design system palette (Samsung Blue / neutral), matching coffee.css.
 
 import { escapeHtml } from './store.js';
 
 export const PALETTE = Object.freeze({
-  primary: '#002561',
-  primaryAlt: '#0068bf',
-  primaryDark: '#001b46',
-  mint: '#0082f0',
-  mintSoft: '#9CCBF9',
-  gray: '#D5E3F0',
-  grayText: '#5B6B7F',
-  bg: '#F4F8FC',
-  border: '#D5E3F0',
-  ink: '#002561',
+  primary: '#1428A0',
+  primaryAlt: '#0689D8',
+  primaryDark: '#0F1F7A',
+  mint: '#0689D8',
+  mintSoft: '#9CC3F5',
+  gray: '#E6E6E6',
+  grayText: '#75787B',
+  bg: '#F7F7F7',
+  border: '#E6E6E6',
+  ink: '#000000',
   warning: '#C2740B',
   warningSoft: '#FBE3C7',
   danger: '#C81E1E',
   success: '#127A4B',
-  info: '#0068bf',
+  info: '#0689D8',
 });
 
 // Ordered palette for categorical series (brands, categories…). Blue-forward
 // with deep / mid / sky / soft steps for strong contrast between slices.
 export const SERIES_COLORS = [
-  '#002561', '#0068bf', '#0082f0', '#4DA3F5', '#9CCBF9',
-  '#001b46', '#5B6B7F', '#7DBBF7', '#BBD8F5', '#374151',
+  '#1428A0', '#0689D8', '#0F1F7A', '#4DA3F5', '#9CC3F5',
+  '#7A7D80', '#A6A6A6', '#7DBBF7', '#C8D6FB', '#374151',
 ];
 
 export function colorAt(index) {

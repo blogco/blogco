@@ -1,26 +1,26 @@
 :root {
   /* ═══ Samsung Corporate identity — Immersive · Dynamic · Distinctive ═══
-     Token mới (--sm-*). Khối legacy Ericsson đã được lưu trong comment
-     ở cuối file brand-guidelines.css để rollback nếu cần. */
-  --sm-blue: #1428A0;          /* Samsung Blue — primary */
-  --sm-blue-dark: #0F1F7A;     /* Hover/pressed */
-  --sm-sky: #0689D8;           /* Accent — UI element, active state */
-  --sm-navy: #1428A0;          /* Header/footer band */
-  --sm-navy-2: #0F1F7A;        /* Viền tối trên nền navy */
-  --sm-soft: #E8F0FE;          /* Nền badge/tag, hover nhẹ */
-  --sm-bg: #FFFFFF;            /* Nền trang — trắng tinh, whitespace rộng rãi */
-  --sm-surface: #F7F7F7;       /* Nền card */
-  --sm-border: #E6E6E6;        /* Viền phân cách */
+     Dẫn xuất từ single source of truth: assets/css/brand/brand-guidelines.css
+     (các biến --blogco-*). Sửa branding ở đó, toàn site tự cập nhật. */
+  --sm-blue: var(--blogco-primary);          /* Samsung Blue — primary */
+  --sm-blue-dark: var(--blogco-primary-hover); /* Hover/pressed */
+  --sm-sky: var(--blogco-accent-sky);        /* Accent — UI element, active state */
+  --sm-navy: var(--blogco-primary);          /* Header/footer band */
+  --sm-navy-2: var(--blogco-primary-hover);  /* Viền tối trên nền navy */
+  --sm-soft: var(--blogco-accent-bg);        /* Nền badge/tag, hover nhẹ */
+  --sm-bg: var(--blogco-bg);                 /* Nền trang — trắng, whitespace rộng */
+  --sm-surface: var(--blogco-card-bg);       /* Nền card */
+  --sm-border: var(--blogco-border);         /* Viền phân cách */
 
   /* Semantic aliases (giữ tên cũ để water/health/coffee không cần sửa) */
-  --bg: #FFFFFF;
-  --text: #000000;
-  --muted: #75787B;
-  --border: #E6E6E6;
-  --accent: #1428A0;
-  --accent-dark: #0F1F7A;
-  --accent-sky: #0689D8;
-  --font-sans: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+  --bg: var(--blogco-bg);
+  --text: var(--blogco-text-main);
+  --muted: var(--blogco-text-body);
+  --border: var(--blogco-border);
+  --accent: var(--blogco-primary);
+  --accent-dark: var(--blogco-primary-hover);
+  --accent-sky: var(--blogco-accent-sky);
+  --font-sans: var(--blogco-font-family);
   --fw-body: 500;
   --fw-heading: 700;
   --fw-h1: 800;
@@ -37,8 +37,8 @@
   --entry: var(--sm-surface);
   --primary: var(--text);
   --secondary: var(--muted);
-  --content: #75787B;
-  --code-bg: #F7F7F7;
+  --content: var(--blogco-text-body);
+  --code-bg: var(--blogco-card-bg);
   color-scheme: light;
 }
 
@@ -209,7 +209,7 @@ body.article-body .main {
 }
 
 .post-entry:hover,
-.first-entry:hover { box-shadow: none; border-color: #cbd5e1; }
+.first-entry:hover { box-shadow: none; border-color: var(--blogco-border); }
 .entry-header h2 { font-size: 24px; font-weight: 700 !important; }
 .entry-content,
 .entry-content p { color: var(--text); font-size: 18px; font-weight: 500 !important; line-height: var(--lh-body); }
@@ -293,18 +293,18 @@ body.article-body .main {
   width: 100%;
   margin: 0 auto 48px;
   padding: 28px 32px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--blogco-border);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--blogco-card-bg);
 }
 
 .search-area__inner { width: 100%; max-width: 880px; margin-inline: auto; }
-.search-area__label { display: block; margin: 0 0 12px; color: #334155; font-size: 14px; font-weight: 700 !important; letter-spacing: .06em; line-height: 1.3; }
-.search-area__field { display: flex; min-height: 56px; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
+.search-area__label { display: block; margin: 0 0 12px; color: var(--blogco-text-main); font-size: 14px; font-weight: 700 !important; letter-spacing: .06em; line-height: 1.3; }
+.search-area__field { display: flex; min-height: 56px; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid var(--blogco-border); border-radius: 6px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
 .search-area__field:focus-within { border-color: var(--accent-dark); box-shadow: 0 0 0 3px rgb(6 137 216 / 18%); }
 .search-area__icon { flex: 0 0 auto; font-size: 18px; line-height: 1; }
 .search-area__input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 54px; padding: 12px 0; border: 0 !important; outline: 0; background: transparent !important; color: #111827; font: inherit; }
-.search-area__input::placeholder { color: #64748b; opacity: 1; }
+.search-area__input::placeholder { color: var(--blogco-text-body); opacity: 1; }
 .search-area__results { display: grid; gap: 8px; margin-top: 12px; }
 .search-area__results:empty { display: none; }
 .search-area__results a { display: block; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
@@ -693,7 +693,7 @@ body.water-route .main .water-page-heading h1 {
 body.water-route .main .water-page-heading > p:last-child {
   max-width: 720px;
   margin: 0;
-  color: #4B5563 !important;
+  color: var(--blogco-text-body) !important;
   font-size: 17px !important;
   font-weight: 500 !important;
   line-height: 1.6 !important;
@@ -721,7 +721,7 @@ body .main .post-header .post-title {
 body .main .post-header .post-description {
   max-width: 720px;
   margin: 0;
-  color: #4B5563 !important;
+  color: var(--blogco-text-body) !important;
   font-size: 17px !important;
   font-weight: 500 !important;
   line-height: 1.6 !important;
@@ -744,7 +744,7 @@ body .main .post-header .post-description {
   max-width: 720px;
   margin: 0 auto;
   padding: 0 24px;
-  color: #1F2937;
+  color: var(--blogco-text-main);
   font-size: 18px !important;
   font-weight: 500 !important;
   line-height: 1.75 !important;
@@ -753,7 +753,7 @@ body .main .post-header .post-description {
 .post-single .post-content p,
 .blogco-article .article-content p {
   margin: 0 0 24px;
-  color: #1F2937;
+  color: var(--blogco-text-main);
   font-size: 18px !important;
   font-weight: 500 !important;
   line-height: 1.75 !important;
@@ -800,7 +800,7 @@ body .main .post-header .post-description {
   border-left: 4px solid var(--accent);
   border-radius: 0 6px 6px 0;
   background: #F8FAFC;
-  color: #1F2937;
+  color: var(--blogco-text-main);
   font-style: italic;
 }
 
@@ -1090,7 +1090,7 @@ body.article-body .blogco-header .header-nav {
 
 .blogco-header .navbar__mega-item:hover,
 .blogco-header .navbar__mega-item:focus-visible {
-  border-color: #BBD8F5;
+  border-color: var(--blogco-border);
   background: var(--sm-soft);
   transform: translateY(-1px);
 }

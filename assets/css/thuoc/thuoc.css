@@ -1,30 +1,30 @@
 /* ==========================================================================
    "Chi phí cà phê" — Expense Management
-   Rebranded to the Ericsson corporate design language: Blue (#002561 /
-   #0068bf / #0082f0), crisp tech surfaces, tabular grids and voucher records.
+   Rebranded to the Samsung corporate design language: Blue (var(--blogco-primary) /
+   var(--blogco-primary) / var(--blogco-accent-sky)), crisp tech surfaces, tabular grids and voucher records.
    Only the `thuoc-*` namespace is touched.
    ========================================================================== */
 
 :root {
-  /* Ericsson corporate identity — deep blue / process blue / sky accent */
-  --thuoc-primary: #002561;        /* Ericsson Blue — primary CTA */
-  --thuoc-primary-dark: #001b46;   /* hover / pressed */
-  --thuoc-sky: #0082f0;            /* secondary accent */
-  --thuoc-primary-deep: #002561;   /* deep ink for headings on soft bg */
+  /* Samsung corporate identity — deep blue / process blue / sky accent */
+  --thuoc-primary: var(--blogco-primary);        /* Samsung Blue — primary CTA */
+  --thuoc-primary-dark: var(--blogco-primary-hover);   /* hover / pressed */
+  --thuoc-sky: var(--blogco-accent-sky);            /* secondary accent */
+  --thuoc-primary-deep: var(--blogco-primary);   /* deep ink for headings on soft bg */
   --thuoc-primary-alt: #4DA3F5;    /* light blue for gradients */
-  --thuoc-primary-soft: #EAF3FE;   /* soft blue surface */
-  --thuoc-primary-soft-2: #F4F8FC;
-  --thuoc-blue-line: #BBD8F5;      /* soft blue hairline */
+  --thuoc-primary-soft: var(--blogco-accent-bg);   /* soft blue surface */
+  --thuoc-primary-soft-2: var(--blogco-bg);
+  --thuoc-blue-line: var(--blogco-border);      /* soft blue hairline */
 
   /* Neutrals */
-  --thuoc-ink: #002561;
-  --thuoc-text: #33475B;
-  --thuoc-muted: #5B6B7F;
-  --thuoc-border: #D5E3F0;
-  --thuoc-border-strong: #BBD8F5;
-  --thuoc-bg: #F4F8FC;
+  --thuoc-ink: var(--blogco-primary);
+  --thuoc-text: var(--blogco-text-body);
+  --thuoc-muted: var(--blogco-text-muted);
+  --thuoc-border: var(--blogco-border);
+  --thuoc-border-strong: var(--blogco-border);
+  --thuoc-bg: var(--blogco-bg);
   --thuoc-surface: #FFFFFF;
-  --thuoc-surface-2: #F4F8FC;
+  --thuoc-surface-2: var(--blogco-bg);
 
   /* Semantic */
   --thuoc-success: #127A4B;
@@ -127,14 +127,14 @@ body.thuoc-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .thuoc-page-heading > p:last-child { margin: 0; color: var(--thuoc-muted); max-width: 70ch; }
-/* Corporate hero band (list + stats landing) — Ericsson blue */
+/* Corporate hero band (list + stats landing) — Samsung blue */
 .thuoc-page-heading--hero {
   border: 0;
   border-left: 5px solid var(--thuoc-sky);
   padding: 1.4rem 1.5rem;
   color: #fff;
-  background: linear-gradient(135deg, #002561 0%, #0068bf 62%, #0082f0 130%);
-  box-shadow: 0 16px 34px rgba(0, 40, 99, .28);
+  background: linear-gradient(135deg, var(--blogco-primary) 0%, var(--blogco-primary) 62%, var(--blogco-accent-sky) 130%);
+  box-shadow: 0 16px 34px rgba(20, 40, 160, .28);
 }
 .thuoc-page-heading--hero::after {
   position: absolute;
@@ -143,7 +143,7 @@ body.thuoc-route .category-bar { display: none; }
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 104, 191, .28), rgba(0, 104, 191, 0) 70%);
+  background: radial-gradient(circle, rgba(6, 137, 216, .28), rgba(6, 137, 216, 0) 70%);
   content: "";
   pointer-events: none;
 }
@@ -197,7 +197,7 @@ body.thuoc-route .category-bar { display: none; }
   text-decoration: none !important;
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
-.thuoc-primary-button { border: 1px solid var(--thuoc-primary); color: #fff !important; background: var(--thuoc-primary); box-shadow: 0 6px 16px rgba(0, 104, 191, .26); }
+.thuoc-primary-button { border: 1px solid var(--thuoc-primary); color: #fff !important; background: var(--thuoc-primary); box-shadow: 0 6px 16px rgba(6, 137, 216, .26); }
 .thuoc-primary-button:hover { background: var(--thuoc-primary-dark); border-color: var(--thuoc-primary-dark); transform: translateY(-1px); }
 .thuoc-secondary-button { border: 1px solid var(--thuoc-border-strong); color: var(--thuoc-primary) !important; background: #fff; }
 .thuoc-secondary-button:hover { border-color: var(--thuoc-primary); background: var(--thuoc-primary-soft-2); transform: translateY(-1px); }
@@ -271,7 +271,7 @@ body.thuoc-route .category-bar { display: none; }
    -------------------------------------------------------------------------- */
 .thuoc-budget-strip { display: grid; gap: .8rem; }
 .thuoc-budget-value { display: inline-block; margin-right: .35rem; font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--thuoc-ink); }
-.thuoc-budget-bar { overflow: hidden; height: 10px; border-radius: 999px; background: #E8EDF1; }
+.thuoc-budget-bar { overflow: hidden; height: 10px; border-radius: 999px; background: var(--blogco-border); }
 .thuoc-budget-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--thuoc-primary), var(--thuoc-primary-alt)); }
 .thuoc-budget-bar > span.is-warning { background: linear-gradient(90deg, #B26A00, #E8A33D); }
 .thuoc-budget-bar > span.is-danger { background: linear-gradient(90deg, #A31212, var(--thuoc-danger)); }
@@ -362,7 +362,7 @@ body.thuoc-route .category-bar { display: none; }
 }
 .thuoc-screen input:focus,
 .thuoc-screen textarea:focus,
-.thuoc-screen select:focus { outline: none; border-color: var(--thuoc-primary); box-shadow: 0 0 0 3px rgba(0, 104, 191, .15); }
+.thuoc-screen select:focus { outline: none; border-color: var(--thuoc-primary); box-shadow: 0 0 0 3px rgba(6, 137, 216, .15); }
 .thuoc-screen textarea { resize: vertical; }
 .thuoc-screen input[readonly] { background: var(--thuoc-surface-2); color: var(--thuoc-muted); font-variant-numeric: tabular-nums; }
 
@@ -447,7 +447,7 @@ body.thuoc-route .category-bar { display: none; }
 
 .thuoc-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: var(--thuoc-radius-xs); color: var(--thuoc-ink); background: transparent; font-size: .86rem; font-weight: 500; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
 .thuoc-manual-input:hover { border-color: var(--thuoc-border); background: #fff; }
-.thuoc-manual-input:focus { outline: none; border-color: var(--thuoc-primary); background: #fff; box-shadow: 0 0 0 3px rgba(0, 104, 191, .16); }
+.thuoc-manual-input:focus { outline: none; border-color: var(--thuoc-primary); background: #fff; box-shadow: 0 0 0 3px rgba(6, 137, 216, .16); }
 .thuoc-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .thuoc-manual-input--qty { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .thuoc-manual-total-cell { display: inline-block; min-width: 100%; color: var(--thuoc-primary-deep); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
@@ -472,7 +472,7 @@ body.thuoc-route .category-bar { display: none; }
   border-radius: var(--thuoc-radius-sm);
   color: #fff !important;
   background: var(--thuoc-primary-deep);
-  box-shadow: 0 12px 30px rgba(10, 22, 80, .3);
+  box-shadow: 0 12px 30px rgba(15, 31, 122, .3);
   font-size: .88rem;
   font-weight: 600;
   opacity: 0;
@@ -495,7 +495,7 @@ body.thuoc-route .category-bar { display: none; }
 .thuoc-chart--donut { width: 100%; max-width: 240px; min-width: 0; margin: 0 auto; }
 .cc-axis-line { stroke: var(--thuoc-border); stroke-width: 1.5; }
 .cc-axis-label { fill: var(--thuoc-muted); font-size: 12px; font-weight: 600; }
-.cc-axis-sub { fill: #94A3B8; font-size: 10px; }
+.cc-axis-sub { fill: var(--blogco-border); font-size: 10px; }
 .cc-seg-label { fill: #fff; font-size: 11px; font-weight: 700; }
 .cc-total-label { fill: var(--thuoc-ink); font-size: 12px; font-weight: 800; }
 .cc-bar-value { fill: var(--thuoc-primary); font-size: 12px; font-weight: 700; }
@@ -686,7 +686,7 @@ body.thuoc-route .category-bar { display: none; }
   font-weight: 600;
 }
 .thuoc-manual-select:hover { border-color: var(--thuoc-border); background: #fff; }
-.thuoc-manual-select:focus { outline: none; border-color: var(--thuoc-primary); background: #fff; box-shadow: 0 0 0 3px rgba(0, 104, 191, .16); }
+.thuoc-manual-select:focus { outline: none; border-color: var(--thuoc-primary); background: #fff; box-shadow: 0 0 0 3px rgba(6, 137, 216, .16); }
 .thuoc-expense-chip {
   display: inline-flex;
   align-items: center;
@@ -725,7 +725,7 @@ body.thuoc-route .category-bar { display: none; }
   display: grid;
   place-items: center;
   padding: 1.2rem;
-  background: rgba(0, 37, 97, .5);
+  background: rgba(20, 40, 160, .5);
 }
 .thuoc-review-modal {
   display: grid;
@@ -735,7 +735,7 @@ body.thuoc-route .category-bar { display: none; }
   overflow: hidden;
   border-radius: 10px;
   background: #fff;
-  box-shadow: 0 24px 60px rgba(0, 37, 97, .3);
+  box-shadow: 0 24px 60px rgba(20, 40, 160, .3);
 }
 .thuoc-review-modal__head {
   display: flex;

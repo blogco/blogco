@@ -175,8 +175,8 @@
 }
 .gh-actions__item--running .gh-actions__status { color: #1d4ed8 !important; }
 
-.gh-actions__item--neutral .gh-actions__dot { background: #64748b; }
-.gh-actions__item--neutral .gh-actions__status { color: #475569 !important; }
+.gh-actions__item--neutral .gh-actions__dot { background: var(--blogco-text-body); }
+.gh-actions__item--neutral .gh-actions__status { color: var(--blogco-text-body) !important; }
 
 @keyframes gh-actions-pulse {
   0%, 100% { opacity: 1; }

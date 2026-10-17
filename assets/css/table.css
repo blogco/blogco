@@ -1,14 +1,14 @@
 :root {
-  --table-border: #D1D5DB;
-  --table-border-strong: #9CA3AF;
+  --table-border: var(--blogco-border);
+  --table-border-strong: var(--blogco-text-muted);
   --table-bg: #FFFFFF;
-  --table-bg-alt: #F3F4F6;
-  --table-bg-hover: #EAF3FE;
+  --table-bg-alt: var(--blogco-card-bg);
+  --table-bg-hover: var(--blogco-accent-bg);
   --table-header-bg: #FFFFFF;
-  --table-header-text: #111111;
-  --table-text: #1F2937;
-  --table-total-bg: #D5E3F0;
-  --table-total-text: #111111;
+  --table-header-text: var(--blogco-text-main);
+  --table-text: var(--blogco-text-main);
+  --table-total-bg: var(--blogco-border);
+  --table-total-text: var(--blogco-text-main);
   --table-font-size: 16px;
   --table-header-fw: 700;
   --table-cell-fw: 500;
@@ -29,7 +29,7 @@
 }
 
 .table-wrap:focus-visible {
-  outline: 3px solid #002561;
+  outline: 3px solid var(--blogco-primary);
   outline-offset: 3px;
 }
 

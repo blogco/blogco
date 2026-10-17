@@ -1,30 +1,30 @@
 /* ==========================================================================
    "Chi phí cà phê" — Expense Management
-   Rebranded to the Ericsson corporate design language: Blue (#002561 /
-   #0068bf / #0082f0), crisp tech surfaces, tabular grids and voucher records.
+   Rebranded to the Samsung corporate design language: Blue (var(--blogco-primary) /
+   var(--blogco-primary) / var(--blogco-accent-sky)), crisp tech surfaces, tabular grids and voucher records.
    Only the `coffee-*` namespace is touched.
    ========================================================================== */
 
 :root {
-  /* Ericsson corporate identity — deep blue / process blue / sky accent */
-  --coffee-primary: #002561;        /* Ericsson Blue — primary CTA */
-  --coffee-primary-dark: #001b46;   /* hover / pressed */
-  --coffee-sky: #0082f0;            /* secondary accent */
-  --coffee-primary-deep: #002561;   /* deep ink for headings on soft bg */
+  /* Samsung corporate identity — deep blue / process blue / sky accent */
+  --coffee-primary: var(--blogco-primary);        /* Samsung Blue — primary CTA */
+  --coffee-primary-dark: var(--blogco-primary-hover);   /* hover / pressed */
+  --coffee-sky: var(--blogco-accent-sky);            /* secondary accent */
+  --coffee-primary-deep: var(--blogco-primary);   /* deep ink for headings on soft bg */
   --coffee-primary-alt: #4DA3F5;    /* light blue for gradients */
-  --coffee-primary-soft: #EAF3FE;   /* soft blue surface */
-  --coffee-primary-soft-2: #F4F8FC;
-  --coffee-blue-line: #BBD8F5;      /* soft blue hairline */
+  --coffee-primary-soft: var(--blogco-accent-bg);   /* soft blue surface */
+  --coffee-primary-soft-2: var(--blogco-bg);
+  --coffee-blue-line: var(--blogco-border);      /* soft blue hairline */
 
   /* Neutrals */
-  --coffee-ink: #002561;
-  --coffee-text: #33475B;
-  --coffee-muted: #5B6B7F;
-  --coffee-border: #D5E3F0;
-  --coffee-border-strong: #BBD8F5;
-  --coffee-bg: #F4F8FC;
+  --coffee-ink: var(--blogco-primary);
+  --coffee-text: var(--blogco-text-body);
+  --coffee-muted: var(--blogco-text-muted);
+  --coffee-border: var(--blogco-border);
+  --coffee-border-strong: var(--blogco-border);
+  --coffee-bg: var(--blogco-bg);
   --coffee-surface: #FFFFFF;
-  --coffee-surface-2: #F4F8FC;
+  --coffee-surface-2: var(--blogco-bg);
 
   /* Semantic */
   --coffee-success: #127A4B;
@@ -127,14 +127,14 @@ body.coffee-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .coffee-page-heading > p:last-child { margin: 0; color: var(--coffee-muted); max-width: 70ch; }
-/* Corporate hero band (list + stats landing) — Ericsson blue */
+/* Corporate hero band (list + stats landing) — Samsung blue */
 .coffee-page-heading--hero {
   border: 0;
   border-left: 5px solid var(--coffee-sky);
   padding: 1.4rem 1.5rem;
   color: #fff;
-  background: linear-gradient(135deg, #002561 0%, #0068bf 62%, #0082f0 130%);
-  box-shadow: 0 16px 34px rgba(0, 40, 99, .28);
+  background: linear-gradient(135deg, var(--blogco-primary) 0%, var(--blogco-primary) 62%, var(--blogco-accent-sky) 130%);
+  box-shadow: 0 16px 34px rgba(20, 40, 160, .28);
 }
 .coffee-page-heading--hero::after {
   position: absolute;
@@ -143,7 +143,7 @@ body.coffee-route .category-bar { display: none; }
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 104, 191, .28), rgba(0, 104, 191, 0) 70%);
+  background: radial-gradient(circle, rgba(6, 137, 216, .28), rgba(6, 137, 216, 0) 70%);
   content: "";
   pointer-events: none;
 }
@@ -197,7 +197,7 @@ body.coffee-route .category-bar { display: none; }
   text-decoration: none !important;
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
-.coffee-primary-button { border: 1px solid var(--coffee-primary); color: #fff !important; background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(0, 104, 191, .26); }
+.coffee-primary-button { border: 1px solid var(--coffee-primary); color: #fff !important; background: var(--coffee-primary); box-shadow: 0 6px 16px rgba(6, 137, 216, .26); }
 .coffee-primary-button:hover { background: var(--coffee-primary-dark); border-color: var(--coffee-primary-dark); transform: translateY(-1px); }
 .coffee-secondary-button { border: 1px solid var(--coffee-border-strong); color: var(--coffee-primary) !important; background: #fff; }
 .coffee-secondary-button:hover { border-color: var(--coffee-primary); background: var(--coffee-primary-soft-2); transform: translateY(-1px); }
@@ -271,7 +271,7 @@ body.coffee-route .category-bar { display: none; }
    -------------------------------------------------------------------------- */
 .coffee-budget-strip { display: grid; gap: .8rem; }
 .coffee-budget-value { display: inline-block; margin-right: .35rem; font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--coffee-ink); }
-.coffee-budget-bar { overflow: hidden; height: 10px; border-radius: 999px; background: #E8EDF1; }
+.coffee-budget-bar { overflow: hidden; height: 10px; border-radius: 999px; background: var(--blogco-border); }
 .coffee-budget-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coffee-primary), var(--coffee-primary-alt)); }
 .coffee-budget-bar > span.is-warning { background: linear-gradient(90deg, #B26A00, #E8A33D); }
 .coffee-budget-bar > span.is-danger { background: linear-gradient(90deg, #A31212, var(--coffee-danger)); }
@@ -362,7 +362,7 @@ body.coffee-route .category-bar { display: none; }
 }
 .coffee-screen input:focus,
 .coffee-screen textarea:focus,
-.coffee-screen select:focus { outline: none; border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(0, 104, 191, .15); }
+.coffee-screen select:focus { outline: none; border-color: var(--coffee-primary); box-shadow: 0 0 0 3px rgba(6, 137, 216, .15); }
 .coffee-screen textarea { resize: vertical; }
 .coffee-screen input[readonly] { background: var(--coffee-surface-2); color: var(--coffee-muted); font-variant-numeric: tabular-nums; }
 
@@ -447,7 +447,7 @@ body.coffee-route .category-bar { display: none; }
 
 .coffee-manual-input { width: 100%; min-height: 40px; padding: .45rem .55rem; border: 1px solid transparent; border-radius: var(--coffee-radius-xs); color: var(--coffee-ink); background: transparent; font-size: .86rem; font-weight: 500; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
 .coffee-manual-input:hover { border-color: var(--coffee-border); background: #fff; }
-.coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(0, 104, 191, .16); }
+.coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(6, 137, 216, .16); }
 .coffee-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-input--qty { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-total-cell { display: inline-block; min-width: 100%; color: var(--coffee-primary-deep); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
@@ -472,7 +472,7 @@ body.coffee-route .category-bar { display: none; }
   border-radius: var(--coffee-radius-sm);
   color: #fff !important;
   background: var(--coffee-primary-deep);
-  box-shadow: 0 12px 30px rgba(10, 22, 80, .3);
+  box-shadow: 0 12px 30px rgba(15, 31, 122, .3);
   font-size: .88rem;
   font-weight: 600;
   opacity: 0;
@@ -495,7 +495,7 @@ body.coffee-route .category-bar { display: none; }
 .coffee-chart--donut { width: 100%; max-width: 240px; min-width: 0; margin: 0 auto; }
 .cc-axis-line { stroke: var(--coffee-border); stroke-width: 1.5; }
 .cc-axis-label { fill: var(--coffee-muted); font-size: 12px; font-weight: 600; }
-.cc-axis-sub { fill: #94A3B8; font-size: 10px; }
+.cc-axis-sub { fill: var(--blogco-border); font-size: 10px; }
 .cc-seg-label { fill: #fff; font-size: 11px; font-weight: 700; }
 .cc-total-label { fill: var(--coffee-ink); font-size: 12px; font-weight: 800; }
 .cc-bar-value { fill: var(--coffee-primary); font-size: 12px; font-weight: 700; }
@@ -686,7 +686,7 @@ body.coffee-route .category-bar { display: none; }
   font-weight: 600;
 }
 .coffee-manual-select:hover { border-color: var(--coffee-border); background: #fff; }
-.coffee-manual-select:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(0, 104, 191, .16); }
+.coffee-manual-select:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(6, 137, 216, .16); }
 .coffee-expense-chip {
   display: inline-flex;
   align-items: center;
@@ -725,7 +725,7 @@ body.coffee-route .category-bar { display: none; }
   display: grid;
   place-items: center;
   padding: 1.2rem;
-  background: rgba(0, 37, 97, .5);
+  background: rgba(20, 40, 160, .5);
 }
 .coffee-review-modal {
   display: grid;
@@ -735,7 +735,7 @@ body.coffee-route .category-bar { display: none; }
   overflow: hidden;
   border-radius: 10px;
   background: #fff;
-  box-shadow: 0 24px 60px rgba(0, 37, 97, .3);
+  box-shadow: 0 24px 60px rgba(20, 40, 160, .3);
 }
 .coffee-review-modal__head {
   display: flex;
