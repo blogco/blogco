@@ -1,42 +1,61 @@
 :root {
-  /* Ericsson corporate identity — connectivity, precision, transparency */
-  --er-blue: #0068bf;
-  --er-blue-dark: #002561;
-  --er-sky: #0082f0;
-  --er-navy: #002561;
-  --er-navy-2: #001b46;
-  --er-soft: #EAF3FE;
-  --er-bg: #F4F8FC;
-  --er-surface: #FFFFFF;
-  --er-border: #D5E3F0;
+  /* ═══ Samsung Corporate identity — Immersive · Dynamic · Distinctive ═══
+     Token mới (--sm-*). Khối legacy Ericsson đã được lưu trong comment
+     ở cuối file brand-guidelines.css để rollback nếu cần. */
+  --sm-blue: #1428A0;          /* Samsung Blue — primary */
+  --sm-blue-dark: #0F1F7A;     /* Hover/pressed */
+  --sm-sky: #0689D8;           /* Accent — UI element, active state */
+  --sm-navy: #1428A0;          /* Header/footer band */
+  --sm-navy-2: #0F1F7A;        /* Viền tối trên nền navy */
+  --sm-soft: #E8F0FE;          /* Nền badge/tag, hover nhẹ */
+  --sm-bg: #FFFFFF;            /* Nền trang — trắng tinh, whitespace rộng rãi */
+  --sm-surface: #F7F7F7;       /* Nền card */
+  --sm-border: #E6E6E6;        /* Viền phân cách */
 
-  --bg: #F4F8FC;
-  --text: #002561;
-  --muted: #5B6B7F;
-  --border: #D5E3F0;
-  --accent: #0068bf;
-  --accent-dark: #002561;
-  --accent-sky: #0082f0;
-  --font-sans: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+  /* Semantic aliases (giữ tên cũ để water/health/coffee không cần sửa) */
+  --bg: #FFFFFF;
+  --text: #000000;
+  --muted: #75787B;
+  --border: #E6E6E6;
+  --accent: #1428A0;
+  --accent-dark: #0F1F7A;
+  --accent-sky: #0689D8;
+  --font-sans: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
   --fw-body: 500;
   --fw-heading: 700;
   --fw-h1: 800;
   --fs-body: 18px;
-  --lh-body: 1.75;
-  --radius: 6px;
-  --radius-sm: 4px;
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --lh-body: 1.6;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
   --max-wide: 1200px;
   --max-content: 720px;
   --space-section: 96px;
 
-  --theme: var(--er-surface);
-  --entry: var(--er-surface);
+  --theme: var(--sm-surface);
+  --entry: var(--sm-surface);
   --primary: var(--text);
   --secondary: var(--muted);
-  --content: #33475B;
-  --code-bg: #F3F4F6;
+  --content: #75787B;
+  --code-bg: #F7F7F7;
   color-scheme: light;
+}
+
+/* Font Samsung — dùng local() nếu máy đã cài; không cài vẫn fallback
+   sang Helvetica Neue/Arial nên trang luôn chạy được ngay, không cần
+   cài thêm dependency hay tải font bên ngoài. */
+@font-face {
+  font-family: "Samsung Sharp Sans";
+  src: local("Samsung Sharp Sans"), local("SamsungSharpSans-Bold");
+  font-weight: 400 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SamsungOne";
+  src: local("SamsungOne"), local("Samsung One");
+  font-weight: 100 900;
+  font-display: swap;
 }
 
 html {
@@ -245,9 +264,9 @@ body.article-body .main {
 .pagination__link { display: inline-flex; min-width: 40px; height: 40px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; color: var(--text) !important; background: #fff; font-size: 14px; font-weight: 700 !important; text-decoration: none; transition: color .15s ease, background .15s ease, border-color .15s ease; }
 .pagination__link--prev,
 .pagination__link--next { padding-inline: 16px; }
-.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #EAF3FE; }
+.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #E8F0FE; }
 .pagination__link.is-active,
-.pagination__link[aria-current="page"] { border-color: #002561; color: #fff !important; background: #002561; }
+.pagination__link[aria-current="page"] { border-color: #1428A0; color: #fff !important; background: #1428A0; }
 .pagination__link:focus-visible { outline: 3px solid var(--accent-dark); outline-offset: 3px; }
 
 .home-posts { width: 100%; max-width: 1280px; margin: 64px auto; padding: 0 24px; }
@@ -255,12 +274,12 @@ body.article-body .main {
 .home-posts .home-posts__header h2 { margin: 0; font-size: 24px !important; font-weight: 800 !important; letter-spacing: .04em; text-transform: uppercase; }
 .home-posts__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
 .post-card { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: #fff; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-.post-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 24px rgb(0 130 240 / 12%); }
+.post-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 24px rgb(20 40 160 / 10%); }
 .post-card__link { display: flex; height: 100%; flex-direction: column; color: inherit !important; text-decoration: none !important; }
 .post-card__thumb { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #f3f4f6; }
 .post-card__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
 .post-card:hover .post-card__thumb img { transform: scale(1.04); }
-.post-card__thumb-placeholder { display: block; width: 100%; height: 100%; background: linear-gradient(135deg, #f3f4f6, #D5E3F0); }
+.post-card__thumb-placeholder { display: block; width: 100%; height: 100%; background: linear-gradient(135deg, #F7F7F7, #E8F0FE); }
 .post-card__body { display: flex; min-height: 250px; flex: 1; flex-direction: column; gap: 8px; padding: 20px; }
 .post-card__date { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; letter-spacing: .06em; text-transform: uppercase; }
 .post-card .post-card__title { display: -webkit-box; overflow: hidden; margin: 0; color: var(--text); font-size: 18px !important; font-weight: 700 !important; line-height: 1.35 !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -282,7 +301,7 @@ body.article-body .main {
 .search-area__inner { width: 100%; max-width: 880px; margin-inline: auto; }
 .search-area__label { display: block; margin: 0 0 12px; color: #334155; font-size: 14px; font-weight: 700 !important; letter-spacing: .06em; line-height: 1.3; }
 .search-area__field { display: flex; min-height: 56px; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
-.search-area__field:focus-within { border-color: var(--accent-dark); box-shadow: 0 0 0 3px rgb(0 95 184 / 18%); }
+.search-area__field:focus-within { border-color: var(--accent-dark); box-shadow: 0 0 0 3px rgb(6 137 216 / 18%); }
 .search-area__icon { flex: 0 0 auto; font-size: 18px; line-height: 1; }
 .search-area__input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 54px; padding: 12px 0; border: 0 !important; outline: 0; background: transparent !important; color: #111827; font: inherit; }
 .search-area__input::placeholder { color: #64748b; opacity: 1; }
@@ -437,8 +456,8 @@ body :focus-visible {
   border: 0;
   border-radius: 12px;
   color: #fff;
-  background: linear-gradient(180deg, #0EA5E9 0%, #0284C7 35%, #075985 70%, #082F49 100%);
-  box-shadow: 0 10px 40px rgba(2, 132, 199, 0.25);
+  background: linear-gradient(135deg, #1428A0 0%, #0689D8 55%, #0F1F7A 100%);
+  box-shadow: 0 10px 40px rgba(20, 40, 160, 0.25);
   text-align: left;
 }
 
@@ -819,8 +838,8 @@ body .main .post-header .post-description {
 
 :root {
   --nav-height: 64px;
-  --nav-active-bg: #0082f0;
-  --nav-font: "Inter", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+  --nav-active-bg: #0689D8;
+  --nav-font: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
   --nav-fw: 700;
   --nav-fs: 14px;
   --nav-ls: 0.06em;
@@ -842,7 +861,7 @@ body.article-body .blogco-header {
   height: var(--nav-height);
   min-height: var(--nav-height);
   border-bottom: 0;
-  background: var(--er-navy);
+  background: var(--sm-navy);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.32);
 }
 
@@ -1011,9 +1030,9 @@ body.article-body .blogco-header .header-nav {
   z-index: 10000;
   width: min(560px, calc(100vw - 32px));
   padding: 18px;
-  border: 1px solid var(--er-border);
+  border: 1px solid var(--sm-border);
   border-radius: 8px;
-  background: var(--er-surface);
+  background: var(--sm-surface);
   box-shadow: 0 20px 48px rgba(0, 0, 0, .22), 0 4px 12px rgba(0, 0, 0, .08);
   opacity: 0;
   visibility: hidden;
@@ -1064,7 +1083,7 @@ body.article-body .blogco-header .header-nav {
   padding: 11px 12px;
   border: 1px solid transparent;
   border-radius: 10px;
-  color: var(--er-navy) !important;
+  color: var(--sm-navy) !important;
   text-decoration: none;
   transition: background .14s ease, border-color .14s ease, transform .14s ease;
 }
@@ -1072,7 +1091,7 @@ body.article-body .blogco-header .header-nav {
 .blogco-header .navbar__mega-item:hover,
 .blogco-header .navbar__mega-item:focus-visible {
   border-color: #BBD8F5;
-  background: var(--er-soft);
+  background: var(--sm-soft);
   transform: translateY(-1px);
 }
 
@@ -1085,7 +1104,7 @@ body.article-body .blogco-header .header-nav {
 .blogco-header .navbar__mega-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
 .blogco-header .navbar__mega-title {
-  color: var(--er-navy);
+  color: var(--sm-navy);
   font-size: 13px;
   font-weight: 700 !important;
   letter-spacing: 0;
@@ -1159,7 +1178,7 @@ body.article-body .blogco-header .header-nav {
     padding: 10px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 0 0 8px 8px;
-    background: var(--er-navy);
+    background: var(--sm-navy);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
     white-space: normal;
   }
@@ -1219,12 +1238,12 @@ body.article-body .blogco-header .header-nav {
   .blogco-header .navbar__logo { font-size: 19px; }
 }
 
-/* Footer — Ericsson deep-blue band ----------------------------------------- */
+/* Footer — Samsung deep-blue band ----------------------------------------- */
 body .footer,
 .footer {
   color: rgba(255, 255, 255, 0.72) !important;
-  background: var(--er-navy);
-  border-top: 1px solid var(--er-navy-2);
+  background: var(--sm-navy);
+  border-top: 1px solid var(--sm-navy-2);
 }
 
 .footer a,

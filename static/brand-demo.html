@@ -1,0 +1,98 @@
+<!doctype html>
+<!-- Demo nhanh branding Samsung Corporate — mở trực tiếp bằng trình duyệt:
+     static/brand-demo.html (served tại /brand-demo.html khi chạy Hugo) -->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BlogCo — Samsung Branding Demo</title>
+<link rel="stylesheet" href="/assets/build/site.css">
+<style>
+  /* Fallback khi chưa build: copy token Samsung + component tối thiểu từ
+     assets/css/brand/brand-guidelines.css để demo chạy được ngay. */
+  :root {
+    --samsung-primary:#1428A0; --samsung-primary-hover:#0F1F7A;
+    --samsung-accent-sky:#0689D8; --samsung-accent-bg:#E8F0FE;
+    --samsung-bg:#FFFFFF; --samsung-surface:#F7F7F7;
+    --samsung-text-main:#000000; --samsung-text-body:#75787B;
+    --samsung-text-muted:#A6A6A6; --samsung-border:#E6E6E6;
+    --samsung-shadow:0 2px 8px rgb(0 0 0 / 6%);
+    --samsung-font-display:"Samsung Sharp Sans","Helvetica Neue",Arial,sans-serif;
+    --samsung-font-body:"SamsungOne","Helvetica Neue",Arial,sans-serif;
+  }
+  body { margin:0; padding:48px 24px; background:var(--samsung-bg); color:var(--samsung-text-body); font:400 16px/1.6 var(--samsung-font-body); }
+  .demo { max-width:1100px; margin:0 auto; display:grid; gap:48px; }
+  h1,h2 { color:var(--samsung-text-main); font-family:var(--samsung-font-display); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+  /* Button */
+  .btn { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:10px 22px; border:1px solid transparent; border-radius:6px; font:600 .95rem/1 var(--samsung-font-body); cursor:pointer; transition:background .15s ease,color .15s ease; }
+  .btn--primary { color:#fff; background:var(--samsung-primary); } .btn--primary:hover { background:var(--samsung-primary-hover); }
+  .btn--outline { color:var(--samsung-primary); border-color:var(--samsung-primary); background:transparent; } .btn--outline:hover { color:#fff; background:var(--samsung-primary); }
+  .btn:focus-visible { outline:3px solid var(--samsung-accent-sky); outline-offset:2px; }
+  /* Badge */
+  .badge { display:inline-block; padding:3px 10px; border-radius:99px; color:var(--samsung-primary); background:var(--samsung-accent-bg); font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+  /* Card */
+  .card { border:1px solid var(--samsung-border); border-radius:12px; background:var(--samsung-surface); box-shadow:var(--samsung-shadow); padding:24px; }
+  .card h3 { margin:0 0 8px; color:var(--samsung-text-main); font-size:1.15rem; font-family:var(--samsung-font-display); }
+  .card p { margin:0; font-size:.9rem; }
+  /* Data Table */
+  .table-wrap { overflow-x:auto; border:1px solid var(--samsung-border); border-radius:12px; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { padding:12px 16px; border-bottom:1px solid var(--samsung-border); text-align:left; }
+  thead th { color:var(--samsung-text-main); background:var(--samsung-surface); font-size:.82rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  td { color:var(--samsung-text-body); } tbody th { color:var(--samsung-text-main); font-weight:600; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <header>
+    <h1>BlogCo — Samsung Corporate Branding</h1>
+    <p>Immersive · Dynamic · Distinctive — demo Button, Badge, Card và Data Table với design token mới.</p>
+  </header>
+
+  <section>
+    <h2>Buttons &amp; Badge</h2>
+    <div class="grid" style="grid-template-columns:1fr">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn--primary">Primary CTA</button>
+        <button class="btn btn--outline">Secondary</button>
+        <span class="badge">Samsung Blue</span>
+        <span class="badge">Immersive</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cards</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="badge">Công nghệ</span>
+        <h3>Thiết kế immersion trên web</h3>
+        <p>Khoảng trắng rộng rãi, shadow tinh tế và bo góc 12px tạo cảm giác cao cấp, đắm chìm.</p>
+      </article>
+      <article class="card">
+        <span class="badge">Design system</span>
+        <h3>Token hóa Samsung Blue</h3>
+        <p>--samsung-primary #1428A0 cho CTA, --samsung-accent-sky #0689D8 cho active state.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Data Table</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Giá trị</th><th>Ứng dụng</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>--samsung-primary</th><td>#1428A0</td><td>Logo, CTA, H1/H2</td></tr>
+          <tr><th>--samsung-accent-sky</th><td>#0689D8</td><td>Link, active state</td></tr>
+          <tr><th>--samsung-surface</th><td>#F7F7F7</td><td>Nền card</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

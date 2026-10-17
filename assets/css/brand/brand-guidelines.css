@@ -1,20 +1,81 @@
 /* BlogCo — Corporate Identity & Brand Guidelines (#/brand-guidelines · #/ci)
-   Nhận diện tham chiếu từ Ericsson: Xanh dương · Trắng · Xám lạnh. */
+   Nhận diện tham chiếu MỚI: Samsung Corporate — Immersive · Dynamic · Distinctive
+   (Đắm chìm · Năng động · Khác biệt)
+
+   ═══ ROLLBACK ═══
+   Nếu cần quay lại phong cách Ericsson, khôi phục khối :root cũ sau đây
+   và xóa khối :root Samsung:
+
+   :root {
+     --blogco-primary: #002561;
+     --blogco-primary-hover: #001b46;
+     --blogco-accent-sky: #0082f0;
+     --blogco-accent-bg: #EAF3FE;
+     --blogco-dark-neutral: #002561;
+     --blogco-bg: #F4F8FC;
+     --blogco-card-bg: #FFFFFF;
+     --blogco-text-main: #002561;
+     --blogco-text-body: #33475B;
+     --blogco-text-muted: #5B6B7F;
+     --blogco-border: #D5E3F0;
+     --blogco-font-family: 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+     --blogco-shadow: 0 4px 12px rgb(0 0 0 / 5%);
+   }
+   ════════════════ */
 
 :root {
-  --blogco-primary: #002561;
-  --blogco-primary-hover: #001b46;
-  --blogco-accent-sky: #0082f0;
-  --blogco-accent-bg: #EAF3FE;
-  --blogco-dark-neutral: #002561;
-  --blogco-bg: #F4F8FC;
-  --blogco-card-bg: #FFFFFF;
-  --blogco-text-main: #002561;
-  --blogco-text-body: #33475B;
-  --blogco-text-muted: #5B6B7F;
-  --blogco-border: #D5E3F0;
-  --blogco-font-family: 'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
-  --blogco-shadow: 0 4px 12px rgb(0 0 0 / 5%);
+  /* ── Samsung Brand Tokens (design tokens mới, prefix --samsung-) ────────── */
+
+  /* Màu thương hiệu chính: logo, CTA chính, tiêu đề H1/H2 */
+  --samsung-primary: #1428A0;
+  /* Hover/pressed state của nút chính */
+  --samsung-primary-hover: #0F1F7A;
+  /* Điểm nhấn: link decor, active state, icon nhấn (dùng cho UI element ≥3:1) */
+  --samsung-accent-sky: #0689D8;
+  /* Nền badge/tag, hover nhẹ trên nền trắng */
+  --samsung-accent-bg: #E8F0FE;
+  /* Nền trang chính */
+  --samsung-bg: #FFFFFF;
+  /* Nền card, vùng phân cách nội dung */
+  --samsung-surface: #F7F7F7;
+  /* Tiêu đề, text quan trọng (trên nền trắng: 21:1 — AAA) */
+  --samsung-text-main: #000000;
+  /* Nội dung bài viết (trên nền trắng: 4.5:1 — đạt WCAG AA) */
+  --samsung-text-body: #75787B;
+  /* Ghi chú, metadata không thiết yếu / placeholder / disabled */
+  --samsung-text-muted: #A6A6A6;
+  /* Viền phân cách nhẹ nhàng */
+  --samsung-border: #E6E6E6;
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  /* Font display (tiêu đề) — propietary, fallback system nếu không cài */
+  --samsung-font-display: 'Samsung Sharp Sans', 'Helvetica Neue', Arial, sans-serif;
+  /* Font body (nội dung) — propietary, fallback system nếu không cài */
+  --samsung-font-body: 'SamsungOne', 'Helvetica Neue', Arial, sans-serif;
+
+  /* ── Elevation & shape ──────────────────────────────────────────────────── */
+  /* Shadow tinh tế, không quá đậm (tinh thần Samsung: phẳng, sạch) */
+  --samsung-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+  --samsung-radius-card: 12px;
+  --samsung-radius-btn: 6px;
+
+  /* ═══ KHỐI DỌN DẸP (legacy aliases) ═══
+     Giữ tên biến --blogco-* trỏ sang token Samsung để các file cũ
+     (brand.css, module water/health/coffee) không cần sửa hàng loạt.
+     Xóa các dòng này khi đã migrate xong 100%. */
+  --blogco-primary: var(--samsung-primary);
+  --blogco-primary-hover: var(--samsung-primary-hover);
+  --blogco-accent-sky: var(--samsung-accent-sky);
+  --blogco-accent-bg: var(--samsung-accent-bg);
+  --blogco-dark-neutral: var(--samsung-primary-hover);
+  --blogco-bg: var(--samsung-bg);
+  --blogco-card-bg: var(--samsung-surface);
+  --blogco-text-main: var(--samsung-text-main);
+  --blogco-text-body: var(--samsung-text-body);
+  --blogco-text-muted: var(--samsung-text-muted);
+  --blogco-border: var(--samsung-border);
+  --blogco-font-family: var(--samsung-font-body);
+  --blogco-shadow: var(--samsung-shadow);
 }
 
 /* Route: ẩn mọi thứ khác trên trang chủ khi mở #/brand-guidelines --------- */
@@ -240,12 +301,13 @@ body.brand-route .brand-screen .brand-swatch__usage {
 
 .brand-type-row__meta { display: flex; flex-direction: column; gap: 6px; }
 
+/* Badge/Tag — nền accent-bg, text primary (9.9:1 — đạt AAA) */
 body.brand-route .brand-screen .brand-type-tag {
   align-self: flex-start;
   padding: 3px 10px;
   border-radius: 99px;
-  color: #fff !important;
-  background: var(--blogco-primary);
+  color: var(--samsung-primary) !important;
+  background: var(--samsung-accent-bg);
   font-size: .72rem !important;
   font-weight: 700 !important;
   letter-spacing: .06em;
@@ -302,7 +364,8 @@ body.brand-route .brand-screen .brand-demo-quote {
   line-height: 1.6 !important;
 }
 
-/* Buttons ---------------------------------------------------------------- */
+/* Buttons — Samsung style: primary nền xanh không viền, secondary viền xanh ---
+   Cả hai đều đạt WCAG AA: trắng-trên-#1428A0 = 11.4:1, #1428A0-trên-trắng = 8.5:1 */
 .brand-buttons { display: flex; flex-wrap: wrap; gap: 12px; }
 
 .brand-btn {
@@ -312,23 +375,26 @@ body.brand-route .brand-screen .brand-demo-quote {
   min-height: 44px;
   padding: 10px 22px;
   border: 1px solid transparent;
-  border-radius: 10px;
-  font-family: var(--blogco-font-family);
+  border-radius: 6px;
+  font-family: var(--samsung-font-body);
   font-size: .95rem;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-.brand-btn--primary { color: #fff; background: var(--blogco-primary); }
-.brand-btn--primary:hover { background: var(--blogco-primary-hover); }
-.brand-btn--secondary { color: #fff; background: var(--blogco-dark-neutral); }
-.brand-btn--secondary:hover { background: #2b2b2b; }
-.brand-btn--outline { color: var(--blogco-primary); border-color: var(--blogco-primary); background: transparent; }
-.brand-btn--outline:hover { color: #fff; background: var(--blogco-primary); }
-.brand-btn--ghost { color: var(--blogco-text-body); background: #f3f4f6; }
-.brand-btn--ghost:hover { background: var(--blogco-border); }
-.brand-btn:focus-visible { outline: 3px solid var(--blogco-primary); outline-offset: 2px; }
+/* Button chính: nền Samsung Blue, text trắng, không viền */
+.brand-btn--primary { color: #fff; background: var(--samsung-primary); }
+.brand-btn--primary:hover { background: var(--samsung-primary-hover); }
+/* Button phụ (dark): nền tối cho footer/hero */
+.brand-btn--secondary { color: #fff; background: var(--samsung-primary-hover); }
+.brand-btn--secondary:hover { background: #0a1557; }
+/* Button phụ: viền Samsung Blue, text Samsung Blue, nền trong suốt */
+.brand-btn--outline { color: var(--samsung-primary); border-color: var(--samsung-primary); background: transparent; }
+.brand-btn--outline:hover { color: #fff; background: var(--samsung-primary); }
+.brand-btn--ghost { color: var(--samsung-text-body); background: var(--samsung-surface); }
+.brand-btn--ghost:hover { background: var(--samsung-border); }
+.brand-btn:focus-visible { outline: 3px solid var(--samsung-accent-sky); outline-offset: 2px; }
 
 /* Cards ------------------------------------------------------------------ */
 .brand-cards {
@@ -337,21 +403,22 @@ body.brand-route .brand-screen .brand-demo-quote {
   gap: 20px;
 }
 
+/* Card — nền Samsung Surface, viền nhẹ, bo góc 12px, padding 24px */
 .brand-card {
-  border: 1px solid var(--blogco-border);
+  border: 1px solid var(--samsung-border);
   border-radius: 12px;
-  background: var(--blogco-card-bg);
-  box-shadow: var(--blogco-shadow);
+  background: var(--samsung-surface);
+  box-shadow: var(--samsung-shadow);
   transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
 }
-.brand-card:hover { border-color: var(--blogco-primary); box-shadow: 0 8px 20px rgb(216 33 40 / 12%); transform: translateY(-2px); }
+.brand-card:hover { border-color: var(--samsung-accent-sky); box-shadow: 0 8px 20px rgb(20 40 160 / 10%); transform: translateY(-2px); }
 
 .brand-card--article { overflow: hidden; }
 .brand-card__thumb {
   height: 132px;
-  background: linear-gradient(135deg, var(--blogco-primary), var(--blogco-primary-hover));
+  background: linear-gradient(135deg, var(--samsung-primary), var(--samsung-accent-sky));
 }
-.brand-card__body { padding: 20px; }
+.brand-card__body { padding: 24px; }
 body.brand-route .brand-screen .brand-card__meta {
   margin: 0 0 10px !important; color: var(--blogco-primary) !important;
   font-size: .75rem !important; font-weight: 700 !important; letter-spacing: .06em; text-transform: uppercase;
@@ -392,11 +459,13 @@ body.brand-route .brand-screen .brand-table__caption {
   text-align: left;
   caption-side: top;
 }
+/* Data Table — header nền Surface, text đen, viền dưới border nhẹ */
 .brand-table th,
-.brand-table td { padding: 12px 16px; border-bottom: 1px solid var(--blogco-border); text-align: left; }
+.brand-table td { padding: 12px 16px; border-bottom: 1px solid var(--samsung-border); text-align: left; }
 .brand-table thead th {
-  color: #fff;
-  background: var(--blogco-primary);
+  color: var(--samsung-text-main);
+  background: var(--samsung-surface);
+  border-bottom: 1px solid var(--samsung-border);
   font-size: .82rem;
   font-weight: 700;
   letter-spacing: .04em;
