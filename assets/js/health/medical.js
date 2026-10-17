@@ -126,12 +126,17 @@ export function saveMedicalKnowledge(input = {}) {
   return clone(entry);
 }
 
-export function deleteRecord(inputId) {
+export function deleteMultiple(inputIds = []) {
   const state = readState();
-  const nextItems = state.items.filter((item) => item.inputId !== inputId);
-  if (nextItems.length === state.items.length) return false;
+  const ids = new Set(inputIds.filter(Boolean));
+  const nextItems = state.items.filter((item) => !ids.has(item.inputId));
+  if (nextItems.length === state.items.length) return 0;
   writeState({ ...state, items: nextItems });
-  return true;
+  return state.items.length - nextItems.length;
+}
+
+export function deleteRecord(inputId) {
+  return deleteMultiple([inputId]) > 0;
 }
 
 function levenshteinSimilarity(left, right) {
@@ -164,20 +169,39 @@ function symptomSimilarity(left = [], right = []) {
   return intersection / new Set([...a, ...b]).size;
 }
 
+function recordSimilarity(left = {}, right = {}) {
+  const titleScore = levenshteinSimilarity(left.title, right.title);
+  const hasSymptoms = Array.isArray(left.symptoms) && Array.isArray(right.symptoms)
+    && (left.symptoms.length || right.symptoms.length);
+  const symptomScore = hasSymptoms ? symptomSimilarity(left.symptoms, right.symptoms) : 0;
+  return hasSymptoms ? titleScore * .6 + symptomScore * .4 : titleScore;
+}
+
 export function detectDuplicate(newRecord = {}, existingRecords = getMedicalEntries()) {
   const candidates = existingRecords.filter((record) => record.inputId !== newRecord.inputId && record.id !== newRecord.id);
   let closest = null;
   candidates.forEach((record) => {
-    const titleScore = levenshteinSimilarity(newRecord.title, record.title);
-    const hasSymptoms = Array.isArray(newRecord.symptoms) && Array.isArray(record.symptoms)
-      && (newRecord.symptoms.length || record.symptoms.length);
-    const symptomScore = hasSymptoms ? symptomSimilarity(newRecord.symptoms, record.symptoms) : 0;
-    const score = hasSymptoms ? titleScore * .6 + symptomScore * .4 : titleScore;
+    const score = recordSimilarity(newRecord, record);
     if (score > .8 && (!closest || score > closest.similarity)) {
       closest = { record, inputId: record.inputId, similarity: score, percentage: Math.round(score * 100) };
     }
   });
   return closest;
+}
+
+export function detectAllDuplicates(records = getMedicalEntries()) {
+  const duplicates = [];
+  for (let leftIndex = 0; leftIndex < records.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < records.length; rightIndex += 1) {
+      const first = records[leftIndex];
+      const second = records[rightIndex];
+      const similarity = recordSimilarity(first, second);
+      if (similarity > .8) {
+        duplicates.push({ first, second, similarity, percentage: Math.round(similarity * 100) });
+      }
+    }
+  }
+  return duplicates.sort((left, right) => right.similarity - left.similarity);
 }
 
 export function markMedicalEntriesSynced(entries = [], commitId = '') {

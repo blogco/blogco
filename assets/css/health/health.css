@@ -358,6 +358,30 @@ body.health-route .category-bar { display: none; }
 .medical-sync-status.is-success { color: #127a4b; }
 .medical-sync-status.is-error { color: var(--health-danger); }
 .medical-sync-log { overflow: auto; min-height: 7rem; margin: 0; padding: .8rem .9rem; border: 1px solid var(--health-border); border-radius: 10px; color: var(--health-muted); background: #f8fafc; font: .78rem/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre-wrap; }
+.medical-management-card { display: grid; gap: 1rem; }
+.medical-management-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.medical-management-search { flex: 1 1 auto; max-width: 34rem; }
+.medical-management-delete-selected { flex: 0 0 auto; }
+.medical-management-summary { margin: 0 !important; color: var(--health-muted) !important; font-size: .84rem; }
+.medical-data-table-wrap { overflow-x: auto; border: 1px solid var(--health-border); border-radius: 12px; background: #fff; }
+.medical-data-table { width: 100%; border-collapse: collapse; color: var(--health-ink); font-size: .86rem; }
+.medical-data-table th,
+.medical-data-table td { padding: .75rem .7rem; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; }
+.medical-data-table th { color: var(--health-muted); background: #f8fafc; font-size: .75rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.medical-data-table tbody tr:last-child td { border-bottom: 0; }
+.medical-data-table tbody tr:hover { background: #f8fffe; }
+.medical-data-table code { color: var(--health-muted); font-size: .76rem; }
+.medical-data-table input[type='checkbox'] { width: 1rem; min-height: 1rem; accent-color: var(--health-teal-dark); }
+.medical-management-unique,
+.medical-management-duplicate { display: inline-block; font-size: .78rem; font-weight: 700; line-height: 1.4; }
+.medical-management-unique { color: #127a4b; }
+.medical-management-duplicate { color: #92400e; }
+.medical-management-empty { padding: 1.4rem !important; color: var(--health-muted); text-align: center !important; }
+.medical-duplicate-map { display: grid; gap: .8rem; }
+.medical-duplicate-map__list { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+.medical-duplicate-map__list li { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; padding: .55rem .7rem; border: 1px solid #fde68a; border-radius: 9px; color: #92400e; background: #fffbeb; font-size: .82rem; }
+.medical-duplicate-map__list code { color: #78350f; font-size: .76rem; font-weight: 800; }
+.medical-duplicate-map__list strong { margin-left: auto; color: #b45309; }
 .medical-raw-field textarea { min-height: 260px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; line-height: 1.55; }
 .medical-offline-note { margin: 0 !important; color: var(--health-muted) !important; font-size: .86rem; }
 .medical-progress { overflow: hidden; height: 7px; margin-top: -.4rem; border-radius: 99px; background: #dbeafe; }
@@ -415,6 +439,23 @@ body.health-route .category-bar { display: none; }
   .medical-tabs { margin-top: 1rem; }
   .medical-tab { flex: 1 1 auto; }
   .medical-sync-grid { grid-template-columns: 1fr; }
+  .medical-management-toolbar { align-items: stretch; flex-direction: column; }
+  .medical-management-search { max-width: none; }
+  .medical-management-delete-selected { width: 100%; }
+  .medical-data-table-wrap { overflow: visible; border: 0; background: transparent; }
+  .medical-data-table,
+  .medical-data-table tbody,
+  .medical-data-table tr,
+  .medical-data-table td { display: block; width: 100%; }
+  .medical-data-table thead { display: none; }
+  .medical-data-table tr { margin-bottom: .7rem; padding: .35rem; border: 1px solid var(--health-border); border-radius: 12px; background: #fff; }
+  .medical-data-table tr:last-child { margin-bottom: 0; }
+  .medical-data-table td { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .55rem .45rem; border-bottom: 1px solid #f1f5f9; text-align: right; }
+  .medical-data-table td:last-child { border-bottom: 0; }
+  .medical-data-table td::before { color: var(--health-muted); content: attr(data-label); font-size: .75rem; font-weight: 800; text-align: left; text-transform: uppercase; }
+  .medical-data-table td:first-child { justify-content: flex-start; }
+  .medical-data-table td:first-child::before { margin-right: auto; }
+  .medical-duplicate-map__list strong { margin-left: 0; }
   .medical-infographic { grid-template-columns: 1fr; }
   .medical-info-card--treatment { grid-column: auto; }
 }

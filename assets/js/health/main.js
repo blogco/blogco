@@ -19,8 +19,9 @@ import { computeStats } from './stats.js';
 import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
 import { renderMedicalInfographic } from './MedicalInfographic.js';
+import { renderDataManagement } from './DataManagement.js';
 import {
-  detectDuplicate, deleteRecord, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
+  deleteMultiple, deleteRecord, detectAllDuplicates, detectDuplicate, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
 } from './medical.js';
@@ -33,6 +34,8 @@ let searchState = { query: '', year: '', facility: '', page: 1 };
 let medicalSearchQuery = '';
 let medicalRemoteEntries = null;
 let medicalRemotePromise = null;
+let medicalManagementQuery = '';
+let medicalManagementSelected = new Set();
 const medicalDrafts = new WeakMap();
 
 // ---------------------------------------------------------------------------
@@ -233,6 +236,7 @@ function medicalTabs(active) {
     ${tab('input', '▣ Nhập liệu', '#/health/medical/input')}
     ${tab('search', '⌕ Tra cứu', '#/health/medical/search')}
     ${tab('sync', '⇅ Đồng bộ', '#/health/medical/sync')}
+    ${tab('manage', '▤ Quản lý', '#/health/medical/manage')}
     <button type="button" class="medical-tab" data-medical-refresh>↻ Làm mới online</button>
   </nav>`;
 }
@@ -350,6 +354,19 @@ function renderMedicalSync(root) {
       <pre class="medical-sync-log" data-medical-sync-log>Log sẽ hiển thị tại đây. Token không được ghi vào log.</pre>
     </form>
   </section>${toastMarkup()}`;
+  root.querySelector('h1')?.focus?.({ preventScroll: true });
+}
+
+function renderMedicalManagement(root) {
+  seedMedicalKnowledge();
+  const records = getMedicalEntries();
+  root.innerHTML = `${renderDataManagement({
+    records,
+    duplicates: detectAllDuplicates(records),
+    query: medicalManagementQuery,
+    selectedIds: medicalManagementSelected,
+    tabs: medicalTabs('manage'),
+  })}${toastMarkup()}`;
   root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
 
@@ -803,7 +820,7 @@ function routeName(root) {
   if (location.hash.startsWith('#/health')) return location.hash.slice(1).replace(/\/$/, '') || '/health';
   const initial = root.dataset.initialRoute;
   if (initial) {
-    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine', 'medical-input': '/health/medical/input', 'medical-search': '/health/medical/search', 'medical-sync': '/health/medical/sync' };
+    const map = { history: '/health/history', list: '/health/history', add: '/health/add', stats: '/health/stats', vaccine: '/health/vaccine', 'medical-input': '/health/medical/input', 'medical-search': '/health/medical/search', 'medical-sync': '/health/medical/sync', 'medical-manage': '/health/medical/manage' };
     return map[initial] || '/health/history';
   }
   return '/health/history';
@@ -818,6 +835,7 @@ function showRoute(root) {
   if (action === 'medical') {
     if (param === 'input') renderMedicalInput(root);
     else if (param === 'sync') renderMedicalSync(root);
+    else if (param === 'manage') renderMedicalManagement(root);
     else renderMedicalSearch(root);
   } else if (action === 'add') renderFormPage(root, '');
   else if (action === 'edit') renderFormPage(root, decodeURIComponent(param));
@@ -862,6 +880,10 @@ export function mountHealthApp(root) {
       searchState.query = event.target.value;
       searchState.page = 1;
       refreshHistoryResults(root);
+    }
+    if (event.target.matches('[data-medical-management-search]')) {
+      medicalManagementQuery = event.target.value;
+      renderMedicalManagement(root);
     }
   });
 
@@ -929,6 +951,21 @@ export function mountHealthApp(root) {
       searchState.page = 1;
       refreshHistoryResults(root);
     }
+    if (target.matches('[data-medical-management-select]')) {
+      const inputId = target.dataset.medicalManagementSelect;
+      if (target.checked) medicalManagementSelected.add(inputId);
+      else medicalManagementSelected.delete(inputId);
+      renderMedicalManagement(root);
+    }
+    if (target.matches('[data-medical-management-select-all]')) {
+      const query = medicalManagementQuery.trim().toLocaleLowerCase('vi');
+      const visibleRecords = getMedicalEntries().filter((record) => `${record.inputId} ${record.title}`.toLocaleLowerCase('vi').includes(query));
+      visibleRecords.forEach((record) => {
+        if (target.checked) medicalManagementSelected.add(record.inputId);
+        else medicalManagementSelected.delete(record.inputId);
+      });
+      renderMedicalManagement(root);
+    }
     if (target.matches('[data-invoice-input]')) {
       const block = target.closest('[data-invoice-block]');
       const file = target.files?.[0];
@@ -975,6 +1012,20 @@ export function mountHealthApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    const deleteSelected = target.closest('[data-medical-delete-selected]');
+    if (deleteSelected) {
+      const inputIds = [...medicalManagementSelected];
+      if (!inputIds.length || !window.confirm(`Xoá ${inputIds.length} bản ghi đã chọn khỏi thiết bị này?`)) return;
+      const removed = deleteMultiple(inputIds);
+      medicalManagementSelected = new Set();
+      if (Array.isArray(medicalRemoteEntries)) {
+        medicalRemoteEntries = medicalRemoteEntries.filter((entry) => !inputIds.includes(entry.inputId));
+      }
+      renderMedicalManagement(root);
+      showToast(root, `Đã xoá ${removed} bản ghi.`);
+      return;
+    }
+
     const medicalDelete = target.closest('[data-medical-delete]');
     if (medicalDelete) {
       const inputId = medicalDelete.dataset.medicalDelete;
@@ -985,6 +1036,10 @@ export function mountHealthApp(root) {
         medicalRemoteEntries = medicalRemoteEntries.filter((entry) => entry.inputId !== inputId);
       }
       if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
+      else if (routeName(root) === '/health/medical/manage') {
+        medicalManagementSelected.delete(inputId);
+        renderMedicalManagement(root);
+      }
       else {
         const preview = root.querySelector('[data-medical-preview]');
         if (preview) preview.hidden = true;
