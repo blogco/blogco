@@ -374,6 +374,12 @@ body.health-route .category-bar { display: none; }
 .medical-results__head h2,
 .medical-result-card h2 { margin: 0; color: var(--health-ink); }
 .medical-preview__title { margin: .35rem 0 0 !important; color: var(--health-muted) !important; font-size: .9rem; }
+.medical-record-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin: .35rem 0 0 !important; color: var(--health-muted) !important; font-size: .75rem; }
+.medical-record-meta code { color: var(--health-muted); font: inherit; }
+.medical-sync-badge { padding: .2rem .45rem; border: 1px solid #86efac; border-radius: 999px; color: #166534; background: #dcfce7; font-size: .72rem; font-weight: 800; }
+.medical-duplicate-warning { margin: 0 !important; padding: .65rem .8rem; border-left: 4px solid #f59e0b; border-radius: 0 9px 9px 0; color: #92400e !important; background: #fffbeb; font-size: .84rem; }
+.medical-record-delete { min-height: 34px; padding: .35rem .6rem; border: 1px solid #fecaca; border-radius: 9px; color: #b91c1c; background: #fff; cursor: pointer; font: inherit; font-size: .78rem; font-weight: 800; }
+.medical-record-delete:hover { border-color: #fca5a5; background: #fef2f2; }
 .medical-infographic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
 .medical-info-card { display: grid; align-content: start; gap: .7rem; min-width: 0; padding: 1rem; border: 1px solid; border-radius: 14px; transition: box-shadow .18s ease, transform .18s ease; }
 .medical-info-card:hover { box-shadow: 0 10px 24px rgba(15, 23, 42, .1); transform: translateY(-1px); }

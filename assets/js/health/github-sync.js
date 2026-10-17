@@ -113,6 +113,8 @@ export async function syncToGitHub(token, owner, repo, branch, filePath, content
     created: !sha,
     path: filePath,
     sha: data?.content?.sha || null,
+    commitSha: data?.commit?.sha || '',
+    commitId: data?.commit?.sha ? data.commit.sha.slice(0, 7) : '',
     commit: data?.commit?.html_url || '',
     contentUrl: data?.content?.html_url || '',
   };

@@ -20,7 +20,7 @@ import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
 import { renderMedicalInfographic } from './MedicalInfographic.js';
 import {
-  extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
+  detectDuplicate, deleteRecord, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
 } from './medical.js';
@@ -268,14 +268,22 @@ function setMedicalProgress(root, visible) {
   else progress.complete();
 }
 
-function renderMedicalPreview(root, entry, collapsed = false, saved = false) {
+function renderMedicalPreview(root, entry, collapsed = false, saved = false, duplicate = null) {
   const preview = root.querySelector('[data-medical-preview]');
   if (!preview) return;
   preview.classList.toggle('is-collapsed', collapsed);
-  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>Kết quả phân tích</h2><p class="medical-preview__title">${escapeHtml(entry.title)}</p></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
+  const commitBadge = entry.commitId ? `<span class="medical-sync-badge">Synced #${escapeHtml(entry.commitId)}</span>` : '';
+  const duplicateWarning = duplicate
+    ? `<p class="medical-duplicate-warning" role="alert">⚠️ Nội dung này trùng gần nhất với <strong>${escapeHtml(duplicate.inputId)}</strong> (độ tương đồng: ${duplicate.percentage}%).</p>`
+    : '';
+  const deleteButton = saved
+    ? `<button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(entry.inputId)}" aria-label="Xoá ${escapeHtml(entry.title)}">🗑️ Xoá</button>`
+    : '';
+  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>Kết quả phân tích</h2><p class="medical-preview__title">${escapeHtml(entry.title)}</p><p class="medical-record-meta"><code>${escapeHtml(entry.inputId || 'Chưa có INPUT ID')}</code>${commitBadge}</p></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
+    ${duplicateWarning}
     ${renderMedicalInfographic(entry, collapsed)}
     ${saved
-      ? '<p class="medical-saved-note">✓ Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions"><a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>'
+      ? `<p class="medical-saved-note">✓ Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions">${deleteButton}<a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>`
       : '<div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>'}`;
   preview.hidden = false;
   const toggle = preview.querySelector('[data-medical-toggle]');
@@ -361,10 +369,12 @@ function ensureMedicalRemote(root) {
 
 function renderMedicalSearch(root) {
   seedMedicalKnowledge();
+  const localEntries = getMedicalEntries();
   const source = medicalRemoteEntries === null
-    ? getMedicalEntries()
-    : mergeMedicalEntries(getMedicalEntries(), medicalRemoteEntries);
+    ? localEntries
+    : mergeMedicalEntries(localEntries, medicalRemoteEntries);
   const results = searchMedicalKnowledge(medicalSearchQuery, source);
+  const localIds = new Set(localEntries.map((entry) => entry.inputId));
   root.innerHTML = `<section class="health-screen medical-screen" aria-labelledby="medical-title">
     <div class="health-page-heading health-page-heading--hero">
       <a class="health-back" href="#/health/history">← Sức Khoẻ</a>
@@ -381,7 +391,7 @@ function renderMedicalSearch(root) {
     </form>
     <section class="medical-results" aria-live="polite">
       <div class="medical-results__head"><h2>Kết quả</h2><span class="health-muted">${results.length} mục</span></div>
-      ${results.length ? results.map(renderMedicalEntry).join('') : '<p class="health-empty">Không tìm thấy tri thức phù hợp. Thử từ khoá khác hoặc nhập dữ liệu mới.</p>'}
+      ${results.length ? results.map((entry) => renderMedicalEntry(entry, { allowDelete: localIds.has(entry.inputId) })).join('') : '<p class="health-empty">Không tìm thấy tri thức phù hợp. Thử từ khoá khác hoặc nhập dữ liệu mới.</p>'}
     </section>
     <p class="health-disclaimer">Kho tri thức cá nhân chạy offline; nội dung y khoa chỉ mang tính tham khảo, không thay thế tư vấn của nhân viên y tế.</p>
   </section>${toastMarkup()}`;
@@ -965,20 +975,39 @@ export function mountHealthApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    const medicalDelete = target.closest('[data-medical-delete]');
+    if (medicalDelete) {
+      const inputId = medicalDelete.dataset.medicalDelete;
+      if (!inputId || !window.confirm(`Xoá bản ghi ${inputId} khỏi thiết bị này?`)) return;
+      if (!deleteRecord(inputId)) return;
+      medicalDrafts.delete(root);
+      if (Array.isArray(medicalRemoteEntries)) {
+        medicalRemoteEntries = medicalRemoteEntries.filter((entry) => entry.inputId !== inputId);
+      }
+      if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
+      else {
+        const preview = root.querySelector('[data-medical-preview]');
+        if (preview) preview.hidden = true;
+      }
+      showToast(root, `Đã xoá ${inputId}.`);
+      return;
+    }
+
     const medicalSave = target.closest('[data-medical-save]');
     if (medicalSave) {
       const draft = medicalDrafts.get(root);
       if (!draft) return;
       try {
         setMedicalProgress(root, true);
-        const saved = saveMedicalKnowledge(draft);
+        const saved = saveMedicalKnowledge(draft.entry || draft);
         medicalSave.disabled = true;
         medicalSave.textContent = 'Đang đồng bộ GitHub…';
         const synced = await syncMedicalKnowledge();
         medicalRemoteEntries = synced.items;
         medicalRemotePromise = null;
         medicalDrafts.delete(root);
-        renderMedicalPreview(root, saved, true, true);
+        const committed = synced.items.find((item) => item.inputId === saved.inputId) || { ...saved, commitId: synced.commitId || '' };
+        renderMedicalPreview(root, committed, true, true, draft.duplicate || null);
         showToast(root, `Đã lưu và đồng bộ “${saved.title}” lên GitHub (${synced.count} mục).`);
       } catch (error) {
         showToast(root, `Đã lưu offline nhưng chưa sync được. ${error.message || ''}`.trim(), true);
@@ -1181,8 +1210,9 @@ export function mountHealthApp(root) {
         progress.step(70);
         const entry = extractMedicalKnowledge(form.elements.rawContent.value, form.elements.category.value);
         progress.step(95);
-        medicalDrafts.set(root, entry);
-        renderMedicalPreview(root, entry);
+        const duplicate = detectDuplicate(entry, getMedicalEntries());
+        medicalDrafts.set(root, { entry, duplicate });
+        renderMedicalPreview(root, entry, false, false, duplicate);
       } catch (error) {
         showToast(root, error.message || 'Không phân tích được dữ liệu.', true);
       } finally {

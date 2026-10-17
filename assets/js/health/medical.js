@@ -38,6 +38,13 @@ function blankState() {
   return { version: 1, nextId: 1, items: [] };
 }
 
+export function generateInputId() {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const random = globalThis.crypto?.randomUUID?.().slice(0, 8).toUpperCase()
+    || Math.random().toString(36).slice(2, 10).toUpperCase();
+  return `INPUT-${date}-${random}`;
+}
+
 function slugify(value) {
   return String(value || 'tri-thuc-y-khoa')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -51,15 +58,18 @@ function normalizeList(value, maxItems = 24) {
 
 export function normalizeMedicalEntry(input = {}, existing = {}) {
   const title = text(input.title, 240) || 'Tri thức y khoa chưa đặt tên';
+  const createdAt = existing.createdAt || input.createdAt || new Date().toISOString();
   return {
     id: existing.id || text(input.id, 100) || `medical-${slugify(title)}-${Date.now()}`,
+    inputId: existing.inputId || text(input.inputId, 100) || generateInputId(),
+    commitId: text(input.commitId || existing.commitId, 7),
     title,
     category: ['Bệnh lý', 'Thuốc', 'Dinh dưỡng'].includes(input.category) ? input.category : 'Bệnh lý',
     symptoms: normalizeList(input.symptoms),
     treatment: multiline(input.treatment, 2400),
     relatedMedications: normalizeList(input.relatedMedications || input.related_medications),
     rawContent: multiline(input.rawContent || input.raw_content, 8000),
-    createdAt: existing.createdAt || input.createdAt || new Date().toISOString(),
+    createdAt,
     updatedAt: input.updatedAt || existing.updatedAt || new Date().toISOString(),
   };
 }
@@ -68,7 +78,16 @@ function readState() {
   if (memoryCache) return clone(memoryCache);
   let parsed = null;
   try { parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { parsed = null; }
-  memoryCache = parsed && parsed.version === 1 && Array.isArray(parsed.items) ? { ...blankState(), ...parsed } : blankState();
+  const hasStoredState = parsed && parsed.version === 1 && Array.isArray(parsed.items);
+  memoryCache = hasStoredState
+    ? { ...blankState(), ...parsed, items: parsed.items.map((item) => normalizeMedicalEntry(item, item)) }
+    : blankState();
+  if (hasStoredState && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryCache));
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(memoryCache));
+    } catch { /* keep the in-memory migration when storage is unavailable */ }
+  }
   if (!parsed && typeof localStorage !== 'undefined') {
     memoryCache.items = [normalizeMedicalEntry(SAMPLE_ENTRY, SAMPLE_ENTRY)];
     memoryCache.nextId = 2;
@@ -95,7 +114,7 @@ export function getMedicalEntries() {
 
 export function saveMedicalKnowledge(input = {}) {
   const state = readState();
-  const existingIndex = state.items.findIndex((item) => item.id === input.id);
+  const existingIndex = state.items.findIndex((item) => item.id === input.id || (input.inputId && item.inputId === input.inputId));
   const existing = existingIndex >= 0 ? state.items[existingIndex] : {};
   const entry = normalizeMedicalEntry(input, existing);
   if (existingIndex >= 0) state.items[existingIndex] = entry;
@@ -105,6 +124,68 @@ export function saveMedicalKnowledge(input = {}) {
   }
   writeState(state);
   return clone(entry);
+}
+
+export function deleteRecord(inputId) {
+  const state = readState();
+  const nextItems = state.items.filter((item) => item.inputId !== inputId);
+  if (nextItems.length === state.items.length) return false;
+  writeState({ ...state, items: nextItems });
+  return true;
+}
+
+function levenshteinSimilarity(left, right) {
+  const a = fold(left);
+  const b = fold(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let row = 1; row <= a.length; row += 1) {
+    let diagonal = previous[0];
+    previous[0] = row;
+    for (let column = 1; column <= b.length; column += 1) {
+      const above = previous[column];
+      previous[column] = Math.min(
+        previous[column] + 1,
+        previous[column - 1] + 1,
+        diagonal + (a[row - 1] === b[column - 1] ? 0 : 1),
+      );
+      diagonal = above;
+    }
+  }
+  return 1 - previous[b.length] / Math.max(a.length, b.length);
+}
+
+function symptomSimilarity(left = [], right = []) {
+  const a = new Set(left.flatMap((item) => tokens(item)));
+  const b = new Set(right.flatMap((item) => tokens(item)));
+  if (!a.size || !b.size) return 0;
+  const intersection = [...a].filter((item) => b.has(item)).length;
+  return intersection / new Set([...a, ...b]).size;
+}
+
+export function detectDuplicate(newRecord = {}, existingRecords = getMedicalEntries()) {
+  const candidates = existingRecords.filter((record) => record.inputId !== newRecord.inputId && record.id !== newRecord.id);
+  let closest = null;
+  candidates.forEach((record) => {
+    const titleScore = levenshteinSimilarity(newRecord.title, record.title);
+    const hasSymptoms = Array.isArray(newRecord.symptoms) && Array.isArray(record.symptoms)
+      && (newRecord.symptoms.length || record.symptoms.length);
+    const symptomScore = hasSymptoms ? symptomSimilarity(newRecord.symptoms, record.symptoms) : 0;
+    const score = hasSymptoms ? titleScore * .6 + symptomScore * .4 : titleScore;
+    if (score > .8 && (!closest || score > closest.similarity)) {
+      closest = { record, inputId: record.inputId, similarity: score, percentage: Math.round(score * 100) };
+    }
+  });
+  return closest;
+}
+
+export function markMedicalEntriesSynced(entries = [], commitId = '') {
+  const state = readState();
+  const normalized = entries.map((item) => normalizeMedicalEntry({ ...item, commitId }, item));
+  const nextId = Math.max(state.nextId, normalized.length + 1);
+  writeState({ ...state, nextId, items: normalized });
+  return clone(normalized);
 }
 
 export function seedMedicalKnowledge() {
@@ -191,7 +272,8 @@ export async function syncMedicalKnowledge(syncSettings = getSessionGitHubSettin
   };
   const { owner, name } = parseRepo(settings.repo);
   const result = await syncToGitHub(settings.token, owner, name, settings.branch || 'main', settings.filePath || MEDICAL_REPO_PATH, JSON.stringify(payload, null, 2));
-  return { ...result, items, count: items.length };
+  const syncedItems = result.commitId ? markMedicalEntriesSynced(items, result.commitId) : items;
+  return { ...result, items: syncedItems, count: syncedItems.length };
 }
 
 function sectionText(lines, patterns) {
@@ -227,9 +309,12 @@ export function extractMedicalKnowledge(rawContent, category = 'Bệnh lý') {
   return normalizeMedicalEntry({ title, category, symptoms, treatment, relatedMedications, rawContent: raw });
 }
 
-export function renderMedicalEntry(entry) {
+export function renderMedicalEntry(entry, { allowDelete = false } = {}) {
+  const commitBadge = entry.commitId ? `<span class="medical-sync-badge">Synced #${escapeHtml(entry.commitId)}</span>` : '';
+  const recordMeta = `<p class="medical-record-meta"><code>${escapeHtml(entry.inputId || 'Chưa có INPUT ID')}</code>${commitBadge}</p>`;
+  const deleteButton = allowDelete ? `<button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(entry.inputId)}" aria-label="Xoá ${escapeHtml(entry.title)}">🗑️ Xoá</button>` : '';
   return `<article class="medical-result-card">
-    <div class="medical-result-card__top"><div><span class="health-badge">${escapeHtml(entry.category)}</span><h2>${escapeHtml(entry.title)}</h2></div></div>
+    <div class="medical-result-card__top"><div><span class="health-badge">${escapeHtml(entry.category)}</span><h2>${escapeHtml(entry.title)}</h2>${recordMeta}</div>${deleteButton}</div>
     ${entry.symptoms.length ? `<div class="medical-result-card__section"><strong>Triệu chứng</strong><div class="medical-chip-list">${entry.symptoms.map((item) => `<span class="medical-chip">${escapeHtml(item)}</span>`).join('')}</div></div>` : ''}
     ${entry.treatment ? `<div class="medical-result-card__section"><strong>Điều trị</strong><p>${escapeHtml(entry.treatment)}</p></div>` : ''}
     ${entry.relatedMedications.length ? `<div class="medical-result-card__section"><strong>Thuốc liên quan</strong><ul>${entry.relatedMedications.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>` : ''}
