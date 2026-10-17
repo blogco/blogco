@@ -1,0 +1,12 @@
+- label: Trang chủ
+  href: /
+  icon: "⌂"
+- label: Sức khoẻ
+  href: /#/health/history
+  icon: "🩺"
+- label: Y Học
+  href: /#/health/medical/search
+  icon: "🧠"
+- label: Về chúng tôi
+  href: /about/
+  icon: "ⓘ"

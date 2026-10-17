@@ -1260,10 +1260,42 @@ body.article-body .blogco-header .header-nav {
 /* Footer — Samsung deep-blue band ----------------------------------------- */
 body .footer,
 .footer {
+  width: min(var(--max-wide), calc(100% - 48px));
+  max-width: var(--max-wide);
+  margin: 32px auto 24px;
+  padding: 24px;
+  border-radius: var(--radius);
   color: rgba(255, 255, 255, 0.72) !important;
   background: var(--sm-navy);
   border-top: 1px solid var(--sm-navy-2);
 }
+
+.footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.footer__identity,
+.footer__nav,
+.footer__meta {
+  display: flex;
+  align-items: center;
+}
+
+.footer__identity { gap: 12px; min-width: 0; }
+.footer__brand { color: #fff !important; font-size: 18px; font-weight: 800 !important; letter-spacing: -.04em; text-decoration: none; }
+.footer__brand-mark { margin-right: 6px; color: var(--accent-sky); font-size: .78em; }
+.footer__brand-accent { color: var(--accent-sky); }
+.footer__copyright { color: rgba(255, 255, 255, .66); font-size: 13px; font-weight: 500; }
+.footer__nav { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.footer__nav a { display: inline-flex; align-items: center; gap: 5px; color: #fff !important; font-size: 13px; font-weight: 600 !important; text-decoration: none; }
+.footer__nav a:hover,
+.footer__nav a:focus-visible { color: var(--accent-sky) !important; }
+.footer__link-icon { font-size: 14px; line-height: 1; }
+.footer__divider { color: rgba(255, 255, 255, .28); font-size: 12px; }
+.footer__meta { justify-content: center; gap: 4px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .14); color: rgba(255, 255, 255, .58); font-size: 12px; }
 
 .footer a,
 .footer span a {
@@ -1278,3 +1310,10 @@ body .footer,
 .footer .gh-actions { border-top-color: rgba(255, 255, 255, 0.14); }
 .footer .gh-actions__link { color: var(--accent-sky) !important; }
 .footer .gh-actions__link:hover { color: #fff !important; }
+
+@media (max-width: 767px) {
+  body .footer,
+  .footer { width: calc(100% - 32px); margin: 24px auto 16px; padding: 20px 16px; }
+  .footer__inner { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .footer__nav { justify-content: flex-start; }
+}

@@ -1,25 +1,33 @@
 {{- if not (.Param "hideFooter") }}
 <footer class="footer">
-    {{- if not site.Params.footer.hideCopyright }}
-        {{- if site.Copyright }}
-        <span>{{ site.Copyright | markdownify }}</span>
-        {{- else }}
-        <span>&copy; {{ now.Year }} <a href="{{ "" | absLangURL }}">{{ site.Title }}</a></span>
-        {{- end }}
-        {{- print " · "}}
-    {{- end }}
+    <div class="footer__inner">
+        <div class="footer__identity">
+            <a class="footer__brand" href="{{ "" | absLangURL }}" aria-label="BlogCo — trang chủ">
+                <span class="footer__brand-mark" aria-hidden="true">◆</span>Blog<span class="footer__brand-accent">Co</span>
+            </a>
+            {{- if not site.Params.footer.hideCopyright }}
+                <span class="footer__copyright">
+                    {{- if site.Copyright }}{{ site.Copyright | markdownify }}{{ else }}&copy; {{ now.Year }} BlogCo{{ end -}}
+                </span>
+            {{- end }}
+        </div>
 
-    {{- with site.Params.footer.text }}
-        {{ . | markdownify }}
-        {{- print " · "}}
-    {{- end }}
+        {{- $footerLinks := index site.Data "footer-links" }}
+        <nav class="footer__nav" aria-label="Liên kết cuối trang">
+            {{- range $index, $link := $footerLinks }}
+                {{- if $index }}<span class="footer__divider" aria-hidden="true">|</span>{{ end }}
+                <a href="{{ $link.href | relURL }}">
+                    {{- with $link.icon }}<span class="footer__link-icon" aria-hidden="true">{{ . }}</span>{{ end -}}
+                    {{ $link.label }}
+                </a>
+            {{- end }}
+        </nav>
+    </div>
 
-    <span>
-        Powered by
-        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
-
+    <div class="footer__meta">
+        {{- with site.Params.footer.text }}{{ . | markdownify }}{{ print " · " }}{{ end -}}
+        <span>Powered by <a href="https://gohugo.io/?utm_source=blogco" rel="noopener" target="_blank">Hugo</a> &amp; <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a></span>
+    </div>
     {{- partial "github-actions.html" . }}
 </footer>
 {{- end }}
