@@ -23,7 +23,8 @@ import { renderDataManagement } from './DataManagement.js';
 import {
   deleteMultiple, deleteRecord, detectAllDuplicates, detectDuplicate, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
-  searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
+  searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge, generateRecommendations,
+  getSkippedRecommendationKeys, skipRecommendation,
 } from './medical.js';
 import { getSessionGitHubSettings, saveSessionGitHubSettings } from './github-sync.js';
 
@@ -360,9 +361,11 @@ function renderMedicalSync(root) {
 function renderMedicalManagement(root) {
   seedMedicalKnowledge();
   const records = getMedicalEntries();
+  const duplicates = detectAllDuplicates(records);
   root.innerHTML = `${renderDataManagement({
     records,
-    duplicates: detectAllDuplicates(records),
+    duplicates,
+    recommendations: generateRecommendations(duplicates).filter((recommendation) => !getSkippedRecommendationKeys().has(recommendation.key)),
     query: medicalManagementQuery,
     selectedIds: medicalManagementSelected,
     tabs: medicalTabs('manage'),
@@ -1011,6 +1014,36 @@ export function mountHealthApp(root) {
 
   root.addEventListener('click', async (event) => {
     const target = event.target;
+
+    const applyAllRecommendations = target.closest('[data-medical-recommend-apply-all]');
+    if (applyAllRecommendations) {
+      const records = getMedicalEntries();
+      const duplicates = detectAllDuplicates(records);
+      const recommendations = generateRecommendations(duplicates).filter((recommendation) => !getSkippedRecommendationKeys().has(recommendation.key));
+      recommendations.forEach((recommendation) => recommendation.removeIds.forEach((inputId) => medicalManagementSelected.add(inputId)));
+      renderMedicalManagement(root);
+      showToast(root, `Đã chọn ${recommendations.reduce((total, recommendation) => total + recommendation.removeIds.length, 0)} bản ghi nên xoá.`);
+      return;
+    }
+
+    const applyRecommendation = target.closest('[data-medical-recommend-apply]');
+    if (applyRecommendation) {
+      const records = getMedicalEntries();
+      const recommendations = generateRecommendations(detectAllDuplicates(records));
+      const recommendation = recommendations.find((item) => item.key === applyRecommendation.dataset.medicalRecommendApply);
+      if (!recommendation) return;
+      recommendation.removeIds.forEach((inputId) => medicalManagementSelected.add(inputId));
+      renderMedicalManagement(root);
+      showToast(root, `Đã chọn ${recommendation.removeIds.length} bản ghi nên xoá.`);
+      return;
+    }
+
+    const skipRecommendationButton = target.closest('[data-medical-recommend-skip]');
+    if (skipRecommendationButton) {
+      skipRecommendation(skipRecommendationButton.dataset.medicalRecommendSkip);
+      renderMedicalManagement(root);
+      return;
+    }
 
     const deleteSelected = target.closest('[data-medical-delete-selected]');
     if (deleteSelected) {

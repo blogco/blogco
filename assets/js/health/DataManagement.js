@@ -1,4 +1,5 @@
 import { escapeHtml } from './medicine.js';
+import { renderRecommendationPanel } from './RecommendationPanel.js';
 
 function formatCreatedAt(value) {
   const date = new Date(value);
@@ -25,7 +26,7 @@ function duplicateMapMarkup(duplicates) {
   return `<ul class="medical-duplicate-map__list">${duplicates.map((pair) => `<li><code>${escapeHtml(pair.first.inputId)}</code><span>⚠️ trùng với</span><code>${escapeHtml(pair.second.inputId)}</code><strong>${pair.percentage}%</strong></li>`).join('')}</ul>`;
 }
 
-export function renderDataManagement({ records = [], duplicates = [], query = '', selectedIds = new Set(), tabs = '' } = {}) {
+export function renderDataManagement({ records = [], duplicates = [], recommendations = [], query = '', selectedIds = new Set(), tabs = '' } = {}) {
   const selected = selectedIds instanceof Set ? selectedIds : new Set(selectedIds);
   const visibleRecords = records.filter((record) => matchesQuery(record, query));
   const visibleIds = visibleRecords.map((record) => record.inputId);
@@ -74,6 +75,7 @@ export function renderDataManagement({ records = [], duplicates = [], query = ''
       <div class="medical-results__head"><h2 id="medical-duplicate-map-title">📌 Bản đồ trùng lặp</h2><span class="health-muted">Ngưỡng &gt; 80%</span></div>
       ${duplicateMapMarkup(duplicates)}
     </section>
+    ${renderRecommendationPanel(recommendations)}
     <p class="health-disclaimer">Bản đồ trùng lặp chỉ áp dụng cho dữ liệu Local Storage trên trình duyệt này.</p>
   </section>`;
 }

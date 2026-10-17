@@ -204,6 +204,130 @@ export function detectAllDuplicates(records = getMedicalEntries()) {
   return duplicates.sort((left, right) => right.similarity - left.similarity);
 }
 
+function recommendationStorage() {
+  try { return globalThis.localStorage; } catch { return undefined; }
+}
+
+const RECOMMENDATION_SKIP_KEY = 'blogco.health.medical.recommendation-skips.v1';
+
+export function getSkippedRecommendationKeys() {
+  try {
+    const saved = JSON.parse(recommendationStorage()?.getItem(RECOMMENDATION_SKIP_KEY) || '[]');
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function skipRecommendation(key) {
+  const keys = getSkippedRecommendationKeys();
+  keys.add(String(key));
+  try { recommendationStorage()?.setItem(RECOMMENDATION_SKIP_KEY, JSON.stringify([...keys])); } catch { /* ignore unavailable storage */ }
+}
+
+function recordQuality(record = {}) {
+  const fields = [
+    ['Triệu chứng', Array.isArray(record.symptoms) && record.symptoms.length > 0],
+    ['Điều trị', Boolean(String(record.treatment || '').trim())],
+    ['Thuốc liên quan', Array.isArray(record.relatedMedications) && record.relatedMedications.length > 0],
+    ['Nội dung gốc', Boolean(String(record.rawContent || '').trim())],
+  ];
+  return {
+    completeness: fields.filter(([, present]) => present).length,
+    missing: fields.filter(([, present]) => !present).map(([label]) => label),
+    treatmentLength: String(record.treatment || '').trim().length,
+    createdAt: Date.parse(record.createdAt || '') || 0,
+    synced: Boolean(record.commitId),
+  };
+}
+
+function preferredRecord(left, right) {
+  const leftQuality = recordQuality(left);
+  const rightQuality = recordQuality(right);
+  const criteria = [
+    ['completeness', leftQuality.completeness, rightQuality.completeness],
+    ['createdAt', leftQuality.createdAt, rightQuality.createdAt],
+    ['treatmentLength', leftQuality.treatmentLength, rightQuality.treatmentLength],
+    ['synced', Number(leftQuality.synced), Number(rightQuality.synced)],
+  ];
+  const criterion = criteria.find(([, leftValue, rightValue]) => leftValue !== rightValue);
+  if (!criterion) return { keep: left, remove: right, keepQuality: leftQuality, removeQuality: rightQuality, criterion: '' };
+  const [, leftValue, rightValue] = criterion;
+  return leftValue > rightValue
+    ? { keep: left, remove: right, keepQuality: leftQuality, removeQuality: rightQuality, criterion: criterion[0] }
+    : { keep: right, remove: left, keepQuality: rightQuality, removeQuality: leftQuality, criterion: criterion[0] };
+}
+
+function recommendationReason(decision) {
+  if (decision.criterion === 'completeness') {
+    const missing = decision.removeQuality.missing.length ? ` Thiếu: ${decision.removeQuality.missing.join(', ')}.` : '';
+    return `${decision.keep.inputId} có dữ liệu đầy đủ hơn.${missing}`;
+  }
+  if (decision.criterion === 'createdAt') return `${decision.keep.inputId} được tạo/cập nhật sau.`;
+  if (decision.criterion === 'treatmentLength') return `${decision.keep.inputId} có phần điều trị dài và chi tiết hơn.`;
+  if (decision.criterion === 'synced') return `${decision.keep.inputId} đã được đồng bộ GitHub, giúp tránh mất bản ghi đã phát hành.`;
+  return `${decision.keep.inputId} được ưu tiên theo độ đầy đủ, thời gian tạo và trạng thái đồng bộ.`;
+}
+
+export function generateRecommendations(duplicatePairs = []) {
+  if (!duplicatePairs.length) return [];
+  const records = new Map();
+  const parent = new Map();
+  const find = (inputId) => {
+    let current = inputId;
+    while (parent.get(current) && parent.get(current) !== current) current = parent.get(current);
+    return current;
+  };
+  const union = (left, right) => {
+    const leftRoot = find(left);
+    const rightRoot = find(right);
+    if (leftRoot !== rightRoot) parent.set(rightRoot, leftRoot);
+  };
+
+  duplicatePairs.forEach((pair) => {
+    [pair.first, pair.second].forEach((record) => {
+      records.set(record.inputId, record);
+      if (!parent.has(record.inputId)) parent.set(record.inputId, record.inputId);
+    });
+    union(pair.first.inputId, pair.second.inputId);
+  });
+
+  const clusters = new Map();
+  records.forEach((record, inputId) => {
+    const root = find(inputId);
+    if (!clusters.has(root)) clusters.set(root, []);
+    clusters.get(root).push(record);
+  });
+
+  return [...clusters.values()].map((cluster) => {
+    const ordered = [...cluster].sort((left, right) => {
+      const decision = preferredRecord(left, right);
+    const leftQuality = recordQuality(left);
+    const rightQuality = recordQuality(right);
+    if (leftQuality.completeness === rightQuality.completeness
+      && leftQuality.createdAt === rightQuality.createdAt
+      && leftQuality.treatmentLength === rightQuality.treatmentLength
+      && leftQuality.synced === rightQuality.synced) return 0;
+      return decision.keep === left ? -1 : 1;
+    });
+    const keep = ordered[0];
+    const removeIds = ordered.slice(1).map((record) => record.inputId);
+    const clusterIds = ordered.map((record) => record.inputId).sort();
+    const pairs = duplicatePairs.filter((pair) => clusterIds.includes(pair.first.inputId) && clusterIds.includes(pair.second.inputId));
+    const decision = preferredRecord(keep, ordered[1] || keep);
+    return {
+      key: clusterIds.join('|'),
+      clusterIds,
+      keepId: keep.inputId,
+      removeIds,
+      percentage: Math.max(...pairs.map((pair) => pair.percentage)),
+      similarity: Math.max(...pairs.map((pair) => pair.similarity)),
+      reason: recommendationReason(decision),
+      pairs,
+    };
+  }).sort((left, right) => right.similarity - left.similarity);
+}
+
 export function markMedicalEntriesSynced(entries = [], commitId = '') {
   const state = readState();
   const normalized = entries.map((item) => normalizeMedicalEntry({ ...item, commitId }, item));
