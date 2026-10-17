@@ -225,17 +225,42 @@ function renderHistory(root) {
 // Medical knowledge (offline/local-first)
 // ---------------------------------------------------------------------------
 
-function renderMedicalPreview(root, entry) {
+function medicalTabs(active) {
+  const tab = (key, label, href) => `<a class="medical-tab${active === key ? ' is-active' : ''}" href="${href}"${active === key ? ' aria-current="page"' : ''}>${label}</a>`;
+  return `<nav class="medical-tabs" aria-label="Điều hướng Y Học">
+    ${tab('input', '▣ Nhập liệu', '#/health/medical/input')}
+    ${tab('search', '⌕ Tra cứu', '#/health/medical/search')}
+    <button type="button" class="medical-tab" data-medical-refresh>↻ Làm mới online</button>
+  </nav>`;
+}
+
+function setMedicalProgress(root, visible) {
+  const progress = root.querySelector('[data-medical-progress]');
+  if (!progress) return;
+  progress.hidden = !visible;
+  progress.setAttribute('aria-hidden', String(!visible));
+}
+
+function renderMedicalPreview(root, entry, collapsed = false, saved = false) {
   const preview = root.querySelector('[data-medical-preview]');
   if (!preview) return;
-  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>${escapeHtml(entry.title)}</h2></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
-    <div class="medical-preview__grid">
-      <div><strong>Triệu chứng</strong><p>${escapeHtml(entry.symptoms.join(', ') || 'Chưa nhận diện được')}</p></div>
-      <div><strong>Thuốc liên quan</strong><p>${escapeHtml(entry.relatedMedications.join(', ') || 'Chưa nhận diện được')}</p></div>
-      <div class="medical-preview__full"><strong>Điều trị</strong><p>${escapeHtml(entry.treatment || 'Chưa nhận diện được')}</p></div>
-    </div>
-    <div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>`;
+  preview.classList.toggle('is-collapsed', collapsed);
+  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>Kết quả phân tích</h2></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
+    <ul class="medical-preview__list">
+      <li><strong>Tên bệnh / chủ đề:</strong> ${escapeHtml(entry.title)}</li>
+      <li><strong>Triệu chứng:</strong>${entry.symptoms.length ? `<ul>${entry.symptoms.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ' Chưa nhận diện được'}</li>
+      <li><strong>Điều trị:</strong>${entry.treatment ? `<ul><li>${escapeHtml(entry.treatment)}</li></ul>` : ' Chưa nhận diện được'}</li>
+      <li><strong>Thuốc liên quan:</strong>${entry.relatedMedications.length ? `<ul>${entry.relatedMedications.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ' Chưa nhận diện được'}</li>
+    </ul>
+    ${saved
+      ? '<p class="medical-saved-note">✓ Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions"><button type="button" class="health-secondary-button" data-medical-toggle aria-expanded="false">Mở ra ▼</button><a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>'
+      : '<div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>'}`;
   preview.hidden = false;
+  const toggle = preview.querySelector('[data-medical-toggle]');
+  if (toggle) {
+    toggle.textContent = collapsed ? 'Mở ra ▼' : 'Thu gọn ▲';
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+  }
 }
 
 function renderMedicalInput(root) {
@@ -247,6 +272,7 @@ function renderMedicalInput(root) {
       <h1 id="medical-title" tabindex="-1">Nhập liệu tri thức</h1>
       <p>Dán văn bản y khoa để phân tích offline. Dữ liệu chỉ lưu trên thiết bị này, không gửi tới API trả phí.</p>
     </div>
+    ${medicalTabs('input')}
     <form class="health-card medical-input-form" data-medical-input-form>
       <label class="health-field">Danh mục
         <select name="category"><option>Bệnh lý</option><option>Thuốc</option><option>Dinh dưỡng</option></select>
@@ -256,6 +282,7 @@ function renderMedicalInput(root) {
       </label>
       <p class="medical-offline-note">ⓘ Bộ phân tích offline nhận diện các nhãn như “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”. Khi xác nhận, dữ liệu sẽ sync lên GitHub nếu bạn đã <a href="#/blog/new">kết nối token</a>.</p>
       <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>✦ Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
+      <div class="medical-progress" data-medical-progress hidden aria-hidden="true"><span></span></div>
     </form>
     <section class="health-card medical-preview" data-medical-preview hidden aria-live="polite"></section>
   </section>${toastMarkup()}`;
@@ -289,11 +316,12 @@ function renderMedicalSearch(root) {
       <h1 id="medical-title" tabindex="-1">Tra cứu Y Học</h1>
       <p>Tìm nhanh theo tên bệnh, triệu chứng, hướng điều trị hoặc thuốc liên quan trong kho cục bộ.</p>
     </div>
+    ${medicalTabs('search')}
     <form class="health-card medical-search-form" data-medical-search-form role="search">
       <label class="health-field health-field--full">Từ khoá hoặc câu hỏi
         <input type="search" name="query" data-medical-search-input value="${escapeHtml(medicalSearchQuery)}" placeholder="Ví dụ: thuốc điều trị cúm mùa...">
       </label>
-      <div class="health-actions"><button type="submit" class="health-primary-button">⌕ Tìm kiếm</button><button type="button" class="health-secondary-button" data-medical-refresh>↻ Làm mới online</button><a class="health-secondary-button" href="#/health/medical/input">＋ Nhập tri thức</a></div>
+      <div class="health-actions"><button type="submit" class="health-primary-button">⌕ Tìm kiếm</button><a class="health-secondary-button" href="#/health/medical/input">＋ Nhập tri thức</a></div>
     </form>
     <section class="medical-results" aria-live="polite">
       <div class="medical-results__head"><h2>Kết quả</h2><span class="health-muted">${results.length} mục</span></div>
@@ -892,8 +920,8 @@ export function mountHealthApp(root) {
         medicalRemoteEntries = synced.items;
         medicalRemotePromise = null;
         medicalDrafts.delete(root);
-        pendingToast = `Đã lưu và đồng bộ “${saved.title}” lên GitHub (${synced.count} mục).`;
-        location.hash = '#/health/medical/search';
+        renderMedicalPreview(root, saved, true, true);
+        showToast(root, `Đã lưu và đồng bộ “${saved.title}” lên GitHub (${synced.count} mục).`);
       } catch (error) {
         showToast(root, `Đã lưu offline nhưng chưa sync được. ${error.message || ''}`.trim(), true);
       } finally {
@@ -902,10 +930,26 @@ export function mountHealthApp(root) {
       }
       return;
     }
+    if (target.closest('[data-medical-toggle]')) {
+      const preview = root.querySelector('[data-medical-preview]');
+      if (!preview) return;
+      const collapsed = !preview.classList.contains('is-collapsed');
+      preview.classList.toggle('is-collapsed', collapsed);
+      const toggle = preview.querySelector('[data-medical-toggle]');
+      if (toggle) {
+        toggle.textContent = collapsed ? 'Mở ra ▼' : 'Thu gọn ▲';
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+      }
+      return;
+    }
     if (target.closest('[data-medical-refresh]')) {
       medicalRemoteEntries = null;
       medicalRemotePromise = null;
-      renderMedicalSearch(root);
+      if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
+      else {
+        ensureMedicalRemote(root);
+        showToast(root, 'Đang làm mới dữ liệu online…');
+      }
       return;
     }
     if (target.closest('[data-medical-clear]')) {
@@ -1014,13 +1058,24 @@ export function mountHealthApp(root) {
     const form = event.target;
     if (form.matches('[data-medical-input-form]')) {
       event.preventDefault();
-      try {
-        const entry = extractMedicalKnowledge(form.elements.rawContent.value, form.elements.category.value);
-        medicalDrafts.set(root, entry);
-        renderMedicalPreview(root, entry);
-      } catch (error) {
-        showToast(root, error.message || 'Không phân tích được dữ liệu.', true);
-      }
+      const button = form.querySelector('[data-medical-analyze]');
+      if (button?.disabled) return;
+      button.disabled = true;
+      button.textContent = 'Đang phân tích…';
+      setMedicalProgress(root, true);
+      window.setTimeout(() => {
+        try {
+          const entry = extractMedicalKnowledge(form.elements.rawContent.value, form.elements.category.value);
+          medicalDrafts.set(root, entry);
+          renderMedicalPreview(root, entry);
+        } catch (error) {
+          showToast(root, error.message || 'Không phân tích được dữ liệu.', true);
+        } finally {
+          setMedicalProgress(root, false);
+          button.disabled = false;
+          button.textContent = '✦ Phân tích & lưu trữ';
+        }
+      }, 40);
       return;
     }
     if (form.matches('[data-medical-search-form]')) {
@@ -1047,7 +1102,10 @@ export function mountHealthApp(root) {
   window.addEventListener('hashchange', () => {
     if (location.hash.startsWith('#/health')) showRoute(root);
   });
-  window.addEventListener('health:data-changed', () => showRoute(root));
+  window.addEventListener('health:data-changed', () => {
+    if (routeName(root) === '/health/medical/input' && medicalDrafts.has(root)) return;
+    showRoute(root);
+  });
   showRoute(root);
 }
 
