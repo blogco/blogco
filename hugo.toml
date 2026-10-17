@@ -30,6 +30,8 @@ enableGitInfo = false
   ShowCodeCopyButtons = true
   ShowSearchButton = true
   githubRepo = 'blogco/blogco'
+  # URL Vercel Function. Leave empty when the API is served from the same host.
+  medicalApiUrl = ''
 
   [params.footer]
     hideCopyright = false

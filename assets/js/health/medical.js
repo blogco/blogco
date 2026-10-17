@@ -227,6 +227,35 @@ export function extractMedicalKnowledge(rawContent, category = 'Bệnh lý') {
   return normalizeMedicalEntry({ title, category, symptoms, treatment, relatedMedications, rawContent: raw });
 }
 
+function medicalApiUrl() {
+  if (typeof document === 'undefined') return '/api/extract-medical';
+  return document.querySelector('meta[name="blogco-medical-api"]')?.content?.trim() || '/api/extract-medical';
+}
+
+export async function extractMedicalKnowledgeOnline(rawContent, category = 'Bệnh lý', onProgress = () => {}) {
+  const raw = multiline(rawContent, 8000);
+  if (!raw) throw new Error('Hãy dán dữ liệu thô trước khi phân tích.');
+  onProgress(10);
+  let response;
+  try {
+    response = await fetch(medicalApiUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw_text: raw, category }),
+    });
+  } catch {
+    throw new Error('Không kết nối được Medical API. Hãy kiểm tra URL Vercel trong cấu hình.');
+  }
+  onProgress(70);
+  let payload = null;
+  try { payload = await response.json(); } catch { payload = null; }
+  if (!response.ok) throw new Error(payload?.error || `Medical API lỗi ${response.status}.`);
+  const result = payload?.data || payload;
+  if (!result?.title) throw new Error('Medical API trả về dữ liệu không hợp lệ.');
+  onProgress(90);
+  return normalizeMedicalEntry({ ...result, category, rawContent: result.raw_content || raw });
+}
+
 export function renderMedicalEntry(entry) {
   return `<article class="medical-result-card">
     <div class="medical-result-card__top"><div><span class="health-badge">${escapeHtml(entry.category)}</span><h2>${escapeHtml(entry.title)}</h2></div></div>

@@ -19,7 +19,7 @@ import { computeStats } from './stats.js';
 import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
 import {
-  extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
+  extractMedicalKnowledgeOnline, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
 } from './medical.js';
@@ -236,11 +236,35 @@ function medicalTabs(active) {
   </nav>`;
 }
 
-function setMedicalProgress(root, visible) {
+function medicalProgressController(root) {
   const progress = root.querySelector('[data-medical-progress]');
-  if (!progress) return;
-  progress.hidden = !visible;
-  progress.setAttribute('aria-hidden', String(!visible));
+  if (!progress) return { start() {}, step() {}, complete() {} };
+  const start = () => {
+    progress.hidden = false;
+    progress.setAttribute('aria-hidden', 'false');
+    progress.setAttribute('aria-valuenow', '0');
+    progress.classList.add('is-indeterminate');
+    progress.style.setProperty('--medical-progress-width', '8%');
+  };
+  const step = (value) => {
+    const amount = Math.min(95, Math.max(0, Number(value) || 0));
+    progress.setAttribute('aria-valuenow', String(amount));
+    progress.style.setProperty('--medical-progress-width', `${amount}%`);
+  };
+  const complete = () => {
+    progress.classList.remove('is-indeterminate');
+    progress.style.setProperty('--medical-progress-width', '100%');
+    progress.setAttribute('aria-valuenow', '100');
+    progress.hidden = true;
+    progress.setAttribute('aria-hidden', 'true');
+  };
+  return { start, step, complete };
+}
+
+function setMedicalProgress(root, visible) {
+  const progress = medicalProgressController(root);
+  if (visible) progress.start();
+  else progress.complete();
 }
 
 function renderMedicalPreview(root, entry, collapsed = false, saved = false) {
@@ -272,7 +296,7 @@ function renderMedicalInput(root) {
       <a class="health-back" href="#/health/medical/search">← Tra cứu Y Học</a>
       <p class="health-eyebrow">Y HỌC · NHẬP LIỆU KIẾN THỨC</p>
       <h1 id="medical-title" tabindex="-1">Nhập liệu tri thức</h1>
-      <p>Dán văn bản y khoa để phân tích offline. Dữ liệu chỉ lưu trên thiết bị này, không gửi tới API trả phí.</p>
+      <p>Dán văn bản y khoa để serverless function miễn phí phân tích thành dữ liệu có cấu trúc trước khi lưu offline.</p>
     </div>
     ${medicalTabs('input')}
     <form class="health-card medical-input-form" data-medical-input-form>
@@ -282,9 +306,9 @@ function renderMedicalInput(root) {
       <label class="health-field medical-raw-field">Dữ liệu thô (Text / Markdown)
         <textarea name="rawContent" rows="12" placeholder="Ví dụ:\nTên bệnh: Cúm mùa\nTriệu chứng: Sốt, ho, đau họng\nĐiều trị: Nghỉ ngơi, uống đủ nước\nThuốc liên quan: Paracetamol, Oseltamivir" required></textarea>
       </label>
-      <p class="medical-offline-note">ⓘ Bộ phân tích offline nhận diện các nhãn như “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”. Khi xác nhận, dữ liệu sẽ sync lên GitHub nếu bạn đã <a href="#/blog/new">kết nối token</a>.</p>
+      <p class="medical-offline-note">ⓘ Văn bản sẽ được gửi tới Medical API dùng underthesea (NLP tiếng Việt), không dùng API AI trả phí. Kết quả chỉ lưu trên thiết bị; bấm xác nhận để sync GitHub nếu đã nhập token ở tab Đồng bộ.</p>
       <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>✦ Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
-      <div class="medical-progress" data-medical-progress hidden aria-hidden="true"><span></span></div>
+      <div class="medical-progress is-indeterminate" data-medical-progress hidden aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
     </form>
     <section class="health-card medical-preview" data-medical-preview hidden aria-live="polite"></section>
   </section>${toastMarkup()}`;
@@ -1093,7 +1117,7 @@ export function mountHealthApp(root) {
     }
   });
 
-  root.addEventListener('submit', (event) => {
+  root.addEventListener('submit', async (event) => {
     const form = event.target;
     if (form.matches('[data-medical-sync-form]')) {
       event.preventDefault();
@@ -1152,21 +1176,26 @@ export function mountHealthApp(root) {
       const button = form.querySelector('[data-medical-analyze]');
       if (button?.disabled) return;
       button.disabled = true;
-      button.textContent = 'Đang phân tích…';
-      setMedicalProgress(root, true);
-      window.setTimeout(() => {
-        try {
-          const entry = extractMedicalKnowledge(form.elements.rawContent.value, form.elements.category.value);
-          medicalDrafts.set(root, entry);
-          renderMedicalPreview(root, entry);
-        } catch (error) {
-          showToast(root, error.message || 'Không phân tích được dữ liệu.', true);
-        } finally {
-          setMedicalProgress(root, false);
-          button.disabled = false;
-          button.textContent = '✦ Phân tích & lưu trữ';
-        }
-      }, 40);
+      button.textContent = 'Đang gọi Medical API…';
+      const progress = medicalProgressController(root);
+      try {
+        progress.start();
+        progress.step(10);
+        const entry = await extractMedicalKnowledgeOnline(
+          form.elements.rawContent.value,
+          form.elements.category.value,
+          (value) => progress.step(value),
+        );
+        progress.step(95);
+        medicalDrafts.set(root, entry);
+        renderMedicalPreview(root, entry);
+      } catch (error) {
+        showToast(root, error.message || 'Không phân tích được dữ liệu.', true);
+      } finally {
+        progress.complete();
+        button.disabled = false;
+        button.textContent = '✦ Phân tích & lưu trữ';
+      }
       return;
     }
     if (form.matches('[data-medical-search-form]')) {

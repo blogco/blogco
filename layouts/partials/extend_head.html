@@ -13,6 +13,7 @@
 <meta name="blogco-gh-branch" content="{{ site.Params.blog.branch | default "main" }}">
 <meta name="blogco-uploads-dir" content="{{ site.Params.blog.uploadsDir | default "static/uploads" }}">
 <meta name="blogco-site-url" content="{{ site.Home.Permalink }}">
+<meta name="blogco-medical-api" content="{{ site.Params.medicalApiUrl | default "/api/extract-medical" }}">
 {{- with site.Params.media.unsplashKey }}
 <meta name="blogco-unsplash-key" content="{{ . }}">
 {{- end }}
