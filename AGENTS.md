@@ -16,5 +16,9 @@
 - Comment: Chỉ comment những đoạn logic phức tạp.
 
 ## 4. Git & CI/CD Workflow
-- Trước khi push: Bắt buộc chạy `npm run lint` và `npm run build` để check lỗi.
+- Không chạy local test, lint hoặc build; làm xong thì commit và push ngay lên GitHub.
 - Commit message: Tuân theo Conventional Commits (VD: `feat: update health dropdown UI`).
+
+## 5. Focus & Delivery
+- Không suy nghĩ overthinking quá rộng hoặc đi xa khỏi yêu cầu gốc của người dùng.
+- Tập trung đúng phạm vi được giao, hoàn tất nhanh và đưa thay đổi lên GitHub ngay.
