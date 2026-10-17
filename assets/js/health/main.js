@@ -18,6 +18,7 @@ import { getICD, searchICD } from './icd.js';
 import { computeStats } from './stats.js';
 import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
+import { renderMedicalInfographic } from './MedicalInfographic.js';
 import {
   extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
@@ -271,15 +272,10 @@ function renderMedicalPreview(root, entry, collapsed = false, saved = false) {
   const preview = root.querySelector('[data-medical-preview]');
   if (!preview) return;
   preview.classList.toggle('is-collapsed', collapsed);
-  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>Kết quả phân tích</h2></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
-    <ul class="medical-preview__list">
-      <li><strong>Tên bệnh / chủ đề:</strong> ${escapeHtml(entry.title)}</li>
-      <li><strong>Triệu chứng:</strong>${entry.symptoms.length ? `<ul>${entry.symptoms.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ' Chưa nhận diện được'}</li>
-      <li><strong>Điều trị:</strong>${entry.treatment ? `<ul><li>${escapeHtml(entry.treatment)}</li></ul>` : ' Chưa nhận diện được'}</li>
-      <li><strong>Thuốc liên quan:</strong>${entry.relatedMedications.length ? `<ul>${entry.relatedMedications.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ' Chưa nhận diện được'}</li>
-    </ul>
+  preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>Kết quả phân tích</h2><p class="medical-preview__title">${escapeHtml(entry.title)}</p></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
+    ${renderMedicalInfographic(entry, collapsed)}
     ${saved
-      ? '<p class="medical-saved-note">✓ Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions"><button type="button" class="health-secondary-button" data-medical-toggle aria-expanded="false">Mở ra ▼</button><a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>'
+      ? '<p class="medical-saved-note">✓ Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions"><a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>'
       : '<div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>'}`;
   preview.hidden = false;
   const toggle = preview.querySelector('[data-medical-toggle]');

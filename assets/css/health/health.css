@@ -373,16 +373,26 @@ body.health-route .category-bar { display: none; }
 .medical-preview__head h2,
 .medical-results__head h2,
 .medical-result-card h2 { margin: 0; color: var(--health-ink); }
-.medical-preview__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
-.medical-preview__grid > div { padding: .75rem; border: 1px solid var(--health-border); border-radius: 10px; background: #fff; }
-.medical-preview__grid p { margin: .35rem 0 0; color: var(--health-muted) !important; line-height: 1.55; }
-.medical-preview__full { grid-column: 1 / -1; }
-.medical-preview__list { display: grid; gap: .7rem; margin: 0; padding-left: 1.25rem; color: var(--blogco-text-body); line-height: 1.55; }
-.medical-preview__list > li { padding-left: .2rem; }
-.medical-preview__list > li:nth-child(n + 4) { transition: opacity .2s ease; }
-.medical-preview.is-collapsed .medical-preview__list > li:nth-child(n + 4) { display: none; }
-.medical-preview__list ul { display: grid; gap: .25rem; margin: .35rem 0 0; padding-left: 1.25rem; }
-.medical-preview__list strong { color: var(--health-ink); }
+.medical-preview__title { margin: .35rem 0 0 !important; color: var(--health-muted) !important; font-size: .9rem; }
+.medical-infographic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+.medical-info-card { display: grid; align-content: start; gap: .7rem; min-width: 0; padding: 1rem; border: 1px solid; border-radius: 14px; transition: box-shadow .18s ease, transform .18s ease; }
+.medical-info-card:hover { box-shadow: 0 10px 24px rgba(15, 23, 42, .1); transform: translateY(-1px); }
+.medical-info-card h3 { display: flex; align-items: center; gap: .45rem; margin: 0; color: var(--health-ink); font-size: .95rem; font-weight: 800; }
+.medical-info-card--symptoms { border-color: #fed7aa; background: #fff7ed; }
+.medical-info-card--medications { border-color: #bfdbfe; background: #eff6ff; }
+.medical-info-card--treatment { grid-column: 1 / -1; border-color: #bbf7d0; background: #f0fdf4; }
+.medical-info-tags { display: flex; flex-wrap: wrap; gap: .45rem; }
+.medical-info-tag { padding: .35rem .65rem; border: 1px solid #fdba74; border-radius: 999px; color: #9a3412; background: #ffedd5; font-size: .84rem; font-weight: 700; }
+.medical-medication-checklist,
+.medical-treatment-list { display: grid; gap: .45rem; margin: 0; padding: 0; color: var(--blogco-text-body); font-size: .88rem; line-height: 1.55; list-style: none; }
+.medical-medication-checklist li { display: flex; align-items: flex-start; gap: .5rem; }
+.medical-medication-checklist li > span:first-child { flex: 0 0 auto; color: #2563eb; font-weight: 900; }
+.medical-treatment-list { padding-left: 1.1rem; list-style: disc; }
+.medical-treatment-list li { padding-left: .15rem; }
+.medical-preview.is-collapsed .medical-treatment-list li:nth-child(n + 4) { display: none; }
+.medical-info-card__toggle { justify-self: start; padding: .35rem .65rem; border: 1px solid #86efac; border-radius: 9px; color: #166534; background: rgba(255, 255, 255, .65); cursor: pointer; font: inherit; font-size: .82rem; font-weight: 800; }
+.medical-info-card__toggle:hover { background: #dcfce7; }
+.medical-info-empty { margin: 0 !important; color: var(--health-muted) !important; font-size: .85rem; }
 .medical-saved-note { margin: 0 !important; color: #127a4b !important; font-size: .88rem; font-weight: 800; }
 .medical-results { display: grid; gap: .8rem; margin-top: 1.25rem; }
 .medical-results__head { align-items: baseline; }
@@ -399,8 +409,8 @@ body.health-route .category-bar { display: none; }
   .medical-tabs { margin-top: 1rem; }
   .medical-tab { flex: 1 1 auto; }
   .medical-sync-grid { grid-template-columns: 1fr; }
-  .medical-preview__grid { grid-template-columns: 1fr; }
-  .medical-preview__full { grid-column: auto; }
+  .medical-infographic { grid-template-columns: 1fr; }
+  .medical-info-card--treatment { grid-column: auto; }
 }
 
 /* Vaccination tracker (#/health/vaccine) ------------------------------------ */
