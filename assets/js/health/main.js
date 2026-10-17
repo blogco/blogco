@@ -362,15 +362,28 @@ function renderMedicalManagement(root) {
   seedMedicalKnowledge();
   const records = getMedicalEntries();
   const duplicates = detectAllDuplicates(records);
+  const allRecommendations = generateRecommendations(duplicates);
   root.innerHTML = `${renderDataManagement({
     records,
     duplicates,
-    recommendations: generateRecommendations(duplicates).filter((recommendation) => !getSkippedRecommendationKeys().has(recommendation.key)),
+    recommendations: allRecommendations.filter((recommendation) => !getSkippedRecommendationKeys().has(recommendation.key)),
+    originalIds: new Set(allRecommendations.map((recommendation) => recommendation.original.inputId)),
     query: medicalManagementQuery,
     selectedIds: medicalManagementSelected,
     tabs: medicalTabs('manage'),
   })}${toastMarkup()}`;
   root.querySelector('h1')?.focus?.({ preventScroll: true });
+}
+
+function medicalOriginalIds() {
+  const records = getMedicalEntries();
+  return new Set(generateRecommendations(detectAllDuplicates(records)).map((recommendation) => recommendation.original.inputId));
+}
+
+function confirmOriginalSelection(inputIds) {
+  const originals = [...new Set(inputIds)].filter((inputId) => medicalOriginalIds().has(inputId));
+  if (!originals.length) return true;
+  return window.confirm(`Bạn đang chọn xoá nội dung gốc (${originals.join(', ')}). Bạn có chắc chắn? Hành động này không thể hoàn tác.`);
 }
 
 function ensureMedicalRemote(root) {
@@ -956,6 +969,10 @@ export function mountHealthApp(root) {
     }
     if (target.matches('[data-medical-management-select]')) {
       const inputId = target.dataset.medicalManagementSelect;
+      if (target.checked && !confirmOriginalSelection([inputId])) {
+        target.checked = false;
+        return;
+      }
       if (target.checked) medicalManagementSelected.add(inputId);
       else medicalManagementSelected.delete(inputId);
       renderMedicalManagement(root);
@@ -963,6 +980,10 @@ export function mountHealthApp(root) {
     if (target.matches('[data-medical-management-select-all]')) {
       const query = medicalManagementQuery.trim().toLocaleLowerCase('vi');
       const visibleRecords = getMedicalEntries().filter((record) => `${record.inputId} ${record.title}`.toLocaleLowerCase('vi').includes(query));
+      if (target.checked && !confirmOriginalSelection(visibleRecords.map((record) => record.inputId))) {
+        target.checked = false;
+        return;
+      }
       visibleRecords.forEach((record) => {
         if (target.checked) medicalManagementSelected.add(record.inputId);
         else medicalManagementSelected.delete(record.inputId);
@@ -1048,7 +1069,7 @@ export function mountHealthApp(root) {
     const deleteSelected = target.closest('[data-medical-delete-selected]');
     if (deleteSelected) {
       const inputIds = [...medicalManagementSelected];
-      if (!inputIds.length || !window.confirm(`Xoá ${inputIds.length} bản ghi đã chọn khỏi thiết bị này?`)) return;
+      if (!inputIds.length || !confirmOriginalSelection(inputIds) || !window.confirm(`Xoá ${inputIds.length} bản ghi đã chọn khỏi thiết bị này?`)) return;
       const removed = deleteMultiple(inputIds);
       medicalManagementSelected = new Set();
       if (Array.isArray(medicalRemoteEntries)) {
@@ -1062,7 +1083,7 @@ export function mountHealthApp(root) {
     const medicalDelete = target.closest('[data-medical-delete]');
     if (medicalDelete) {
       const inputId = medicalDelete.dataset.medicalDelete;
-      if (!inputId || !window.confirm(`Xoá bản ghi ${inputId} khỏi thiết bị này?`)) return;
+      if (!inputId || !confirmOriginalSelection([inputId]) || !window.confirm(`Xoá bản ghi ${inputId} khỏi thiết bị này?`)) return;
       if (!deleteRecord(inputId)) return;
       medicalDrafts.delete(root);
       if (Array.isArray(medicalRemoteEntries)) {

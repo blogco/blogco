@@ -376,6 +376,7 @@ body.health-route .category-bar { display: none; }
 .medical-management-duplicate { display: inline-block; font-size: .78rem; font-weight: 700; line-height: 1.4; }
 .medical-management-unique { color: #127a4b; }
 .medical-management-duplicate { color: #92400e; }
+.medical-original-badge { display: inline-block; margin-right: .35rem; padding: .2rem .45rem; border: 1px solid #facc15; border-radius: 999px; color: #854d0e; background: #fef9c3; font-size: .72rem; font-weight: 800; white-space: nowrap; }
 .medical-management-empty { padding: 1.4rem !important; color: var(--health-muted); text-align: center !important; }
 .medical-duplicate-map { display: grid; gap: .8rem; }
 .medical-duplicate-map__list { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
@@ -391,10 +392,10 @@ body.health-route .category-bar { display: none; }
 .medical-recommendation p { margin: 0; line-height: 1.5; }
 .medical-recommendation code { color: #3730a3; font-size: .78rem; font-weight: 800; }
 .medical-recommendation__pair { color: #312e81; }
-.medical-recommendation__decision { display: flex; flex-wrap: wrap; gap: .75rem; }
-.medical-recommendation__decision span:first-of-type { color: #166534; font-weight: 800; }
-.medical-recommendation__decision span:last-of-type { color: #b91c1c; font-weight: 800; }
-.medical-recommendation__reason { color: var(--health-muted); }
+.medical-recommendation__original { color: #166534; font-weight: 800; }
+.medical-recommendation__deletions { color: #b91c1c; font-weight: 800; }
+.medical-recommendation__deletions p { margin: .25rem 0 0 1rem; color: var(--health-muted); font-weight: 500; }
+.medical-recommendation__deletions p code { color: #b91c1c; font-weight: 800; }
 .medical-raw-field textarea { min-height: 260px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; line-height: 1.55; }
 .medical-offline-note { margin: 0 !important; color: var(--health-muted) !important; font-size: .86rem; }
 .medical-progress { overflow: hidden; height: 7px; margin-top: -.4rem; border-radius: 99px; background: #dbeafe; }
@@ -457,7 +458,7 @@ body.health-route .category-bar { display: none; }
   .medical-management-delete-selected { width: 100%; }
   .medical-recommendations__head { align-items: stretch; flex-direction: column; }
   .medical-recommendations__head .health-secondary-button { width: 100%; }
-  .medical-recommendation__decision { display: grid; gap: .25rem; }
+  .medical-recommendation__deletions p { margin-left: .5rem; }
   .medical-data-table-wrap { overflow: visible; border: 0; background: transparent; }
   .medical-data-table,
   .medical-data-table tbody,
