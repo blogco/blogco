@@ -19,7 +19,7 @@ import { computeStats } from './stats.js';
 import { recognizeImage, parseInvoiceText } from './ocr.js';
 import { mountVaccineView } from './vaccine.js';
 import {
-  extractMedicalKnowledgeOnline, getMedicalEntries, renderMedicalEntry,
+  extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge,
 } from './medical.js';
@@ -296,7 +296,7 @@ function renderMedicalInput(root) {
       <a class="health-back" href="#/health/medical/search">← Tra cứu Y Học</a>
       <p class="health-eyebrow">Y HỌC · NHẬP LIỆU KIẾN THỨC</p>
       <h1 id="medical-title" tabindex="-1">Nhập liệu tri thức</h1>
-      <p>Dán văn bản y khoa để serverless function miễn phí phân tích thành dữ liệu có cấu trúc trước khi lưu offline.</p>
+      <p>Dán văn bản y khoa để bộ phân tích offline chuyển thành dữ liệu có cấu trúc, không cần server hay API trả phí.</p>
     </div>
     ${medicalTabs('input')}
     <form class="health-card medical-input-form" data-medical-input-form>
@@ -306,7 +306,7 @@ function renderMedicalInput(root) {
       <label class="health-field medical-raw-field">Dữ liệu thô (Text / Markdown)
         <textarea name="rawContent" rows="12" placeholder="Ví dụ:\nTên bệnh: Cúm mùa\nTriệu chứng: Sốt, ho, đau họng\nĐiều trị: Nghỉ ngơi, uống đủ nước\nThuốc liên quan: Paracetamol, Oseltamivir" required></textarea>
       </label>
-      <p class="medical-offline-note">ⓘ Văn bản sẽ được gửi tới Medical API dùng underthesea (NLP tiếng Việt), không dùng API AI trả phí. Kết quả chỉ lưu trên thiết bị; bấm xác nhận để sync GitHub nếu đã nhập token ở tab Đồng bộ.</p>
+      <p class="medical-offline-note">ⓘ Bộ phân tích chạy trực tiếp trên trình duyệt, nhận diện các nhãn “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”. Kết quả chỉ lưu trên thiết bị; bấm xác nhận để sync GitHub nếu đã nhập token ở tab Đồng bộ.</p>
       <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>✦ Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
       <div class="medical-progress is-indeterminate" data-medical-progress hidden aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
     </form>
@@ -1176,16 +1176,14 @@ export function mountHealthApp(root) {
       const button = form.querySelector('[data-medical-analyze]');
       if (button?.disabled) return;
       button.disabled = true;
-      button.textContent = 'Đang gọi Medical API…';
+      button.textContent = 'Đang phân tích offline…';
       const progress = medicalProgressController(root);
       try {
         progress.start();
         progress.step(10);
-        const entry = await extractMedicalKnowledgeOnline(
-          form.elements.rawContent.value,
-          form.elements.category.value,
-          (value) => progress.step(value),
-        );
+        await new Promise((resolve) => window.setTimeout(resolve, 80));
+        progress.step(70);
+        const entry = extractMedicalKnowledge(form.elements.rawContent.value, form.elements.category.value);
         progress.step(95);
         medicalDrafts.set(root, entry);
         renderMedicalPreview(root, entry);
