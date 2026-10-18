@@ -12,7 +12,7 @@
 - **Runtime dependencies:** `fuse.js 7.5.0`, `highlight.js 11.12.0`, `marked 15.0.12`, `turndown 7.2.0`.
 - **Asset scripts:**
   - `npm run build:assets` — build Vite, tạo bundle/manifest cho Hugo.
-  - `npm test` — Node test runner cho các file `*.test.js`.
+  - `npm test` — Node test runner cho các file `*.test.js` (giữ lại để tham khảo/CI nếu cần, không thuộc workflow local bắt buộc).
   - `npm run hash` — tạo hash cho passcode CMS.
 - `ai/` là toolkit Node tùy chọn, tách khỏi static site. Không đưa API key của toolkit này vào bundle trình duyệt.
 - Không tự ý thêm framework, thư viện, API trả phí hoặc backend mới nếu chưa được approve.
@@ -182,14 +182,16 @@ State được lưu dưới dạng:
 
 ## 7. Git và CI/CD Workflow
 
+- **Quy trình:** Code → Commit → Push. Không chạy test local.
 - Commit message theo Conventional Commits, ví dụ:
   - `feat: add medical management filter`
   - `fix: refresh records after deletion`
   - `docs: update agents rules`
 - Chỉ stage file liên quan; không dùng `git add .` cho thay đổi không được rà soát.
-- Quy tắc chạy kiểm tra theo yêu cầu task/user. Repo hiện **không có** script `lint` hoặc `build`; không tự bịa thêm script để làm cho lệnh đó pass.
-- Khi project bổ sung các script tương ứng, trước push chạy `npm run lint` và `npm run build` nếu task yêu cầu. Build asset hiện có là `npm run build:assets`; test hiện có là `npm test`.
-- Theo rule delivery hiện tại: không tự chạy local test/lint/build ngoài phạm vi được yêu cầu; khi user yêu cầu rõ thì chạy đúng script có trong `package.json` và báo trung thực nếu script thiếu/thất bại.
+- Không chạy `npm run lint`, `npm run build`, `npm run build:assets`, `npm run test` hoặc test local tương đương.
+- Chỉ cần rà soát lỗi cú pháp rõ ràng bằng việc đọc code và tuân thủ convention trong file này; không thực hiện bước test/build local.
+- Việc kiểm tra cuối cùng sẽ được thực hiện trực tiếp trên GitHub Pages sau khi push.
+- AI Agent không được tự ý chạy `npm run lint` hoặc `npm run build` trừ khi người dùng yêu cầu rõ ràng.
 - Push branch/commit sau khi hoàn tất theo yêu cầu công việc. Nếu push bị reject, fetch/rebase an toàn rồi push lại; không dùng destructive reset.
 - Không có quy trình Pull Request riêng được định nghĩa trong repo. Nếu tạo PR, ghi rõ phạm vi thay đổi, kiểm tra đã chạy/chưa chạy và các giới hạn còn lại.
 
