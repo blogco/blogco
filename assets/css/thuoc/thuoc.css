@@ -1,18 +1,18 @@
 /* ==========================================================================
    "Chi phí cà phê" — Expense Management
-   Rebranded to the Samsung corporate design language: Blue (var(--blogco-primary) /
-   var(--blogco-primary) / var(--blogco-accent-sky)), crisp tech surfaces, tabular grids and voucher records.
+   Rebranded to the BlogCo corporate design language: ink / mint / neutral,
+   crisp surfaces, tabular grids and voucher records.
    Only the `thuoc-*` namespace is touched.
    ========================================================================== */
 
 :root {
-  /* Samsung corporate identity — deep blue / process blue / sky accent */
-  --thuoc-primary: var(--blogco-primary);        /* Samsung Blue — primary CTA */
+  /* BlogCo corporate identity — ink / mint / slate accent */
+  --thuoc-primary: var(--blogco-primary);        /* Ink — primary CTA */
   --thuoc-primary-dark: var(--blogco-primary-hover);   /* hover / pressed */
-  --thuoc-sky: var(--blogco-accent-sky);            /* secondary accent */
+  --thuoc-sky: var(--blogco-accent-sky);            /* mint accent */
   --thuoc-primary-deep: var(--blogco-primary);   /* deep ink for headings on soft bg */
-  --thuoc-primary-alt: #4DA3F5;    /* light blue for gradients */
-  --thuoc-primary-soft: var(--blogco-accent-bg);   /* soft blue surface */
+  --thuoc-primary-alt: var(--blogco-accent-sky);    /* mint focus ring */
+  --thuoc-primary-soft: var(--blogco-accent-bg);   /* soft mint surface */
   --thuoc-primary-soft-2: var(--blogco-bg);
   --thuoc-blue-line: var(--blogco-border);      /* soft blue hairline */
 
@@ -35,11 +35,11 @@
   --thuoc-danger-soft: #FBEAEA;
 
   /* Shape + type */
-  --thuoc-radius: 6px;
+  --thuoc-radius: 4px;
   --thuoc-radius-sm: 4px;
   --thuoc-radius-xs: 4px;
-  --thuoc-shadow: 0 4px 12px rgba(0, 0, 0, .05);
-  --thuoc-shadow-sm: 0 4px 12px rgba(0, 0, 0, .05);
+  --thuoc-shadow: 0 1px 3px rgba(0, 0, 0, .04);
+  --thuoc-shadow-sm: 0 1px 3px rgba(0, 0, 0, .04);
   --thuoc-font: "Inter", "Helvetica Neue", system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
 
@@ -127,7 +127,7 @@ body.thuoc-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .thuoc-page-heading > p:last-child { margin: 0; color: var(--thuoc-muted); max-width: 70ch; }
-/* Corporate hero band (list + stats landing) — Samsung blue */
+/* Corporate hero band (list + stats landing) — flat mint surface */
 .thuoc-page-heading--hero {
   border: 0;
   border-left: 5px solid var(--thuoc-sky);

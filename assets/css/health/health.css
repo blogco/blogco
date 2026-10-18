@@ -2,20 +2,20 @@
    Follows the water module's visual language but uses a teal / clinical palette. */
 
 :root {
-  --health-teal: #0d9488;
-  --health-teal-dark: #0f766e;
-  --health-teal-soft: #ccfbf1;
-  --health-ink: #0f172a;
+  --health-teal: #6dc2ca;
+  --health-teal-dark: #2c3e50;
+  --health-teal-soft: #f4f8f9;
+  --health-ink: #1a1a1a;
   --health-muted: var(--blogco-text-body);
-  --health-border: #d1e7e3;
+  --health-border: #e0e0e0;
   --health-danger: #b91c1c;
   --health-warning: #92400e;
-  --health-glass: rgba(255, 255, 255, .9);
+  --health-glass: #fff;
 }
 
 body.health-route {
   color: var(--health-ink);
-  background: linear-gradient(150deg, #f0fdfa 0%, #fff 65%, #ecfeff 100%);
+  background: #fff;
   color-scheme: light;
 }
 body.health-route main.main > :not(#health-app) { display: none !important; }
@@ -29,7 +29,7 @@ body.health-route .category-bar { display: none; }
   margin: 0 auto;
   padding: clamp(1rem, 3vw, 2rem) 0 4rem;
   color: var(--health-ink);
-  font-family: Inter, "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--blogco-font-family);
 }
 .health-screen *,
 .health-screen *::before,

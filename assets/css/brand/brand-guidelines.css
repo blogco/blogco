@@ -1,6 +1,6 @@
 /* BlogCo — Corporate Identity & Brand Guidelines (#/brand-guidelines · #/ci)
-   Nhận diện tham chiếu: Samsung Corporate — Immersive · Dynamic · Distinctive
-   (Đắm chìm · Năng động · Khác biệt)
+   Ngôn ngữ thiết kế: corporate tối giản, hiện đại, tin cậy; lấy cảm hứng từ
+   annual-report systems nhưng không sao chép nhận diện của thương hiệu khác.
 
    ═══ ROLLBACK ═══
    Hướng dẫn khôi phục phong cách cũ (nếu cần) nằm tại:
@@ -16,29 +16,23 @@
      #/brand-guidelines — phải luôn khớp với assets/js/brand/main.js.
      ──────────────────────────────────────────────────────────────────────── */
 
-  /* Màu thương hiệu chính: logo, CTA chính, tiêu đề H1/H2 */
-  --blogco-primary: #1428A0;
-  /* Hover/pressed state của nút chính */
-  --blogco-primary-hover: #0F1F7A;
-  /* Điểm nhấn: active state, border nổi bật, thanh tiến trình */
-  --blogco-accent-sky: #0689D8;
-  /* Nền badge/tag, hover nhẹ trên bàn/table */
-  --blogco-accent-bg: #E8F0FE;
+  /* Sembcorp-inspired corporate palette: calm, minimal, mint-led. */
+  --blogco-primary: #1A1A1A;
+  --blogco-primary-hover: #2C3E50;
+  --blogco-accent-sky: #6DC2CA;
+  --blogco-accent-bg: #F4F8F9;
   /* Nền trang chính */
   --blogco-bg: #FFFFFF;
   /* Nền card, nền bảng biểu dữ liệu */
-  --blogco-card-bg: #F7F7F7;
-  /* Tiêu đề, nhãn quan trọng (trắng: 21:1 — AAA) */
-  --blogco-text-main: #000000;
-  /* Nội dung bài viết (trắng: 4.5:1 — WCAG AA) */
-  --blogco-text-body: #75787B;
-  /* Ngày tháng, ghi chú phụ, placeholder (không dùng cho text thiết yếu) */
-  --blogco-text-muted: #A6A6A6;
-  /* Viền mảnh phân tách card, bảng */
-  --blogco-border: #E6E6E6;
-  /* Font body + display (proprietary, fallback system) */
-  --blogco-font-family: 'SamsungOne', 'Helvetica Neue', Arial, sans-serif;
-  --blogco-font-display: 'Samsung Sharp Sans', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-card-bg: #F4F8F9;
+  --blogco-text-main: #1A1A1A;
+  --blogco-text-body: #2C3E50;
+  --blogco-text-muted: #7B8790;
+  --blogco-border: #E0E0E0;
+  --blogco-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+  --blogco-dark-neutral: #1A1A1A;
+  --blogco-font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
 
   /* ── Aliases nội bộ (--samsung-* + hình khối/shadow) ────────────────────── */
   --samsung-primary: var(--blogco-primary);
@@ -53,9 +47,9 @@
   --samsung-border: var(--blogco-border);
   --samsung-font-display: var(--blogco-font-display);
   --samsung-font-body: var(--blogco-font-family);
-  --samsung-shadow: 0 2px 8px rgb(0 0 0 / 6%);
-  --samsung-radius-card: 12px;
-  --samsung-radius-btn: 6px;
+  --samsung-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+  --samsung-radius-card: 4px;
+  --samsung-radius-btn: 4px;
 }
 
 /* Route: ẩn mọi thứ khác trên trang chủ khi mở #/brand-guidelines --------- */
@@ -344,8 +338,7 @@ body.brand-route .brand-screen .brand-demo-quote {
   line-height: 1.6 !important;
 }
 
-/* Buttons — Samsung style: primary nền xanh không viền, secondary viền xanh ---
-   Cả hai đều đạt WCAG AA: trắng-trên-#1428A0 = 11.4:1, #1428A0-trên-trắng = 8.5:1 */
+/* Buttons — flat corporate style: mint primary, thin outline secondary. */
 .brand-buttons { display: flex; flex-wrap: wrap; gap: 12px; }
 
 .brand-btn {
@@ -363,13 +356,13 @@ body.brand-route .brand-screen .brand-demo-quote {
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-/* Button chính: nền Samsung Blue, text trắng, không viền */
+/* Button chính: nền mint, text đậm, không viền */
 .brand-btn--primary { color: #fff; background: var(--samsung-primary); }
 .brand-btn--primary:hover { background: var(--samsung-primary-hover); }
 /* Button phụ (dark): nền tối cho footer/hero */
 .brand-btn--secondary { color: #fff; background: var(--samsung-primary-hover); }
 .brand-btn--secondary:hover { background: #0a1557; }
-/* Button phụ: viền Samsung Blue, text Samsung Blue, nền trong suốt */
+/* Button phụ: viền xám, text đậm, nền trong suốt */
 .brand-btn--outline { color: var(--samsung-primary); border-color: var(--samsung-primary); background: transparent; }
 .brand-btn--outline:hover { color: #fff; background: var(--samsung-primary); }
 .brand-btn--ghost { color: var(--samsung-text-body); background: var(--samsung-surface); }
@@ -383,7 +376,7 @@ body.brand-route .brand-screen .brand-demo-quote {
   gap: 20px;
 }
 
-/* Card — nền Samsung Surface, viền nhẹ, bo góc 12px, padding 24px */
+/* Card — nền sáng, viền nhẹ, bo góc tối đa 4px. */
 .brand-card {
   border: 1px solid var(--samsung-border);
   border-radius: 12px;
@@ -485,6 +478,26 @@ body.brand-route .brand-screen .brand-code__pre code {
   .brand-cards { grid-template-columns: 1fr; }
   .brand-type-row { grid-template-columns: 1fr; gap: 12px; }
 }
+
+/* Brand guide follows the same flat corporate system as the public site. */
+body.brand-route .brand-hero,
+body.brand-route .brand-card,
+body.brand-route .brand-table-wrap,
+body.brand-route .brand-code {
+  border-radius: 4px;
+  box-shadow: none;
+}
+body.brand-route .brand-hero,
+body.brand-route .brand-card { background: #fff; }
+body.brand-route .brand-card:hover { border-color: var(--blogco-accent-sky); box-shadow: none; transform: none; }
+body.brand-route .brand-btn { border-radius: 4px; box-shadow: none; }
+body.brand-route .brand-btn--primary { color: var(--blogco-text-main); background: var(--blogco-accent-sky); }
+body.brand-route .brand-btn--primary:hover { background: #58b4bd; }
+body.brand-route .brand-btn--secondary { color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+body.brand-route .brand-btn--outline { color: var(--blogco-text-main); border-color: var(--blogco-accent-sky); }
+body.brand-route .brand-btn--outline:hover { color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+body.brand-route .brand-table-wrap { border-color: var(--blogco-border); }
+body.brand-route .brand-table thead th { background: var(--blogco-accent-bg); }
 
 @media (max-width: 640px) {
   .brand-hero { padding: 28px 22px; }

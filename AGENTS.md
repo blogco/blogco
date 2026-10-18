@@ -40,7 +40,7 @@ CSS/JS được nạp qua `layouts/partials/extend_head.html` từ Vite manifest
 - Layout gốc là `layouts/baseof.html`; thứ tự chung là Header → `main` → Footer.
 - Navbar là Hugo partial `layouts/_partials/header.html`, không phải React component.
 - Footer là Hugo partial `layouts/_partials/footer.html`; các link lấy từ `data/footer-links.yaml`. Thêm link mới bằng một object YAML, không hardcode lại trong markup nếu không cần.
-- Navbar/Footer dùng chung nền xanh thương hiệu và các token `--blogco-*`.
+- Navbar/Footer dùng chung nền trắng, viền mảnh và các token `--blogco-*`; mint chỉ dùng làm accent.
 - Health mega menu hiện tại:
   - Rộng tối đa khoảng `480px`, grid 2 cột desktop.
   - Không dùng tagline phụ.
@@ -49,34 +49,36 @@ CSS/JS được nạp qua `layouts/partials/extend_head.html` từ Vite manifest
 
 ## 3. UI/UX Conventions
 
+Ngôn ngữ thiết kế hiện tại là corporate tối giản, hiện đại, tin cậy, lấy cảm hứng từ annual-report systems; không sao chép 100% giao diện hoặc nhận diện của thương hiệu bên ngoài.
+
 ### Design tokens
 
 Nguồn sự thật duy nhất là `assets/css/brand/brand-guidelines.css`:
 
-- Primary: `#1428A0` — logo, tiêu đề chính, CTA toàn site.
-- Primary hover: `#0F1F7A`.
-- Accent sky: `#0689D8` — active state, progress bar, điểm nhấn.
-- Accent background: `#E8F0FE`.
+- Primary/text chính: `#1A1A1A`.
+- Secondary/dark text: `#2C3E50`.
+- Accent mint: `#6DC2CA` — active state, progress bar, số liệu và điểm nhấn.
+- Accent/background phụ: `#F4F8F9`.
 - Page background: `#FFFFFF`.
-- Card background: `#F7F7F7`.
-- Main text: `#000000`.
-- Body text: `#75787B`.
-- Muted text: `#A6A6A6`.
-- Border: `#E6E6E6`.
-- Font toàn site: `SamsungOne`, fallback `Helvetica Neue`, `Arial`, sans-serif.
-- Display font: `Samsung Sharp Sans`, fallback system.
-- Health palette: teal `#0D9488`, teal dark `#0F766E`, soft teal `#CCFBF1`, ink `#0F172A`, border `#D1E7E3`, danger `#B91C1C`, warning `#92400E`.
+- Card background: `#F4F8F9`.
+- Main text: `#1A1A1A`.
+- Body text: `#2C3E50`.
+- Muted text: `#7B8790`.
+- Border: `#E0E0E0`.
+- Font toàn site: `Inter`, fallback `Helvetica Neue`, `Arial`, sans-serif.
+- Display font: `Inter`, fallback system.
+- Health palette kế thừa mint/corporate tokens; danger/warning chỉ dùng cho trạng thái lỗi hoặc cảnh báo.
 
 Không hardcode màu mới nếu token hiện có phù hợp. Nếu cần màu đặc thù của một card y khoa, giữ trong `assets/css/health/health.css` và dùng cho đúng ngữ nghĩa.
 
 ### Typography và spacing
 
 - Body toàn site: `18px`, weight tối thiểu 500, line-height `1.6`.
-- Navbar: `SamsungOne`, `14px`, weight 700, uppercase, letter-spacing khoảng `.06em`.
+- Navbar: `Inter`, `14px`, weight 700, uppercase, letter-spacing khoảng `.06em`.
 - Footer link: khoảng `13px`; footer meta: khoảng `12px`.
 - Heading toàn site: H1 dùng `clamp(40px, 5vw, 64px)`, H2 khoảng `32px`, H3 khoảng `24px`, nhưng health screen có override H1 `1.7rem–2.5rem` và H2 `1.15rem`.
 - Ưu tiên spacing theo `rem`, `clamp()` và token hiện có; không áp dụng máy móc `p-4/m-4` của Tailwind.
-- Card phổ biến: border 1px, radius `12px–16px`, padding khoảng `1rem–1.25rem`.
+- Card phổ biến: border 1px, radius tối đa `4px`, không shadow hoặc shadow rất nhẹ, padding khoảng `1rem–1.25rem`.
 - Health screen rộng tối đa khoảng `1040px`, padding dưới khoảng `4rem`.
 
 ### Icons và responsive
@@ -115,7 +117,7 @@ Không hardcode màu mới nếu token hiện có phù hợp. Nếu cần màu �
 ### Các module chính
 
 - `assets/js/health/main.js`: hash router, event delegation, render các tab Input/Search/Sync/Manage.
-- `assets/js/health/MedicalInfographic.js`: structured data → symptom tags, medication checklist, treatment bullet points/collapse.
+- `assets/js/health/MedicalInfographic.js`: structured data → mint data tags, medication checklist/accordion, treatment bullet points/collapse.
 - `assets/js/health/DataManagement.js`: bảng quản lý, duplicate map và recommendation panel.
 - `assets/js/health/RecommendationPanel.js`: hiển thị đề xuất giữ/xoá.
 - `assets/js/health/useMedicalRecords.js`: adapter hook-like cho vanilla JS; không phải React hook. Nó load khi mount, lắng nghe `health:data-changed`/`storage`, cập nhật state sau xoá.

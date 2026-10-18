@@ -1,8 +1,8 @@
 :root {
-  /* ═══ Samsung Corporate identity — Immersive · Dynamic · Distinctive ═══
+  /* ═══ BlogCo corporate identity — Minimal · Modern · Trustworthy ═══
      Dẫn xuất từ single source of truth: assets/css/brand/brand-guidelines.css
      (các biến --blogco-*). Sửa branding ở đó, toàn site tự cập nhật. */
-  --sm-blue: var(--blogco-primary);          /* Samsung Blue — primary */
+  --sm-blue: var(--blogco-primary);          /* Legacy alias — primary */
   --sm-blue-dark: var(--blogco-primary-hover); /* Hover/pressed */
   --sm-sky: var(--blogco-accent-sky);        /* Accent — UI element, active state */
   --sm-navy: var(--blogco-primary);          /* Header/footer band */
@@ -26,9 +26,9 @@
   --fw-h1: 800;
   --fs-body: 18px;
   --lh-body: 1.6;
-  --radius: 8px;
-  --radius-sm: 6px;
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --radius: 4px;
+  --radius-sm: 4px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
   --max-wide: 1200px;
   --max-content: 720px;
   --space-section: 96px;
@@ -40,22 +40,6 @@
   --content: var(--blogco-text-body);
   --code-bg: var(--blogco-card-bg);
   color-scheme: light;
-}
-
-/* Font Samsung — dùng local() nếu máy đã cài; không cài vẫn fallback
-   sang Helvetica Neue/Arial nên trang luôn chạy được ngay, không cần
-   cài thêm dependency hay tải font bên ngoài. */
-@font-face {
-  font-family: "Samsung Sharp Sans";
-  src: local("Samsung Sharp Sans"), local("SamsungSharpSans-Bold");
-  font-weight: 400 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: "SamsungOne";
-  src: local("SamsungOne"), local("Samsung One");
-  font-weight: 100 900;
-  font-display: swap;
 }
 
 html {
@@ -264,9 +248,9 @@ body.article-body .main {
 .pagination__link { display: inline-flex; min-width: 40px; height: 40px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; color: var(--text) !important; background: #fff; font-size: 14px; font-weight: 700 !important; text-decoration: none; transition: color .15s ease, background .15s ease, border-color .15s ease; }
 .pagination__link--prev,
 .pagination__link--next { padding-inline: 16px; }
-.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: #E8F0FE; }
+.pagination__link:hover { border-color: var(--accent-dark); color: var(--accent-dark) !important; background: var(--blogco-accent-bg); }
 .pagination__link.is-active,
-.pagination__link[aria-current="page"] { border-color: #1428A0; color: #fff !important; background: #1428A0; }
+.pagination__link[aria-current="page"] { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-sky); }
 .pagination__link:focus-visible { outline: 3px solid var(--accent-dark); outline-offset: 3px; }
 
 .home-posts { width: 100%; max-width: 1280px; margin: 64px auto; padding: 0 24px; }
@@ -279,7 +263,7 @@ body.article-body .main {
 .post-card__thumb { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #f3f4f6; }
 .post-card__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
 .post-card:hover .post-card__thumb img { transform: scale(1.04); }
-.post-card__thumb-placeholder { display: block; width: 100%; height: 100%; background: linear-gradient(135deg, #F7F7F7, #E8F0FE); }
+.post-card__thumb-placeholder { display: block; width: 100%; height: 100%; background: var(--blogco-accent-bg); }
 .post-card__body { display: flex; min-height: 250px; flex: 1; flex-direction: column; gap: 8px; padding: 20px; }
 .post-card__date { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; letter-spacing: .06em; text-transform: uppercase; }
 .post-card .post-card__title { display: -webkit-box; overflow: hidden; margin: 0; color: var(--text); font-size: 18px !important; font-weight: 700 !important; line-height: 1.35 !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -456,8 +440,8 @@ body :focus-visible {
   border: 0;
   border-radius: 12px;
   color: #fff;
-  background: linear-gradient(135deg, #1428A0 0%, #0689D8 55%, #0F1F7A 100%);
-  box-shadow: 0 10px 40px rgba(20, 40, 160, 0.25);
+  background: var(--blogco-accent-bg);
+  box-shadow: none;
   text-align: left;
 }
 
@@ -838,8 +822,8 @@ body .main .post-header .post-description {
 
 :root {
   --nav-height: 64px;
-  --nav-active-bg: #0689D8;
-  --nav-font: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+  --nav-active-bg: var(--blogco-accent-sky);
+  --nav-font: var(--blogco-font-family);
   --nav-fw: 700;
   --nav-fs: 14px;
   --nav-ls: 0.06em;
@@ -1257,7 +1241,7 @@ body.article-body .blogco-header .header-nav {
   .blogco-header .navbar__logo { font-size: 19px; }
 }
 
-/* Footer — Samsung deep-blue band ----------------------------------------- */
+/* Footer — flat corporate surface ------------------------------------------ */
 body .footer,
 .footer {
   width: min(var(--max-wide), calc(100% - 48px));
@@ -1316,4 +1300,208 @@ body .footer,
   .footer { width: calc(100% - 32px); margin: 24px auto 16px; padding: 20px 16px; }
   .footer__inner { align-items: flex-start; flex-direction: column; gap: 16px; }
   .footer__nav { justify-content: flex-start; }
+}
+
+/* Corporate minimal rebrand -------------------------------------------------
+   Flat white surfaces, thin borders and mint accents inspired by modern
+   annual-report systems. Keep this override after module styles so every
+   existing view inherits the same visual language. */
+body,
+body.health-route,
+body.brand-route { color: var(--blogco-text-main); background: var(--blogco-bg); }
+
+body .blogco-header,
+body.article-body .blogco-header {
+  border-bottom: 1px solid var(--blogco-border);
+  background: #fff;
+  box-shadow: none;
+}
+.blogco-header .navbar__logo,
+.blogco-header .navbar__link { color: var(--blogco-text-main) !important; }
+.blogco-header .navbar__logo-accent,
+.blogco-header .navbar__logo-mark { color: var(--blogco-accent-sky); }
+.blogco-header .navbar__link:hover,
+.blogco-header .navbar__link.is-active,
+.blogco-header .navbar__link[aria-current="page"] { color: var(--blogco-text-main) !important; background: transparent; }
+.blogco-header .navbar__link::after { background: var(--blogco-accent-sky); }
+.blogco-header .navbar__mega {
+  border-color: var(--blogco-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+}
+.blogco-header .navbar__mega-item { border-radius: 4px; color: var(--blogco-text-main) !important; }
+.blogco-header .navbar__mega-item:hover,
+.blogco-header .navbar__mega-item:focus-visible { border-color: var(--blogco-accent-sky); background: var(--blogco-accent-bg); }
+.blogco-header .navbar__mega-title { color: var(--blogco-text-main); }
+.blogco-header .navbar__mega-item:hover .navbar__mega-title { color: var(--blogco-primary-hover); }
+
+body .footer,
+.footer {
+  border: 1px solid var(--blogco-border);
+  border-radius: 4px;
+  color: var(--blogco-text-body) !important;
+  background: #fff;
+  box-shadow: none;
+}
+.footer__brand,
+.footer a,
+.footer span a { color: var(--blogco-text-main) !important; }
+.footer__brand-accent,
+.footer__brand-mark,
+.footer a:hover,
+.footer a:focus-visible { color: var(--blogco-accent-sky) !important; }
+.footer__copyright,
+.footer__meta,
+.footer__divider { color: var(--blogco-text-muted); }
+.footer__meta { border-top-color: var(--blogco-border); }
+.footer .gh-actions__heading { color: var(--blogco-text-main) !important; }
+.footer .gh-actions { border-top-color: var(--blogco-border); }
+
+.post-entry,
+.first-entry,
+.post-card,
+.posts-index__card,
+.posts-index__empty,
+.search-area,
+.search-area__results a {
+  border-radius: 4px;
+  box-shadow: none;
+}
+.post-card:hover { transform: none; border-color: var(--blogco-accent-sky); box-shadow: none; }
+.post-card__thumb-placeholder { background: var(--blogco-accent-bg); }
+.pagination__link.is-active,
+.pagination__link[aria-current="page"] { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-sky); }
+
+.hero.first-entry.home-info {
+  min-height: 420px;
+  padding: clamp(3rem, 8vw, 7rem) clamp(1.5rem, 8vw, 7rem);
+  border: 1px solid var(--blogco-border);
+  border-radius: 4px;
+  color: var(--blogco-text-main);
+  background: #fff;
+  box-shadow: none;
+}
+.hero.first-entry.home-info::before,
+.hero__bubbles,
+.hero__sea-life,
+.hero__waves { display: none; }
+.hero__title { color: var(--blogco-text-main) !important; text-shadow: none; }
+.hero__tagline { color: var(--blogco-text-body); text-shadow: none; }
+.hero__tagline p { color: inherit; }
+.hero__footer a { color: var(--blogco-accent-sky) !important; }
+
+.health-screen .health-card,
+.health-screen .health-page-heading,
+.health-screen .health-visit-card,
+.health-screen .health-summary-card,
+.health-screen .health-fieldset,
+.health-screen .health-medicine,
+.health-screen .health-invoice,
+.health-screen .health-invoice-view,
+.health-screen .medical-info-card,
+.health-screen .medical-result-card,
+.health-screen .medical-recommendation,
+.health-screen .medical-sync-prompt__dialog {
+  border-radius: 4px;
+  box-shadow: none;
+}
+.health-screen .health-page-heading,
+.health-screen .health-card,
+.health-screen .health-visit-card,
+.health-screen .health-summary-card,
+.health-screen .health-invoice-view,
+.health-screen .medical-result-card { border-color: var(--blogco-border); background: #fff; }
+.health-screen .health-page-heading--hero { background: var(--blogco-accent-bg); }
+.health-screen .health-primary-button,
+.health-screen .health-secondary-button,
+.health-screen .health-ghost-button,
+.health-screen .health-icon-button {
+  border-radius: 4px;
+  box-shadow: none;
+  transition: color .15s ease, background .15s ease, border-color .15s ease;
+  transform: none;
+}
+.health-screen .health-primary-button { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-sky); }
+.health-screen .health-primary-button:hover { color: var(--blogco-text-main) !important; background: #58b4bd; }
+.health-screen .health-secondary-button { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: transparent; }
+.health-screen .health-secondary-button:hover,
+.health-screen .health-ghost-button:hover { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-bg); }
+.health-screen .health-ghost-button { border-color: var(--blogco-border); color: var(--blogco-text-main) !important; background: #fff; }
+.health-screen a:hover { text-decoration-color: var(--blogco-accent-sky); }
+
+.medical-tabs { border-color: var(--blogco-border); border-radius: 4px; background: #fff; }
+.medical-tab { border-radius: 4px; color: var(--blogco-text-body) !important; }
+.medical-tab:hover,
+.medical-tab:focus-visible { color: var(--blogco-text-main) !important; background: var(--blogco-accent-bg); }
+.medical-tab.is-active { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-bg); }
+
+.medical-data-table-wrap { border: 0; border-radius: 0; background: transparent; }
+.medical-data-table th { color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+.medical-data-table th,
+.medical-data-table td { border-bottom-color: var(--blogco-border); }
+.medical-data-table tbody tr:hover { background: var(--blogco-accent-bg); }
+.medical-management-unique { color: var(--blogco-text-body); }
+.medical-management-duplicate { color: var(--blogco-text-main); }
+.medical-original-badge,
+.medical-sync-badge { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+.medical-duplicate-map__list li { border-color: var(--blogco-border); border-radius: 4px; color: var(--blogco-text-body); background: var(--blogco-accent-bg); }
+.medical-recommendation { border-color: var(--blogco-border); border-radius: 4px; background: var(--blogco-accent-bg); }
+.medical-recommendation__pair,
+.medical-recommendation__original,
+.medical-recommendation__deletions { color: var(--blogco-text-main); }
+
+.medical-info-card { border-color: var(--blogco-border) !important; background: #fff !important; }
+.medical-info-card--symptoms,
+.medical-info-card--medications,
+.medical-info-card--treatment { border-left: 3px solid var(--blogco-accent-sky) !important; }
+.medical-info-card__summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; list-style: none; color: var(--blogco-text-main); font-size: .95rem; font-weight: 700; }
+.medical-info-card__summary::-webkit-details-marker { display: none; }
+.medical-info-card__summary-icon { color: var(--blogco-accent-sky); font-size: 1.25rem; font-weight: 400; line-height: 1; transition: transform .15s ease; }
+.medical-info-card[open] > .medical-info-card__summary .medical-info-card__summary-icon { transform: rotate(45deg); }
+.medical-medication-checklist { margin-top: .75rem; }
+.medical-medication-checklist li { display: block; padding: .55rem 0; border-top: 1px solid var(--blogco-border); }
+.medical-medication-checklist li > details > summary { display: flex; align-items: center; gap: .5rem; cursor: pointer; list-style: none; }
+.medical-medication-checklist li > details > summary::-webkit-details-marker { display: none; }
+.medical-medication-checklist li > details > summary > span:first-child { color: var(--blogco-accent-sky); }
+.medical-medication-checklist li > details > summary .medical-info-card__summary-icon { margin-left: auto; font-size: 1rem; }
+.medical-medication-checklist li > details[open] > summary .medical-info-card__summary-icon { transform: rotate(45deg); }
+.medical-medication-checklist li > details p { margin: .45rem 0 0 1.25rem; color: var(--blogco-text-body); font-size: .86rem; }
+.medical-info-tag { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+.medical-info-card__toggle { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-text-main); background: #fff; }
+.medical-info-card__toggle:hover { background: var(--blogco-accent-bg); }
+.medical-progress span { background: var(--blogco-accent-sky); }
+
+body.thuoc-route .thuoc-page-heading--hero,
+body.coffee-route .coffee-page-heading--hero {
+  border: 1px solid var(--blogco-border);
+  border-left: 3px solid var(--blogco-accent-sky);
+  border-radius: 4px;
+  color: var(--blogco-text-main);
+  background: var(--blogco-accent-bg);
+  box-shadow: none;
+}
+body.thuoc-route .thuoc-page-heading--hero::after,
+body.coffee-route .coffee-page-heading--hero::after { display: none; }
+body.thuoc-route .thuoc-page-heading--hero h1,
+body.coffee-route .coffee-page-heading--hero h1 { color: var(--blogco-text-main); }
+body.thuoc-route .thuoc-page-heading--hero .thuoc-eyebrow,
+body.coffee-route .coffee-page-heading--hero .coffee-eyebrow { color: var(--blogco-text-body) !important; }
+body.thuoc-route .thuoc-page-heading--hero > p:last-child,
+body.coffee-route .coffee-page-heading--hero > p:last-child { color: var(--blogco-text-body); }
+
+.auth-lock__backdrop { background: rgb(244 248 249 / 94%); backdrop-filter: blur(6px); }
+.auth-lock__card { border-radius: 4px; box-shadow: none; }
+
+@media (max-width: 1024px) {
+  .blogco-header .navbar__menu { border-color: var(--blogco-border); border-radius: 0 0 4px 4px; background: #fff; box-shadow: none; }
+  .blogco-header .navbar__link { color: var(--blogco-text-main) !important; }
+  .blogco-header .navbar__mega { border-radius: 4px; background: var(--blogco-accent-bg); }
+  .blogco-header .navbar__mega-title { color: var(--blogco-text-main); }
+  .blogco-header .navbar__mega-desc { color: var(--blogco-text-body); }
+}
+
+@media (max-width: 767px) {
+  .hero.first-entry.home-info { min-height: 320px; padding: 3rem 1.5rem; text-align: left; }
+  .medical-data-table tr { border-color: var(--blogco-border); border-radius: 4px; }
 }

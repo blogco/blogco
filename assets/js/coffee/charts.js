@@ -3,33 +3,33 @@
 // Every builder is a PURE function that returns an HTML/SVG string (no DOM), so
 // the layouts can be unit-tested in Node and dropped straight into innerHTML.
 //
-// Design system palette (Samsung Blue / neutral), matching coffee.css.
+// Design system palette (BlogCo ink / mint / neutral), matching coffee.css.
 
 import { escapeHtml } from './store.js';
 
 export const PALETTE = Object.freeze({
-  primary: '#1428A0',
-  primaryAlt: '#0689D8',
-  primaryDark: '#0F1F7A',
-  mint: '#0689D8',
-  mintSoft: '#9CC3F5',
-  gray: '#E6E6E6',
-  grayText: '#75787B',
-  bg: '#F7F7F7',
-  border: '#E6E6E6',
-  ink: '#000000',
+  primary: '#1A1A1A',
+  primaryAlt: '#6DC2CA',
+  primaryDark: '#2C3E50',
+  mint: '#6DC2CA',
+  mintSoft: '#F4F8F9',
+  gray: '#E0E0E0',
+  grayText: '#7B8790',
+  bg: '#F4F8F9',
+  border: '#E0E0E0',
+  ink: '#1A1A1A',
   warning: '#C2740B',
   warningSoft: '#FBE3C7',
   danger: '#C81E1E',
   success: '#127A4B',
-  info: '#0689D8',
+  info: '#6DC2CA',
 });
 
-// Ordered palette for categorical series (brands, categories…). Blue-forward
-// with deep / mid / sky / soft steps for strong contrast between slices.
+// Ordered palette for categorical series (brands, categories…) using restrained
+// mint, ink and slate steps for a clear corporate presentation.
 export const SERIES_COLORS = [
-  '#1428A0', '#0689D8', '#0F1F7A', '#4DA3F5', '#9CC3F5',
-  '#7A7D80', '#A6A6A6', '#7DBBF7', '#C8D6FB', '#374151',
+  '#1A1A1A', '#6DC2CA', '#2C3E50', '#8ED3D8', '#B9E6E8',
+  '#7B8790', '#B5BEC3', '#D8F1F2', '#E7F7F8', '#374151',
 ];
 
 export function colorAt(index) {

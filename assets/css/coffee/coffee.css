@@ -1,18 +1,18 @@
 /* ==========================================================================
    "Chi phí cà phê" — Expense Management
-   Rebranded to the Samsung corporate design language: Blue (var(--blogco-primary) /
-   var(--blogco-primary) / var(--blogco-accent-sky)), crisp tech surfaces, tabular grids and voucher records.
+   Rebranded to the BlogCo corporate design language: ink / mint / neutral,
+   crisp surfaces, tabular grids and voucher records.
    Only the `coffee-*` namespace is touched.
    ========================================================================== */
 
 :root {
-  /* Samsung corporate identity — deep blue / process blue / sky accent */
-  --coffee-primary: var(--blogco-primary);        /* Samsung Blue — primary CTA */
+  /* BlogCo corporate identity — ink / mint / slate accent */
+  --coffee-primary: var(--blogco-primary);        /* Ink — primary CTA */
   --coffee-primary-dark: var(--blogco-primary-hover);   /* hover / pressed */
-  --coffee-sky: var(--blogco-accent-sky);            /* secondary accent */
+  --coffee-sky: var(--blogco-accent-sky);            /* mint accent */
   --coffee-primary-deep: var(--blogco-primary);   /* deep ink for headings on soft bg */
-  --coffee-primary-alt: #4DA3F5;    /* light blue for gradients */
-  --coffee-primary-soft: var(--blogco-accent-bg);   /* soft blue surface */
+  --coffee-primary-alt: var(--blogco-accent-sky);    /* mint focus ring */
+  --coffee-primary-soft: var(--blogco-accent-bg);   /* soft mint surface */
   --coffee-primary-soft-2: var(--blogco-bg);
   --coffee-blue-line: var(--blogco-border);      /* soft blue hairline */
 
@@ -35,11 +35,11 @@
   --coffee-danger-soft: #FBEAEA;
 
   /* Shape + type */
-  --coffee-radius: 6px;
+  --coffee-radius: 4px;
   --coffee-radius-sm: 4px;
   --coffee-radius-xs: 4px;
-  --coffee-shadow: 0 4px 12px rgba(0, 0, 0, .05);
-  --coffee-shadow-sm: 0 4px 12px rgba(0, 0, 0, .05);
+  --coffee-shadow: 0 1px 3px rgba(0, 0, 0, .04);
+  --coffee-shadow-sm: 0 1px 3px rgba(0, 0, 0, .04);
   --coffee-font: "Inter", "Helvetica Neue", system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
 
@@ -127,7 +127,7 @@ body.coffee-route .category-bar { display: none; }
   text-transform: uppercase;
 }
 .coffee-page-heading > p:last-child { margin: 0; color: var(--coffee-muted); max-width: 70ch; }
-/* Corporate hero band (list + stats landing) — Samsung blue */
+/* Corporate hero band (list + stats landing) — flat mint surface */
 .coffee-page-heading--hero {
   border: 0;
   border-left: 5px solid var(--coffee-sky);

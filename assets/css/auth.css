@@ -1,5 +1,5 @@
 /* Privacy lock screen for the personalised SPA features.
-   Matches the Samsung light identity: navy · sky · ice-blue. */
+   Matches the BlogCo corporate identity: ink · mint · white. */
 
 body.auth-locked { overflow: hidden; }
 

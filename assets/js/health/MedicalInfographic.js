@@ -14,6 +14,11 @@ function listValue(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function medicationParts(value) {
+  const parts = String(value).split(/\s+[—–-]\s+/);
+  return { name: parts.shift() || String(value), detail: parts.join(' — ') };
+}
+
 export function renderMedicalInfographic(entry, collapsed = false) {
   const symptoms = listValue(entry.symptoms);
   const medications = listValue(entry.relatedMedications || entry.medications);
@@ -29,17 +34,20 @@ export function renderMedicalInfographic(entry, collapsed = false) {
         ? `<div class="medical-info-tags">${symptoms.map((item) => `<span class="medical-info-tag">${escapeHtml(item)}</span>`).join('')}</div>`
         : '<p class="medical-info-empty">Chưa nhận diện được.</p>'}
     </section>
-    <section class="medical-info-card medical-info-card--medications">
-      <h3><span aria-hidden="true">💊</span> Thuốc liên quan</h3>
+    <details class="medical-info-card medical-info-card--medications" open>
+      <summary class="medical-info-card__summary"><span><span aria-hidden="true">💊</span> Thuốc liên quan</span><span class="medical-info-card__summary-icon" aria-hidden="true">+</span></summary>
       ${medications.length
-        ? `<ul class="medical-medication-checklist">${medications.map((item) => `<li><span aria-hidden="true">✓</span><span>${escapeHtml(item)}</span></li>`).join('')}</ul>`
+        ? `<ul class="medical-medication-checklist">${medications.map((item) => {
+          const medication = medicationParts(item);
+          return `<li><details><summary><span aria-hidden="true">✓</span><strong>${escapeHtml(medication.name)}</strong><span class="medical-info-card__summary-icon" aria-hidden="true">+</span></summary>${medication.detail ? `<p>${escapeHtml(medication.detail)}</p>` : ''}</details></li>`;
+        }).join('')}</ul>`
         : '<p class="medical-info-empty">Chưa nhận diện được.</p>'}
-    </section>
-    <section class="medical-info-card medical-info-card--treatment">
-      <h3><span aria-hidden="true">🏥</span> Điều trị</h3>
+    </details>
+    <details class="medical-info-card medical-info-card--treatment" open>
+      <summary class="medical-info-card__summary"><span><span aria-hidden="true">🏥</span> Điều trị chi tiết</span><span class="medical-info-card__summary-icon" aria-hidden="true">+</span></summary>
       ${treatmentPoints.length
         ? `<ul class="medical-treatment-list">${treatmentPoints.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>${treatmentToggle}`
         : '<p class="medical-info-empty">Chưa nhận diện được.</p>'}
-    </section>
+    </details>
   </div>`;
 }
