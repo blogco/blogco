@@ -21,8 +21,8 @@ import { mountVaccineView } from './vaccine.js';
 import { renderMedicalInfographic } from './MedicalInfographic.js';
 import { renderDataManagement } from './DataManagement.js';
 import {
-  deleteRecord, detectAllDuplicates, detectDuplicate, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
-  loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
+  deleteRecord, detectAllDuplicates, detectDuplicate, extractMedicalKnowledge, getMedicalEntries, reloadMedicalEntries, renderMedicalEntry,
+  loadRemoteMedicalKnowledge, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge, generateRecommendations,
   getSkippedRecommendationKeys, skipRecommendation,
 } from './medical.js';
@@ -425,6 +425,7 @@ function getMedicalRecordsStore(root) {
   if (!medicalRecordStores.has(root)) {
     medicalRecordStores.set(root, useMedicalRecords(() => {
       if (routeName(root) === '/health/medical/manage') renderMedicalManagement(root);
+      if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
     }));
   }
   return medicalRecordStores.get(root);
@@ -476,12 +477,16 @@ function ensureMedicalRemote(root) {
 
 function renderMedicalSearch(root) {
   seedMedicalKnowledge();
-  const localEntries = getMedicalEntries();
-  const source = medicalRemoteEntries === null
-    ? localEntries
-    : mergeMedicalEntries(localEntries, medicalRemoteEntries);
+  const recordsStore = getMedicalRecordsStore(root);
+  // Always invalidate the in-memory cache so a search never uses records
+  // deleted from Local Storage in another tab or management route.
+  const localEntries = recordsStore.reload();
+  const source = localEntries;
   const results = searchMedicalKnowledge(medicalSearchQuery, source);
   const localIds = new Set(localEntries.map((entry) => entry.inputId));
+  const emptyMessage = localEntries.length
+    ? 'Không tìm thấy tri thức phù hợp. Thử từ khoá khác hoặc nhập dữ liệu mới.'
+    : 'Không có dữ liệu để tra cứu. Vui lòng nhập liệu trước.';
   root.innerHTML = `<section class="health-screen medical-screen" aria-labelledby="medical-title">
     <div class="health-page-heading health-page-heading--hero">
       <a class="health-back" href="#/health/history">← Sức Khoẻ</a>
@@ -498,12 +503,11 @@ function renderMedicalSearch(root) {
     </form>
     <section class="medical-results" aria-live="polite">
       <div class="medical-results__head"><h2>Kết quả</h2><span class="health-muted">${results.length} mục</span></div>
-      ${results.length ? results.map((entry) => renderMedicalEntry(entry, { allowDelete: localIds.has(entry.inputId) })).join('') : '<p class="health-empty">Không tìm thấy tri thức phù hợp. Thử từ khoá khác hoặc nhập dữ liệu mới.</p>'}
+      ${results.length ? results.map((entry) => renderMedicalEntry(entry, { allowDelete: localIds.has(entry.inputId) })).join('') : `<p class="health-empty">${emptyMessage}</p>`}
     </section>
     <p class="health-disclaimer">Kho tri thức cá nhân chạy offline; nội dung y khoa chỉ mang tính tham khảo, không thay thế tư vấn của nhân viên y tế.</p>
   </section>${toastMarkup()}`;
   root.querySelector('h1')?.focus?.({ preventScroll: true });
-  ensureMedicalRemote(root);
 }
 
 // ---------------------------------------------------------------------------
@@ -1231,7 +1235,11 @@ export function mountHealthApp(root) {
     if (target.closest('[data-medical-refresh]')) {
       medicalRemoteEntries = null;
       medicalRemotePromise = null;
-      if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
+      if (routeName(root) === '/health/medical/search') {
+        reloadMedicalEntries();
+        renderMedicalSearch(root);
+        showToast(root, 'Đã làm mới dữ liệu tra cứu từ Local Storage.');
+      }
       else {
         ensureMedicalRemote(root);
         showToast(root, 'Đang làm mới dữ liệu online…');

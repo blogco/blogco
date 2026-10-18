@@ -6,6 +6,7 @@ import {
   deleteRecord as deleteMedicalRecord,
   getMedicalEntries,
   getMedicalStorageError,
+  MEDICAL_STORAGE_KEY,
   reloadMedicalEntries,
 } from './medical.js';
 
@@ -21,8 +22,9 @@ export function useMedicalRecords(onChange = () => {}) {
     return records;
   };
 
-  const handleStorageChange = () => {
+  const handleStorageChange = (event) => {
     if (disposed || writing) return;
+    if (event?.type === 'storage' && event.key && event.key !== MEDICAL_STORAGE_KEY) return;
     reload();
     onChange(records);
   };

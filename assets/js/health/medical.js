@@ -6,7 +6,7 @@ import { escapeHtml } from './medicine.js';
 import { getDefaultGitHubSettings, getSessionGitHubSettings, parseRepo, syncToGitHub } from './github-sync.js';
 import { rawFileUrl } from '../blog/lib.js';
 
-const STORAGE_KEY = 'blogco.health.medical.v1';
+export const MEDICAL_STORAGE_KEY = 'blogco.health.medical.v1';
 const BACKUP_KEY = 'blogco.health.medical.backup.v1';
 const SEED_KEY = 'blogco.health.medical.seeded.v1';
 export const MEDICAL_REPO_PATH = 'static/data/medical-knowledge.json';
@@ -87,7 +87,7 @@ function readState() {
   let parsed = null;
   let hasStoredValue = false;
   try {
-    raw = storage?.getItem(STORAGE_KEY) || null;
+    raw = storage?.getItem(MEDICAL_STORAGE_KEY) || null;
     hasStoredValue = raw !== null;
     if (hasStoredValue) parsed = JSON.parse(raw);
   } catch {
@@ -103,7 +103,7 @@ function readState() {
   }
   if (hasStoredState && storage) {
     try {
-      storage.setItem(STORAGE_KEY, JSON.stringify(memoryCache));
+      storage.setItem(MEDICAL_STORAGE_KEY, JSON.stringify(memoryCache));
       storage.setItem(BACKUP_KEY, JSON.stringify(memoryCache));
       storage.setItem(SEED_KEY, '1');
     } catch { /* keep the in-memory migration when storage is unavailable */ }
@@ -117,7 +117,7 @@ function writeState(state) {
   try {
     if (!storage) throw new Error('localStorage unavailable');
     storage.setItem(BACKUP_KEY, serialized);
-    storage.setItem(STORAGE_KEY, serialized);
+    storage.setItem(MEDICAL_STORAGE_KEY, serialized);
     storage.setItem(SEED_KEY, '1');
   } catch {
     throw new Error('Không thể lưu tri thức y khoa trên thiết bị này.');
