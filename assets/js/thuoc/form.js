@@ -1,7 +1,7 @@
 // Add / edit form for a medicine entry: markup + reading the values back.
 
 import { escapeHtml } from './store.js';
-import { categoryEmoji, categoryLabel, classifyMedicine } from './catalog.js';
+import { categoryIcon, categoryLabel, classifyMedicine } from './catalog.js';
 
 function fieldContainer(value) {
   return escapeHtml(value ?? '');
@@ -31,7 +31,7 @@ export function renderEntryForm(entry = {}, { mode = 'add', facilities = [] } = 
           <textarea name="notes" rows="2" maxlength="600" placeholder="1 viên × 2 lần/ngày, uống sau ăn...">${fieldContainer(entry.notes)}</textarea>
         </label>
       </div>
-      <p class="thuoc-muted">Nhóm thuốc được phân loại tự động: <span class="thuoc-cat-chip" data-cat-chip>${categoryEmoji(category)} ${escapeHtml(categoryLabel(category))}</span></p>
+      <p class="thuoc-muted">Nhóm thuốc được phân loại tự động: <span class="thuoc-cat-chip" data-cat-chip>${categoryIcon(category)} ${escapeHtml(categoryLabel(category))}</span></p>
     </fieldset>
     <div class="thuoc-actions">
       <button class="thuoc-primary-button" type="submit">${mode === 'edit' ? 'Lưu thay đổi' : 'Lưu thuốc'}</button>
@@ -55,5 +55,5 @@ export function refreshCategoryChip(form) {
   const chip = form.querySelector('[data-cat-chip]');
   if (!chip) return;
   const category = classifyMedicine(form.querySelector('[name="name"]')?.value || '', form.querySelector('[name="usage"]')?.value || '');
-  chip.textContent = `${categoryEmoji(category)} ${categoryLabel(category)}`;
+  chip.innerHTML = `${categoryIcon(category)} ${escapeHtml(categoryLabel(category))}`;
 }

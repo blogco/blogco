@@ -12,11 +12,12 @@ import {
   exportEntries, importEntries, readJsonFile, downloadCsv, clearThuocData,
   escapeHtml,
 } from './store.js';
-import { CATEGORY_ORDER, categoryEmoji, categoryLabel } from './catalog.js';
+import { CATEGORY_ORDER, categoryIcon, categoryLabel } from './catalog.js';
 import { renderEntryForm, readEntryForm, refreshCategoryChip } from './form.js';
 import { computeThuocStats } from './stats.js';
 import { renderThuocInsights } from './insights.js';
 import { renderThuocDashboard } from './dashboard.js';
+import { icon } from '../icons.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 8;
@@ -121,10 +122,10 @@ function monthOptionLabelFromKey(key) {
 
 function renderRow(entry) {
   const id = escapeHtml(entry.id);
-  const emoji = categoryEmoji(entry.category);
+  const categoryGlyph = categoryIcon(entry.category);
   return `<tr>
     <td><span class="thuoc-datatable__date">${escapeHtml(formatDate(entry.visitDate))}</span></td>
-    <td><span class="thuoc-datatable__store">${escapeHtml(entry.name || 'Không rõ')}</span><span class="thuoc-cat-chip">${emoji} ${escapeHtml(categoryLabel(entry.category))}</span></td>
+    <td><span class="thuoc-datatable__store">${escapeHtml(entry.name || 'Không rõ')}</span><span class="thuoc-cat-chip">${categoryGlyph} ${escapeHtml(categoryLabel(entry.category))}</span></td>
     <td><span class="thuoc-datatable__items">${escapeHtml(entry.usage || '—')}</span></td>
     <td>${escapeHtml(entry.facility || '—')}</td>
     <td>
@@ -139,13 +140,13 @@ function renderRow(entry) {
 
 function renderRecordCard(entry) {
   const id = escapeHtml(entry.id);
-  const emoji = categoryEmoji(entry.category);
+  const categoryGlyph = categoryIcon(entry.category);
   return `<li class="thuoc-record-card">
     <div class="thuoc-record-card__top">
       <span class="thuoc-record-card__store">${escapeHtml(entry.name || 'Không rõ')}</span>
-      <span class="thuoc-cat-chip">${emoji} ${escapeHtml(categoryLabel(entry.category))}</span>
+      <span class="thuoc-cat-chip">${categoryGlyph} ${escapeHtml(categoryLabel(entry.category))}</span>
     </div>
-    <p class="thuoc-record-card__meta">📅 ${escapeHtml(formatDate(entry.visitDate))} · 🏥 ${escapeHtml(entry.facility || '—')}</p>
+    <p class="thuoc-record-card__meta">${icon('calendar', { size: 16 })} ${escapeHtml(formatDate(entry.visitDate))} · ${icon('activity', { size: 16 })} ${escapeHtml(entry.facility || '—')}</p>
     <p class="thuoc-record-card__meta">${escapeHtml(entry.usage || 'Chưa ghi công dụng điều trị.')}</p>
     <div class="thuoc-record-card__actions">
       <a class="thuoc-ghost-button" href="#/thuoc/detail/${id}">Chi tiết</a>
@@ -211,12 +212,12 @@ function renderList(root) {
     </div>
 
     <div class="thuoc-toolbar">
-      <a class="thuoc-primary-button" href="#/thuoc/add">➕ Thêm thuốc</a>
-      <a class="thuoc-secondary-button" href="#/thuoc/stats">📊 Thống kê</a>
-      <button type="button" class="thuoc-secondary-button" data-export>⬇ Export JSON</button>
-      <button type="button" class="thuoc-secondary-button" data-import-trigger>⬆ Import</button>
-      <button type="button" class="thuoc-secondary-button" data-export-csv>⬇ CSV</button>
-      <button type="button" class="thuoc-secondary-button thuoc-clear-all" data-clear-all>🗑️ Xóa toàn bộ dữ liệu / Reset</button>
+      <a class="thuoc-primary-button" href="#/thuoc/add">${icon('plus', { size: 16 })} Thêm thuốc</a>
+      <a class="thuoc-secondary-button" href="#/thuoc/stats">${icon('barChart', { size: 16 })} Thống kê</a>
+      <button type="button" class="thuoc-secondary-button" data-export>${icon('arrowDown', { size: 16 })} Export JSON</button>
+      <button type="button" class="thuoc-secondary-button" data-import-trigger>${icon('upload', { size: 16 })} Import</button>
+      <button type="button" class="thuoc-secondary-button" data-export-csv>${icon('arrowDown', { size: 16 })} CSV</button>
+      <button type="button" class="thuoc-secondary-button thuoc-clear-all" data-clear-all>${icon('trash', { size: 16 })} Xóa toàn bộ dữ liệu / Reset</button>
       <input type="file" accept="application/json,.json" data-import-input hidden aria-label="Chọn file JSON để nhập">
     </div>
 
@@ -229,7 +230,7 @@ function renderList(root) {
 
     <div class="thuoc-card thuoc-search">
       <label class="thuoc-field thuoc-field--full">
-        <span>🔍 Tìm kiếm</span>
+        <span>${icon('search', { size: 16 })} Tìm kiếm</span>
         <input type="search" data-search-input value="${escapeHtml(searchState.query)}" placeholder="Tên thuốc / công dụng / cơ sở khám / ghi chú...">
       </label>
       <div class="thuoc-search__filters">
@@ -248,7 +249,7 @@ function renderList(root) {
         <label class="thuoc-field">Nhóm thuốc
           <select data-filter-category>
             <option value="">Tất cả</option>
-            ${categories.map((key) => `<option value="${key}"${searchState.category === key ? ' selected' : ''}>${categoryEmoji(key)} ${escapeHtml(categoryLabel(key))}</option>`).join('')}
+            ${categories.map((key) => `<option value="${key}"${searchState.category === key ? ' selected' : ''}>${escapeHtml(categoryLabel(key))}</option>`).join('')}
           </select>
         </label>
       </div>
@@ -275,13 +276,13 @@ function renderDetail(root, entryId) {
     root.innerHTML = `<section class="thuoc-screen">${pageHeader('Không tìm thấy', 'Thuốc cần xem không tồn tại trên thiết bị này.')}</section>${toastMarkup()}`;
     return;
   }
-  const emoji = categoryEmoji(entry.category);
+  const categoryGlyph = categoryIcon(entry.category);
   root.innerHTML = `<section class="thuoc-screen" aria-labelledby="thuoc-title">
     <div class="thuoc-page-heading">
       <a class="thuoc-back" href="#/thuoc" aria-label="Quay lại danh sách">← Danh sách</a>
       <p class="thuoc-eyebrow">THUỐC · ${escapeHtml(formatDate(entry.visitDate))}</p>
       <h1 id="thuoc-title" tabindex="-1">${escapeHtml(entry.name || 'Thuốc')}</h1>
-      <p><span class="thuoc-cat-chip">${emoji} ${escapeHtml(categoryLabel(entry.category))}</span></p>
+      <p><span class="thuoc-cat-chip">${categoryGlyph} ${escapeHtml(categoryLabel(entry.category))}</span></p>
     </div>
 
     <section class="thuoc-card">
@@ -290,7 +291,7 @@ function renderDetail(root, entryId) {
         <div><dt>Công dụng điều trị</dt><dd>${escapeHtml(entry.usage || '—')}</dd></div>
         <div><dt>Ngày đi khám</dt><dd>${escapeHtml(formatDate(entry.visitDate))}</dd></div>
         <div><dt>Cơ sở khám</dt><dd>${escapeHtml(entry.facility || '—')}</dd></div>
-        <div><dt>Nhóm thuốc</dt><dd>${emoji} ${escapeHtml(categoryLabel(entry.category))}</dd></div>
+        <div><dt>Nhóm thuốc</dt><dd>${categoryGlyph} ${escapeHtml(categoryLabel(entry.category))}</dd></div>
         <div><dt>Ghi chú</dt><dd>${escapeHtml(entry.notes || '—')}</dd></div>
       </dl>
     </section>
@@ -344,7 +345,7 @@ function renderStats(root) {
     ${renderThuocInsights(state.entries)}`}
 
     <div class="thuoc-actions"><a class="thuoc-secondary-button" href="#/thuoc">← Danh sách</a>
-      <button type="button" class="thuoc-secondary-button thuoc-clear-all" data-clear-all>🗑️ Xóa toàn bộ dữ liệu / Reset</button></div>
+      <button type="button" class="thuoc-secondary-button thuoc-clear-all" data-clear-all>${icon('trash', { size: 16 })} Xóa toàn bộ dữ liệu / Reset</button></div>
   </section>${toastMarkup()}`;
 }
 

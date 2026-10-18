@@ -2,6 +2,8 @@
 // classification (from the name and the "công dụng" text) and label/emoji maps.
 // Pure functions — no DOM, so they are cheap to unit-test.
 
+import { icon } from '../icons.js';
+
 export const MED_CATEGORY_LABELS = {
   pain: 'Giảm đau / Hạ sốt',
   antibiotic: 'Kháng sinh',
@@ -70,6 +72,15 @@ export function categoryLabel(key) {
 
 export function categoryEmoji(key) {
   return MED_CATEGORY_EMOJI[key] || MED_CATEGORY_EMOJI.other;
+}
+
+const MED_CATEGORY_ICON_KEYS = {
+  pain: 'pill', antibiotic: 'shield', antiinflam: 'activity', gastric: 'activity', cardio: 'heartPulse',
+  diabetes: 'activity', allergy: 'activity', respiratory: 'activity', neuro: 'activity', vitamin: 'sparkles', other: 'package',
+};
+
+export function categoryIcon(key, size = 16) {
+  return icon(MED_CATEGORY_ICON_KEYS[key] || 'package', { size });
 }
 
 export function categoryMeta(key) {

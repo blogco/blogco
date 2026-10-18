@@ -73,7 +73,7 @@ export function computeDashboard(receipts = [], { now = new Date() } = {}) {
     const segments = brandOrder
       .map((name) => ({ name, value: bucket.byBrand.get(name) || 0, color: brands.colorMap.get(name) }))
       .filter((segment) => segment.value > 0);
-    return { key: season.key, label: `${season.emoji} ${season.label}`, total: bucket.total, count: bucket.count, segments };
+    return { key: season.key, label: season.label, total: bucket.total, count: bucket.count, segments };
   });
 
   const brandLegend = brandOrder.map((name) => ({

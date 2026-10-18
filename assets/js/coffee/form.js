@@ -4,6 +4,7 @@
 import { escapeHtml, toNumber } from './store.js';
 import { CATEGORY_LABELS, POPULAR_ITEMS } from './menu.js';
 import { EXPENSE_CATEGORIES } from './expense.js';
+import { icon } from '../icons.js';
 
 function value(field, fallback = '') {
   return field === null || field === undefined ? fallback : escapeHtml(field);
@@ -79,8 +80,8 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
         </label>
         <label class="coffee-field">Danh mục chi phí
           <select name="expenseCategory">
-            <option value=""${receipt.expenseCategory ? '' : ' selected'}>✨ Tự động (AI phân loại)</option>
-            ${EXPENSE_CATEGORIES.map((category) => `<option value="${category.key}"${selected(receipt.expenseCategory || '', category.key)}>${category.emoji} ${escapeHtml(category.label)}</option>`).join('')}
+            <option value=""${receipt.expenseCategory ? '' : ' selected'}>Tự động phân loại</option>
+            ${EXPENSE_CATEGORIES.map((category) => `<option value="${category.key}"${selected(receipt.expenseCategory || '', category.key)}>${escapeHtml(category.label)}</option>`).join('')}
           </select>
         </label>
         <label class="coffee-field">Khách hàng
@@ -92,7 +93,7 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
     <fieldset class="coffee-fieldset">
       <legend>Món đã gọi</legend>
       <div data-item-list>${items.map((item, index) => renderItemRow(item, index)).join('')}</div>
-      <button type="button" class="coffee-secondary-button" data-add-item>＋ Thêm món</button>
+      <button type="button" class="coffee-secondary-button" data-add-item>${icon('plus', { size: 16 })} Thêm món</button>
       <p class="coffee-empty" data-item-empty hidden>Chưa có món nào. Bấm “Thêm món” hoặc để trống nếu chỉ muốn ghi tổng tiền.</p>
     </fieldset>
 
@@ -124,8 +125,8 @@ export function renderReceiptForm(receipt = {}, { mode = 'add', nextId = '' } = 
     </fieldset>
 
     <div class="coffee-actions">
-      <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
-      <button class="coffee-primary-button" type="submit">💾 ${title === 'Sửa giao dịch' ? 'Cập nhật giao dịch' : 'Lưu giao dịch'}</button>
+      <a class="coffee-secondary-button" href="#/coffee">${icon('x', { size: 16 })} Huỷ</a>
+      <button class="coffee-primary-button" type="submit">${icon('save', { size: 16 })} ${title === 'Sửa giao dịch' ? 'Cập nhật giao dịch' : 'Lưu giao dịch'}</button>
     </div>
   </form>`;
 }

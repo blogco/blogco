@@ -3,6 +3,7 @@
 // keywords instead of a paid LLM/API.
 
 import { escapeHtml } from './medicine.js';
+import { icon } from '../icons.js';
 import { getDefaultGitHubSettings, getSessionGitHubSettings, parseRepo, syncToGitHub } from './github-sync.js';
 import { rawFileUrl } from '../blog/lib.js';
 
@@ -472,7 +473,7 @@ export function extractMedicalKnowledge(rawContent, category = 'Bệnh lý') {
 export function renderMedicalEntry(entry, { allowDelete = false } = {}) {
   const commitBadge = entry.commitId ? `<span class="medical-sync-badge">Synced #${escapeHtml(entry.commitId)}</span>` : '';
   const recordMeta = `<p class="medical-record-meta"><code>${escapeHtml(entry.inputId || 'Chưa có INPUT ID')}</code>${commitBadge}</p>`;
-  const deleteButton = allowDelete ? `<button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(entry.inputId)}" aria-label="Xoá ${escapeHtml(entry.title)}">🗑️ Xoá</button>` : '';
+  const deleteButton = allowDelete ? `<button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(entry.inputId)}" aria-label="Xoá ${escapeHtml(entry.title)}">${icon('trash', { size: 16 })} Xoá</button>` : '';
   return `<article class="medical-result-card">
     <div class="medical-result-card__top"><div><span class="health-badge">${escapeHtml(entry.category)}</span><h2>${escapeHtml(entry.title)}</h2>${recordMeta}</div>${deleteButton}</div>
     ${entry.symptoms.length ? `<div class="medical-result-card__section"><strong>Triệu chứng</strong><div class="medical-chip-list">${entry.symptoms.map((item) => `<span class="medical-chip">${escapeHtml(item)}</span>`).join('')}</div></div>` : ''}

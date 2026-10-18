@@ -1,5 +1,6 @@
 import { escapeHtml } from './medicine.js';
 import { renderRecommendationPanel } from './RecommendationPanel.js';
+import { icon } from '../icons.js';
 
 function formatCreatedAt(value) {
   const date = new Date(value);
@@ -15,16 +16,16 @@ function matchesQuery(record, query) {
 
 function duplicateStatus(record, duplicates, originalIds) {
   const matches = duplicates.filter((pair) => pair.first.inputId === record.inputId || pair.second.inputId === record.inputId);
-  const originalBadge = originalIds.has(record.inputId) ? '<span class="medical-original-badge">📌 Gốc</span>' : '';
-  if (!matches.length) return `${originalBadge}<span class="medical-management-unique">✅ Duy nhất</span>`;
+  const originalBadge = originalIds.has(record.inputId) ? `<span class="medical-original-badge">${icon('pin', { size: 14 })} Gốc</span>` : '';
+  if (!matches.length) return `${originalBadge}<span class="medical-management-unique">${icon('check', { size: 14 })} Duy nhất</span>`;
   const closest = matches.sort((a, b) => b.similarity - a.similarity)[0];
   const other = closest.first.inputId === record.inputId ? closest.second.inputId : closest.first.inputId;
-  return `${originalBadge}<span class="medical-management-duplicate">⚠️ Trùng với ${escapeHtml(other)} (${closest.percentage}%)</span>`;
+  return `${originalBadge}<span class="medical-management-duplicate">${icon('alertTriangle', { size: 14 })} Trùng với ${escapeHtml(other)} (${closest.percentage}%)</span>`;
 }
 
 function duplicateMapMarkup(duplicates, originalIds) {
   if (!duplicates.length) return '<p class="medical-info-empty">Chưa phát hiện cặp bản ghi trùng lặp trên 80%.</p>';
-  return `<ul class="medical-duplicate-map__list">${duplicates.map((pair) => `<li><code>${escapeHtml(pair.first.inputId)}</code>${originalIds.has(pair.first.inputId) ? '<span class="medical-original-badge">📌 Gốc</span>' : ''}<span>⚠️ trùng với</span><code>${escapeHtml(pair.second.inputId)}</code>${originalIds.has(pair.second.inputId) ? '<span class="medical-original-badge">📌 Gốc</span>' : ''}<strong>${pair.percentage}%</strong></li>`).join('')}</ul>`;
+  return `<ul class="medical-duplicate-map__list">${duplicates.map((pair) => `<li><code>${escapeHtml(pair.first.inputId)}</code>${originalIds.has(pair.first.inputId) ? `<span class="medical-original-badge">${icon('pin', { size: 14 })} Gốc</span>` : ''}<span>${icon('alertTriangle', { size: 14 })} trùng với</span><code>${escapeHtml(pair.second.inputId)}</code>${originalIds.has(pair.second.inputId) ? `<span class="medical-original-badge">${icon('pin', { size: 14 })} Gốc</span>` : ''}<strong>${pair.percentage}%</strong></li>`).join('')}</ul>`;
 }
 
 export function renderDataManagement({ records = [], duplicates = [], recommendations = [], originalIds = new Set(), query = '', selectedIds = new Set(), tabs = '' } = {}) {
@@ -33,7 +34,7 @@ export function renderDataManagement({ records = [], duplicates = [], recommenda
   const visibleIds = visibleRecords.map((record) => record.inputId);
   const visibleSelected = visibleIds.filter((inputId) => selected.has(inputId));
   const allVisibleSelected = visibleRecords.length > 0 && visibleSelected.length === visibleRecords.length;
-  const deleteLabel = selected.size ? `🗑️ Xoá mục đã chọn (${selected.size})` : '🗑️ Xoá mục đã chọn';
+  const deleteLabel = selected.size ? `${icon('trash', { size: 16 })} Xoá mục đã chọn (${selected.size})` : `${icon('trash', { size: 16 })} Xoá mục đã chọn`;
 
   const rows = visibleRecords.length
     ? visibleRecords.map((record) => `<tr>
@@ -42,13 +43,13 @@ export function renderDataManagement({ records = [], duplicates = [], recommenda
         <td data-label="Tên bệnh / thuốc"><strong>${escapeHtml(record.title)}</strong></td>
         <td data-label="Ngày tạo">${formatCreatedAt(record.createdAt)}</td>
         <td data-label="Trạng thái">${duplicateStatus(record, duplicates, originalIds)}</td>
-        <td data-label="Hành động"><button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(record.inputId)}" aria-label="Xoá ${escapeHtml(record.title)}">🗑️ Xoá</button></td>
+        <td data-label="Hành động"><button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(record.inputId)}" aria-label="Xoá ${escapeHtml(record.title)}">${icon('trash', { size: 16 })} Xoá</button></td>
       </tr>`).join('')
     : '<tr><td class="medical-management-empty" colspan="6">Không có bản ghi phù hợp.</td></tr>';
 
   return `<section class="health-screen medical-screen" aria-labelledby="medical-management-title">
     <div class="health-page-heading health-page-heading--hero">
-      <a class="health-back" href="#/health/medical/search">← Tra cứu Y Học</a>
+      <a class="health-back" href="#/health/medical/search">${icon('arrowLeft', { size: 16 })} Tra cứu Y Học</a>
       <p class="health-eyebrow">Y HỌC · QUẢN LÝ DỮ LIỆU</p>
       <h1 id="medical-management-title" tabindex="-1">Quản lý dữ liệu</h1>
       <p>Theo dõi, lọc và xoá các bản ghi tri thức đang lưu trên thiết bị này.</p>
@@ -73,7 +74,7 @@ export function renderDataManagement({ records = [], duplicates = [], recommenda
       </div>
     </section>
     <section class="health-card medical-duplicate-map" aria-labelledby="medical-duplicate-map-title">
-      <div class="medical-results__head"><h2 id="medical-duplicate-map-title">📌 Bản đồ trùng lặp</h2><span class="health-muted">Ngưỡng &gt; 80%</span></div>
+      <div class="medical-results__head"><h2 id="medical-duplicate-map-title">${icon('pin', { size: 20 })} Bản đồ trùng lặp</h2><span class="health-muted">Ngưỡng &gt; 80%</span></div>
       ${duplicateMapMarkup(duplicates, originalIds)}
     </section>
     ${renderRecommendationPanel(recommendations)}

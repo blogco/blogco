@@ -2,12 +2,12 @@
    Follows the water module's visual language but uses a teal / clinical palette. */
 
 :root {
-  --health-teal: #4da0aa;
-  --health-teal-dark: #1f2937;
-  --health-teal-soft: #e7f3f4;
+  --health-teal: #10b981;
+  --health-teal-dark: #047857;
+  --health-teal-soft: #ecfdf5;
   --health-ink: #111827;
   --health-muted: var(--blogco-text-body);
-  --health-border: #d1d5db;
+  --health-border: #e5e7eb;
   --health-danger: #b91c1c;
   --health-warning: #92400e;
   --health-glass: #fff;

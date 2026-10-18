@@ -11,6 +11,7 @@
 //      comment + concrete tips ("AI phản hồi linh hoạt theo ngữ cảnh").
 
 import { normalizeName } from './menu.js';
+import { icon } from '../icons.js';
 
 // `key` is what we persist; `label`/`emoji` are only for display.
 export const EXPENSE_CATEGORIES = [
@@ -29,6 +30,15 @@ export const EXPENSE_CATEGORIES = [
 export const EXPENSE_CATEGORY_ORDER = EXPENSE_CATEGORIES.map((category) => category.key);
 export const EXPENSE_CATEGORY_LABELS = Object.fromEntries(EXPENSE_CATEGORIES.map((category) => [category.key, category.label]));
 export const EXPENSE_CATEGORY_EMOJI = Object.fromEntries(EXPENSE_CATEGORIES.map((category) => [category.key, category.emoji]));
+const EXPENSE_CATEGORY_ICON_KEYS = {
+  coffee: 'activity', food: 'package', grocery: 'package', travel: 'arrowRight', entertainment: 'sparkles',
+  transport: 'arrowRight', health: 'heartPulse', bills: 'receipt', education: 'bookOpen', other: 'package',
+};
+
+export function expenseCategoryIcon(key, size = 16) {
+  const safe = normalizeExpenseCategory(key) || DEFAULT_EXPENSE_CATEGORY;
+  return icon(EXPENSE_CATEGORY_ICON_KEYS[safe] || 'package', { size });
+}
 export const DEFAULT_EXPENSE_CATEGORY = 'other';
 
 // Returns a valid key, or '' when the value is missing/"auto".
@@ -217,7 +227,7 @@ export function expenseAdvice(entry = {}, context = {}) {
   if (budget > 0) {
     if (monthTotal > budget) {
       tone = 'warning';
-      notes.push(`⚠️ Bạn đã vượt ngân sách tháng ${formatMoney(budget)} — nên hãm lại các khoản không thiết yếu.`);
+      notes.push(`Bạn đã vượt ngân sách tháng ${formatMoney(budget)} — nên hãm lại các khoản không thiết yếu.`);
     } else {
       notes.push(`Còn lại ${formatMoney(Math.max(0, budget - monthTotal))} trong ngân sách tháng ${formatMoney(budget)}.`);
     }

@@ -1,12 +1,12 @@
 - label: Trang chủ
   href: /
-  icon: "⌂"
+  icon: home
 - label: Sức khoẻ
   href: /#/health/history
-  icon: "🩺"
+  icon: stethoscope
 - label: Y Học
   href: /#/health/medical/search
-  icon: "🧠"
+  icon: pill
 - label: Về chúng tôi
   href: /about/
-  icon: "ⓘ"
+  icon: info

@@ -11,8 +11,10 @@ import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { seasonOf, seasonLabel } from './season.js';
 import { POPULAR_ITEMS, classifyItem } from './menu.js';
 import {
-  EXPENSE_CATEGORIES, classifyExpense, normalizeExpenseCategory, expenseCategoryMeta,
+  EXPENSE_CATEGORIES, classifyExpense, normalizeExpenseCategory, expenseCategoryMeta, expenseCategoryIcon,
 } from './expense.js';
+import { icon } from '../icons.js';
+import { seasonIcon } from './season.js';
 
 export const BRAND_SUGGESTIONS = [
   'Highlands Coffee', 'Starbucks', 'Phúc Long', 'The Coffee House',
@@ -99,9 +101,9 @@ export function rowToItems(itemsText, subtotal, quantity = 0) {
 
 export function expenseCategoryOptions(selected = '') {
   const current = normalizeExpenseCategory(selected);
-  const auto = `<option value=""${current ? '' : ' selected'}>✨ Tự động (AI phân loại)</option>`;
+  const auto = `<option value=""${current ? '' : ' selected'}>Tự động phân loại</option>`;
   return auto + EXPENSE_CATEGORIES
-    .map((category) => `<option value="${category.key}"${current === category.key ? ' selected' : ''}>${category.emoji} ${escapeHtml(category.label)}</option>`)
+    .map((category) => `<option value="${category.key}"${current === category.key ? ' selected' : ''}>${escapeHtml(category.label)}</option>`)
     .join('');
 }
 
@@ -134,7 +136,7 @@ export function renderManualRow(row = {}, index = 0) {
       <select class="coffee-manual-select" name="category" data-manual-category aria-label="Danh mục chi phí dòng ${index + 1}">
         ${expenseCategoryOptions(pickedCategory)}
       </select>
-      <span class="coffee-expense-chip" data-expense-chip data-auto="${pickedCategory ? 'false' : 'true'}" title="${pickedCategory ? 'Danh mục bạn chọn' : 'Danh mục AI tự phân loại'}">${categoryMeta.emoji} ${escapeHtml(categoryMeta.label)}</span>
+      <span class="coffee-expense-chip" data-expense-chip data-auto="${pickedCategory ? 'false' : 'true'}" title="${pickedCategory ? 'Danh mục bạn chọn' : 'Danh mục tự phân loại'}">${expenseCategoryIcon(categoryMeta.key)} ${escapeHtml(categoryMeta.label)}</span>
     </td>
     <td class="coffee-manual-cell--items">
       <input class="coffee-manual-input" name="items" type="text" list="coffee-manual-item-suggest" maxlength="300" autocomplete="off" value="${escapeHtml(itemsText)}" placeholder="Matcha Latte, Bánh dừa" aria-label="Items (tên món) dòng ${index + 1}, nhiều món phân cách bằng dấu phẩy">
@@ -146,7 +148,7 @@ export function renderManualRow(row = {}, index = 0) {
       <input class="coffee-manual-input coffee-manual-input--date" name="date" type="date" value="${escapeHtml(date)}" aria-label="Ngày giao dịch dòng ${index + 1}">
     </td>
     <td class="coffee-manual-cell--season">
-      <span class="coffee-season-chip${season ? '' : ' is-empty'}" data-season-cell title="Tự động theo ngày giao dịch">${season ? `${season.emoji} ${escapeHtml(season.label)}` : '—'}</span>
+      <span class="coffee-season-chip${season ? '' : ' is-empty'}" data-season-cell title="Tự động theo ngày giao dịch">${season ? `${seasonIcon(season.key)} ${escapeHtml(season.label)}` : '—'}</span>
     </td>
     <td class="coffee-manual-cell--money">
       <input class="coffee-manual-input coffee-manual-input--amount" name="subtotal" type="text" inputmode="numeric" autocomplete="off" value="${escapeHtml(subtotal)}" placeholder="100.200" aria-label="Thành tiền dòng ${index + 1}">
@@ -196,14 +198,14 @@ export function renderManualTable(rows = [{}]) {
 export function renderManualForm() {
   return `<form id="coffee-manual-form" class="coffee-card coffee-manual" novalidate>
     <div class="coffee-manual-toolbar">
-      <button type="button" class="coffee-secondary-button" data-manual-add>＋ Thêm dòng</button>
+      <button type="button" class="coffee-secondary-button" data-manual-add>${icon('plus', { size: 16 })} Thêm dòng</button>
       <button type="button" class="coffee-ghost-button" data-manual-clear>Xoá tất cả</button>
       <span class="coffee-manual-total" data-manual-total>Tổng cộng: <strong>0 đ</strong></span>
     </div>
 
     <div class="coffee-manual-quicktags" data-manual-quicktags>
-      <span class="coffee-manual-quicktags__label">🏷️ Gán nhanh danh mục cho tất cả dòng:</span>
-      ${EXPENSE_CATEGORIES.map((category) => `<button type="button" class="coffee-tag" data-quick-category="${category.key}">${category.emoji} ${escapeHtml(category.label)}</button>`).join('')}
+      <span class="coffee-manual-quicktags__label">${icon('package', { size: 16 })} Gán nhanh danh mục cho tất cả dòng:</span>
+      ${EXPENSE_CATEGORIES.map((category) => `<button type="button" class="coffee-tag" data-quick-category="${category.key}">${expenseCategoryIcon(category.key)} ${escapeHtml(category.label)}</button>`).join('')}
     </div>
 
     ${renderManualTable([{}])}
@@ -212,7 +214,7 @@ export function renderManualForm() {
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
-      <button class="coffee-primary-button" type="submit">💾 Lưu giao dịch</button>
+      <button class="coffee-primary-button" type="submit">${icon('save', { size: 16 })} Lưu giao dịch</button>
     </div>
   </form>`;
 }

@@ -3,7 +3,7 @@
 <section class="home-posts" aria-labelledby="home-posts-title">
   <div class="home-posts__head">
     <h2 id="home-posts-title">Bài viết mới</h2>
-    <a class="home-posts__cta" href="{{ site.Home.RelPermalink }}#/blog/new">✍️ Viết blog mới</a>
+    <a class="home-posts__cta" href="{{ site.Home.RelPermalink }}#/blog/new"><svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Viết blog mới</a>
   </div>
   {{- if $posts }}
   <ul class="home-posts__grid">
@@ -13,11 +13,11 @@
     {{- $alt := .Params.cover.alt | default $title -}}
     <li class="post-card">
       <a class="post-card__link" href="{{ .RelPermalink }}">
-        <span class="post-card__media">
+          <span class="post-card__media">
           {{- if $cover }}
           <img src="{{ $cover }}" alt="{{ $alt }}" loading="lazy">
           {{- else }}
-          <span aria-hidden="true">📝</span>
+          <svg class="ui-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
           {{- end }}
         </span>
         <span class="post-card__body">

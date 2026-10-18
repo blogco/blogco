@@ -4,6 +4,7 @@ import {
 } from './store.js';
 import { groupEntriesByDate, searchWaterEntries } from './search.js';
 import { buildDailyInsights, getTargetMl, getWeeklyTotals, localDateKey } from './insights.js';
+import { icon } from '../icons.js';
 
 const mountedRoots = new WeakSet();
 let pendingToast = '';
@@ -72,13 +73,13 @@ function renderEntry(entry, query = '') {
     <div><strong>${idHtml}</strong><time datetime="${escapeHtml(entry.date)}T${escapeHtml(entry.time)}">${escapeHtml(entry.time)}</time></div>
     <span class="water-log-amount">${formatMl(entry.amountMl)}</span>
     <span>${escapeHtml(drink)}</span>
-    <button class="water-icon-button" type="button" data-delete-entry="${id}" aria-label="Xoá bản ghi ${id}">Xoá</button>
+    <button class="water-icon-button" type="button" data-delete-entry="${id}" aria-label="Xoá bản ghi ${id}">${icon('trash', { size: 16 })}</button>
   </li>`;
 }
 
 function pageHeader(title, description, back = '/water') {
   return `<div class="water-page-heading">
-    <a class="water-back" href="#${back}" aria-label="Quay lại trang trước">← Quay lại</a>
+    <a class="water-back" href="#${back}" aria-label="Quay lại trang trước">${icon('arrowLeft', { size: 16 })} Quay lại</a>
     <p class="water-eyebrow">BLOGCO · THEO DÕI ĐỒ UỐNG</p>
     <h1 id="water-title" tabindex="-1">${title}</h1><p>${description}</p>
   </div>`;
@@ -122,8 +123,8 @@ function renderDashboard(root) {
         </div>
       </div>
       <div class="water-actions">
-        <a class="water-primary-button water-ripple" href="#/water/add">＋ Ghi đồ uống</a>
-        <a class="water-secondary-button" href="#/water/search">⌕ Tra cứu</a>
+        <a class="water-primary-button water-ripple" href="#/water/add">${icon('plus', { size: 16 })} Ghi đồ uống</a>
+        <a class="water-secondary-button" href="#/water/search">${icon('search', { size: 16 })} Tra cứu</a>
       </div>
     </section>
 
@@ -131,10 +132,10 @@ function renderDashboard(root) {
       <section class="water-card water-insight-preview">
         <div class="water-card-heading"><div><p class="water-eyebrow">INSIGHTS HÔM NAY</p><h2>Gợi ý tự động</h2></div><span class="water-badge">Rule-based</span></div>
         <p>${escapeHtml(insight.recommendation)}</p>
-        <a class="water-text-link" href="#/water/insights">Xem chi tiết <span aria-hidden="true">→</span></a>
+        <a class="water-text-link" href="#/water/insights">Xem chi tiết ${icon('arrowRight', { size: 16 })}</a>
       </section>
       <section class="water-card water-recent-card">
-        <div class="water-card-heading"><div><p class="water-eyebrow">NHẬT KÝ</p><h2>Ghi nhận gần đây</h2></div><a class="water-text-link" href="#/water/search">Xem tất cả →</a></div>
+        <div class="water-card-heading"><div><p class="water-eyebrow">NHẬT KÝ</p><h2>Ghi nhận gần đây</h2></div><a class="water-text-link" href="#/water/search">Xem tất cả ${icon('arrowRight', { size: 16 })}</a></div>
         ${recent.length ? `<ul class="water-log-list">${recent.map((entry) => renderEntry(entry)).join('')}</ul>` : '<p class="water-empty">Chưa có dữ liệu. Ghi lần uống đầu tiên để bắt đầu theo dõi.</p>'}
       </section>
     </div>
@@ -201,7 +202,7 @@ function renderSearchPage(root) {
       <label data-search-field="id" ${previous.mode !== 'id' ? 'hidden' : ''}>ID (có thể nhập nhiều ID, cách nhau bằng dấu phẩy)<input name="idQuery" value="${escapeHtml(previous.idQuery)}" placeholder="#WTR-001, WTR-002"></label>
       <label data-search-field="date" ${previous.mode !== 'date' ? 'hidden' : ''}>Chọn ngày<input name="date" type="date" value="${escapeHtml(previous.date)}"></label>
       <div class="water-date-range" data-search-field="range" ${previous.mode !== 'range' ? 'hidden' : ''}><label>Từ ngày<input name="startDate" type="date" value="${escapeHtml(previous.startDate)}"></label><label>Đến ngày<input name="endDate" type="date" value="${escapeHtml(previous.endDate)}"></label></div>
-      <button class="water-primary-button" type="submit">⌕ Tìm kiếm</button>
+      <button class="water-primary-button" type="submit">${icon('search', { size: 16 })} Tìm kiếm</button>
     </form>
     <section class="water-card water-search-results" aria-live="polite">
       <div class="water-card-heading"><h2>Kết quả</h2>${results?.length ? '<button class="water-secondary-button" type="button" data-export-csv>Xuất CSV</button>' : ''}</div>
@@ -241,7 +242,7 @@ function renderInsightsPage(root) {
       <p>Dựa trên ${formatMl(insight.totalMl)} hôm nay · mục tiêu cá nhân đã chọn ${formatMl(target)}. Điểm số là tỷ lệ trong ứng dụng, không đo mức hydration hoặc chẩn đoán thiếu nước.</p>
     </section>
     <div class="water-insights-grid">
-      <section class="water-card"><p class="water-eyebrow">NGỮ CẢNH</p><h2>Phân tích hôm nay</h2><div class="water-context-columns"><div><h3 class="water-subheading is-good">✓ Điểm tốt</h3><ul class="water-insight-list is-good">${good}</ul></div><div><h3 class="water-subheading is-caution">! Cần lưu ý</h3><ul class="water-insight-list is-caution">${improve}</ul></div></div></section>
+      <section class="water-card"><p class="water-eyebrow">NGỮ CẢNH</p><h2>Phân tích hôm nay</h2><div class="water-context-columns"><div><h3 class="water-subheading is-good">${icon('check', { size: 16 })} Điểm tốt</h3><ul class="water-insight-list is-good">${good}</ul></div><div><h3 class="water-subheading is-caution">${icon('alertTriangle', { size: 16 })} Cần lưu ý</h3><ul class="water-insight-list is-caution">${improve}</ul></div></div></section>
       <section class="water-card water-suggestions"><p class="water-eyebrow">GỢI Ý THEO NHẬT KÝ</p><h2>Việc có thể làm tiếp</h2><ul class="water-insight-list">${insight.suggestions.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>
     </div>
     <section class="water-card water-drink-analysis"><div class="water-card-heading"><div><p class="water-eyebrow">PHÂN TÍCH ĐỒ UỐNG HÔM NAY</p><h2>Nhóm thành phần phổ biến</h2></div><span class="water-badge">Rule-based · offline</span></div>

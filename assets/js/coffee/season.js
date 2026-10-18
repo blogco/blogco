@@ -17,6 +17,11 @@ export const SEASONS = [
 
 export const SEASON_LABELS = Object.fromEntries(SEASONS.map((season) => [season.key, season.label]));
 
+export function seasonIcon(key, size = 16) {
+  const source = SEASONS.find((season) => season.key === key);
+  return source ? `<svg class="ui-icon ui-icon--season" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v18M5 7l14 10M19 7 5 17"/></svg>` : '';
+}
+
 // Returns the season descriptor ({ key, label, emoji, months }) for a
 // `YYYY-MM-DD` date key, or null when the date is missing/invalid.
 export function seasonOf(dateKey) {

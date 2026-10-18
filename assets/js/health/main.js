@@ -28,6 +28,7 @@ import {
 } from './medical.js';
 import { getSessionGitHubSettings, saveSessionGitHubSettings } from './github-sync.js';
 import { useMedicalRecords } from './useMedicalRecords.js';
+import { icon } from '../icons.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -136,14 +137,14 @@ function renderVisitCard(visit) {
   const id = escapeHtml(visit.id);
   return `<li class="health-visit-card">
     <div class="health-visit-card__top">
-      <p class="health-visit-card__meta">🏥 ${escapeHtml(formatDate(visit.visit?.date))}${visit.visit?.time ? ` · ${escapeHtml(visit.visit.time)}` : ''} · ${escapeHtml(visit.visit?.facility || 'Không rõ cơ sở')}</p>
+      <p class="health-visit-card__meta">${icon('activity', { size: 16 })} ${escapeHtml(formatDate(visit.visit?.date))}${visit.visit?.time ? ` · ${escapeHtml(visit.visit.time)}` : ''} · ${escapeHtml(visit.visit?.facility || 'Không rõ cơ sở')}</p>
       <span class="health-badge">ICD: ${escapeHtml(visit.diagnosis?.icd || '—')}</span>
     </div>
     <h2 class="health-visit-card__title">${escapeHtml(visit.diagnosis?.disease || 'Chưa rõ chẩn đoán')}</h2>
-    <p class="health-visit-card__patient">👤 ${escapeHtml(visit.patient?.fullName || '—')} · ${escapeHtml(visit.patient?.patientId || '—')}</p>
-    <p class="health-visit-card__sum">💰 ${escapeHtml(formatVnd(total))} · 💊 ${medicines.length} loại thuốc</p>
+    <p class="health-visit-card__patient">${icon('user', { size: 16 })} ${escapeHtml(visit.patient?.fullName || '—')} · ${escapeHtml(visit.patient?.patientId || '—')}</p>
+    <p class="health-visit-card__sum">${icon('wallet', { size: 16 })} ${escapeHtml(formatVnd(total))} · ${icon('pill', { size: 16 })} ${medicines.length} loại thuốc</p>
     <div class="health-visit-card__actions">
-      <a class="health-text-link" href="#/health/detail/${id}">Xem chi tiết →</a>
+      <a class="health-text-link" href="#/health/detail/${id}">Xem chi tiết ${icon('arrowRight', { size: 16 })}</a>
       <a class="health-ghost-button" href="#/health/edit/${id}">Sửa</a>
       <button type="button" class="health-ghost-button health-ghost-button--danger" data-delete-visit="${id}" aria-label="Xoá lần khám ${id}">Xoá</button>
     </div>
@@ -169,9 +170,9 @@ function renderHistoryResults(state) {
   }
 
   const pager = totalPages > 1 ? `<nav class="health-pagination" aria-label="Phân trang lần khám">
-    <button type="button" class="health-ghost-button" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← Trước</button>
+      <button type="button" class="health-ghost-button" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>${icon('arrowLeft', { size: 16 })} Trước</button>
     ${Array.from({ length: totalPages }, (_, index) => index + 1).map((number) => `<button type="button" class="health-page-button${number === page ? ' is-active' : ''}" data-page="${number}" ${number === page ? 'aria-current="page"' : ''}>${number}</button>`).join('')}
-    <button type="button" class="health-ghost-button" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>Sau →</button>
+    <button type="button" class="health-ghost-button" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>Sau ${icon('arrowRight', { size: 16 })}</button>
   </nav>` : '';
 
   return `<div data-history-results>
@@ -192,16 +193,16 @@ function renderHistory(root) {
     </div>
 
     <div class="health-toolbar">
-      <a class="health-primary-button" href="#/health/add">＋ Thêm lần khám mới</a>
+      <a class="health-primary-button" href="#/health/add">${icon('plus', { size: 16 })} Thêm lần khám mới</a>
       <button type="button" class="health-secondary-button" data-export>⬇ Export JSON</button>
       <button type="button" class="health-secondary-button" data-import-trigger>⬆ Import</button>
-      <a class="health-secondary-button" href="#/health/stats">📊 Thống kê chi phí</a>
+      <a class="health-secondary-button" href="#/health/stats">${icon('barChart', { size: 16 })} Thống kê chi phí</a>
       <input type="file" accept="application/json,.json" data-import-input hidden aria-label="Chọn file JSON để nhập">
     </div>
 
     <div class="health-card health-search">
       <label class="health-field health-field--full">
-        <span class="health-search__label">🔍 Tìm kiếm</span>
+        <span class="health-search__label">${icon('search', { size: 16 })} Tìm kiếm</span>
         <input type="search" data-search-input value="${escapeHtml(searchState.query)}" placeholder="Tên bệnh nhân / mã BN / bệnh / ICD / cơ sở...">
       </label>
       <div class="health-search__filters">
@@ -236,11 +237,11 @@ function renderHistory(root) {
 function medicalTabs(active) {
   const tab = (key, label, href) => `<a class="medical-tab${active === key ? ' is-active' : ''}" href="${href}"${active === key ? ' aria-current="page"' : ''}>${label}</a>`;
   return `<nav class="medical-tabs" aria-label="Điều hướng Y Học">
-    ${tab('input', '▣ Nhập liệu', '#/health/medical/input')}
-    ${tab('search', '⌕ Tra cứu', '#/health/medical/search')}
-    ${tab('sync', '⇅ Đồng bộ', '#/health/medical/sync')}
-    ${tab('manage', '▤ Quản lý', '#/health/medical/manage')}
-    <button type="button" class="medical-tab" data-medical-refresh>↻ Làm mới online</button>
+    ${tab('input', `${icon('fileText', { size: 16 })} Nhập liệu`, '#/health/medical/input')}
+    ${tab('search', `${icon('search', { size: 16 })} Tra cứu`, '#/health/medical/search')}
+    ${tab('sync', `${icon('upload', { size: 16 })} Đồng bộ`, '#/health/medical/sync')}
+    ${tab('manage', `${icon('database', { size: 16 })} Quản lý`, '#/health/medical/manage')}
+    <button type="button" class="medical-tab" data-medical-refresh>${icon('refresh', { size: 16 })} Làm mới online</button>
   </nav>`;
 }
 
@@ -282,7 +283,7 @@ function medicalDeleteSyncPromptMarkup() {
       <h2 id="medical-delete-sync-title">Đã xoá dữ liệu</h2>
       <p data-medical-delete-sync-message>Bạn có muốn đồng bộ lên GitHub ngay bây giờ không?</p>
       <div class="health-actions">
-        <button type="button" class="health-primary-button" data-medical-delete-sync-now>⇅ Đồng bộ ngay</button>
+        <button type="button" class="health-primary-button" data-medical-delete-sync-now>${icon('upload', { size: 16 })} Đồng bộ ngay</button>
         <button type="button" class="health-ghost-button" data-medical-delete-sync-later>Để sau</button>
       </div>
       <div class="medical-progress is-indeterminate" data-medical-progress hidden aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
@@ -342,17 +343,17 @@ function renderMedicalPreview(root, entry, collapsed = false, saved = false, dup
   preview.classList.toggle('is-collapsed', collapsed);
   const commitBadge = entry.commitId ? `<span class="medical-sync-badge">Synced #${escapeHtml(entry.commitId)}</span>` : '';
   const duplicateWarning = duplicate
-    ? `<p class="medical-duplicate-warning" role="alert">⚠️ Nội dung này trùng gần nhất với <strong>${escapeHtml(duplicate.inputId)}</strong> (độ tương đồng: ${duplicate.percentage}%).</p>`
+    ? `<p class="medical-duplicate-warning" role="alert">${icon('alertTriangle', { size: 16 })} Nội dung này trùng gần nhất với <strong>${escapeHtml(duplicate.inputId)}</strong> (độ tương đồng: ${duplicate.percentage}%).</p>`
     : '';
   const deleteButton = saved
-    ? `<button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(entry.inputId)}" aria-label="Xoá ${escapeHtml(entry.title)}">🗑️ Xoá</button>`
+    ? `<button type="button" class="medical-record-delete" data-medical-delete="${escapeHtml(entry.inputId)}" aria-label="Xoá ${escapeHtml(entry.title)}">${icon('trash', { size: 16 })} Xoá</button>`
     : '';
   preview.innerHTML = `<div class="medical-preview__head"><div><p class="health-eyebrow">STRUCTURED DATA PREVIEW</p><h2>Kết quả phân tích</h2><p class="medical-preview__title">${escapeHtml(entry.title)}</p><p class="medical-record-meta"><code>${escapeHtml(entry.inputId || 'Chưa có INPUT ID')}</code>${commitBadge}</p></div><span class="health-badge">${escapeHtml(entry.category)}</span></div>
     ${duplicateWarning}
     ${renderMedicalInfographic(entry, collapsed)}
     ${saved
-      ? `<p class="medical-saved-note">✓ Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions">${deleteButton}<a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>`
-      : '<div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>✓ Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>'}`;
+      ? `<p class="medical-saved-note">${icon('check', { size: 16 })} Đã lưu offline và đồng bộ GitHub.</p><div class="health-actions">${deleteButton}<a class="health-ghost-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>`
+      : `<div class="health-actions"><button type="button" class="health-primary-button" data-medical-save>${icon('save', { size: 16 })} Xác nhận lưu &amp; đồng bộ GitHub</button><button type="button" class="health-ghost-button" data-medical-clear>Nhập lại</button></div>`}`;
   preview.hidden = false;
   const toggle = preview.querySelector('[data-medical-toggle]');
   if (toggle) {
@@ -379,7 +380,7 @@ function renderMedicalInput(root) {
         <textarea name="rawContent" rows="12" placeholder="Ví dụ:\nTên bệnh: Cúm mùa\nTriệu chứng: Sốt, ho, đau họng\nĐiều trị: Nghỉ ngơi, uống đủ nước\nThuốc liên quan: Paracetamol, Oseltamivir" required></textarea>
       </label>
       <p class="medical-offline-note">ⓘ Bộ phân tích chạy trực tiếp trên trình duyệt, nhận diện các nhãn “Tên bệnh”, “Triệu chứng”, “Điều trị”, “Thuốc liên quan”. Kết quả chỉ lưu trên thiết bị; bấm xác nhận để sync GitHub nếu đã nhập token ở tab Đồng bộ.</p>
-      <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>✦ Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
+      <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-analyze>${icon('sparkles', { size: 16 })} Phân tích &amp; lưu trữ</button><a class="health-secondary-button" href="#/health/medical/search">Tra cứu kho tri thức</a></div>
       <div class="medical-progress is-indeterminate" data-medical-progress hidden aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
     </form>
     <section class="health-card medical-preview" data-medical-preview hidden aria-live="polite"></section>
@@ -412,8 +413,8 @@ function renderMedicalSync(root) {
       <label class="health-field">Đường dẫn file JSON
         <input type="text" name="filePath" data-medical-sync-path value="${escapeHtml(settings.filePath)}" placeholder="static/data/medical-knowledge.json" required>
       </label>
-      <p class="medical-security-warning">⚠️ PAT chỉ được giữ trong <code>sessionStorage</code> của tab này và sẽ mất khi đóng tab. Không chia sẻ token hoặc dùng token có quyền rộng hơn cần thiết; nếu token bị lộ, hãy revoke ngay.</p>
-      <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-sync-submit>⇅ Đồng bộ lên GitHub</button><a class="health-secondary-button" href="#/health/medical/search">← Tra cứu</a></div>
+      <p class="medical-security-warning">${icon('shield', { size: 17 })} PAT chỉ được giữ trong <code>sessionStorage</code> của tab này và sẽ mất khi đóng tab. Không chia sẻ token hoặc dùng token có quyền rộng hơn cần thiết; nếu token bị lộ, hãy revoke ngay.</p>
+      <div class="health-actions"><button type="submit" class="health-primary-button" data-medical-sync-submit>${icon('upload', { size: 16 })} Đồng bộ lên GitHub</button><a class="health-secondary-button" href="#/health/medical/search">${icon('arrowLeft', { size: 16 })} Tra cứu</a></div>
       <div class="medical-sync-status" data-medical-sync-status role="status" aria-live="polite">Chưa đồng bộ</div>
       <pre class="medical-sync-log" data-medical-sync-log>Log sẽ hiển thị tại đây. Token không được ghi vào log.</pre>
     </form>
@@ -501,7 +502,7 @@ function renderMedicalSearch(root) {
       <label class="health-field health-field--full">Từ khoá hoặc câu hỏi
         <input type="search" name="query" data-medical-search-input value="${escapeHtml(medicalSearchQuery)}" placeholder="Ví dụ: thuốc điều trị cúm mùa...">
       </label>
-      <div class="health-actions"><button type="submit" class="health-primary-button">⌕ Tìm kiếm</button><a class="health-secondary-button" href="#/health/medical/input">＋ Nhập tri thức</a></div>
+      <div class="health-actions"><button type="submit" class="health-primary-button">${icon('search', { size: 16 })} Tìm kiếm</button><a class="health-secondary-button" href="#/health/medical/input">${icon('plus', { size: 16 })} Nhập tri thức</a></div>
     </form>
     <section class="medical-results" aria-live="polite">
       <div class="medical-results__head"><h2>Kết quả</h2><span class="health-muted">${results.length} mục</span></div>
@@ -554,8 +555,8 @@ function renderDetail(root, id) {
 
     <section class="health-card">
       <div class="health-detail-identity">
-        <p>👤 <strong>${escapeHtml(visit.patient?.fullName || '—')}</strong> · ${escapeHtml(visit.patient?.patientId || '—')} · ${escapeHtml(visit.patient?.dob ? formatDate(visit.patient.dob) : '—')} · ${escapeHtml(genderLabel(visit.patient?.gender))}</p>
-        <p>📅 ${escapeHtml(formatDate(visit.visit?.date))}${visit.visit?.time ? ` · ${escapeHtml(visit.visit.time)}` : ''}${visit.visit?.doctor ? ` · ${escapeHtml(visit.visit.doctor)}` : ''}</p>
+        <p>${icon('user', { size: 16 })} <strong>${escapeHtml(visit.patient?.fullName || '—')}</strong> · ${escapeHtml(visit.patient?.patientId || '—')} · ${escapeHtml(visit.patient?.dob ? formatDate(visit.patient.dob) : '—')} · ${escapeHtml(genderLabel(visit.patient?.gender))}</p>
+        <p>${icon('calendar', { size: 16 })} ${escapeHtml(formatDate(visit.visit?.date))}${visit.visit?.time ? ` · ${escapeHtml(visit.visit.time)}` : ''}${visit.visit?.doctor ? ` · ${escapeHtml(visit.visit.doctor)}` : ''}</p>
       </div>
 
       <h2 class="health-section-title">Chẩn đoán</h2>
@@ -571,12 +572,12 @@ function renderDetail(root, id) {
 
       <h2 class="health-section-title">Thuốc</h2>
       ${medicines.length ? `<ul class="health-medicine-view">${medicines.map((med) => `<li>
-        <strong>💊 ${escapeHtml(med.name)}</strong>
+        <strong>${icon('pill', { size: 16 })} ${escapeHtml(med.name)}</strong>
         <span>${escapeHtml(med.dosage || '—')}${med.duration ? ` · ${escapeHtml(med.duration)} ngày` : ''}</span>
         ${med.usage ? `<small>Công dụng: ${escapeHtml(med.usage)}</small>` : ''}
         ${med.notes ? `<small>Ghi chú: ${escapeHtml(med.notes)}</small>` : ''}
       </li>`).join('')}</ul>` : '<p class="health-muted">Không có thuốc được ghi nhận.</p>'}
-      ${interactions.length ? `<div class="health-interactions is-visible"><strong>⚠️ Cảnh báo tương tác (tham khảo):</strong><ul>${interactions.map((warning) => `<li>${escapeHtml(warning.pair)} — ${escapeHtml(warning.message)}</li>`).join('')}</ul></div>` : ''}
+      ${interactions.length ? `<div class="health-interactions is-visible"><strong>${icon('alertTriangle', { size: 16 })} Cảnh báo tương tác (tham khảo):</strong><ul>${interactions.map((warning) => `<li>${escapeHtml(warning.pair)} — ${escapeHtml(warning.message)}</li>`).join('')}</ul></div>` : ''}
 
       <h2 class="health-section-title">Chi phí</h2>
       <dl class="health-detail-list health-detail-list--cost">
@@ -703,7 +704,7 @@ function updateInteractions(form) {
   }
   box.hidden = false;
   box.classList.add('is-visible');
-  box.innerHTML = `<strong>⚠️ Cảnh báo tương tác thuốc (tham khảo):</strong><ul>${warnings.map((warning) => `<li>${escapeHtml(warning.pair)} — ${escapeHtml(warning.message)}</li>`).join('')}</ul><small>Đây là kiểm tra thô dựa trên tên thuốc, không thay thế tư vấn dược sĩ/bác sĩ.</small>`;
+  box.innerHTML = `<strong>${icon('alertTriangle', { size: 16 })} Cảnh báo tương tác thuốc (tham khảo):</strong><ul>${warnings.map((warning) => `<li>${escapeHtml(warning.pair)} — ${escapeHtml(warning.message)}</li>`).join('')}</ul><small>Đây là kiểm tra thô dựa trên tên thuốc, không thay thế tư vấn dược sĩ/bác sĩ.</small>`;
 }
 
 function updateMedicineEmpty(form) {
@@ -1207,7 +1208,7 @@ export function mountHealthApp(root) {
         setMedicalProgress(root, true);
         const saved = saveMedicalKnowledge(draft.entry || draft);
         medicalSave.disabled = true;
-        medicalSave.textContent = 'Đang đồng bộ GitHub…';
+        medicalSave.innerHTML = `${icon('upload', { size: 16 })} Đang đồng bộ GitHub…`;
         const synced = await syncMedicalKnowledge();
         medicalRemoteEntries = synced.items;
         medicalRemotePromise = null;
@@ -1220,7 +1221,7 @@ export function mountHealthApp(root) {
       } finally {
         setMedicalProgress(root, false);
         medicalSave.disabled = false;
-        medicalSave.textContent = '✓ Xác nhận lưu & đồng bộ GitHub';
+        medicalSave.innerHTML = `${icon('save', { size: 16 })} Xác nhận lưu & đồng bộ GitHub`;
       }
       return;
     }
@@ -1397,12 +1398,12 @@ export function mountHealthApp(root) {
           ]);
         }).finally(() => {
           button.disabled = false;
-          button.textContent = '⇅ Đồng bộ lên GitHub';
+          button.innerHTML = `${icon('upload', { size: 16 })} Đồng bộ lên GitHub`;
         });
       } catch (error) {
         setSyncFeedback('error', 'Đồng bộ lỗi', [`[Lỗi] ${error.message || 'Không lưu được cấu hình phiên.'}`]);
         button.disabled = false;
-        button.textContent = '⇅ Đồng bộ lên GitHub';
+        button.innerHTML = `${icon('upload', { size: 16 })} Đồng bộ lên GitHub`;
       }
       return;
     }
@@ -1411,7 +1412,7 @@ export function mountHealthApp(root) {
       const button = form.querySelector('[data-medical-analyze]');
       if (button?.disabled) return;
       button.disabled = true;
-      button.textContent = 'Đang phân tích offline…';
+      button.innerHTML = `${icon('activity', { size: 16 })} Đang phân tích offline…`;
       const progress = medicalProgressController(root);
       try {
         progress.start();
@@ -1428,7 +1429,7 @@ export function mountHealthApp(root) {
       } finally {
         progress.complete();
         button.disabled = false;
-        button.textContent = '✦ Phân tích & lưu trữ';
+        button.innerHTML = `${icon('sparkles', { size: 16 })} Phân tích & lưu trữ`;
       }
       return;
     }

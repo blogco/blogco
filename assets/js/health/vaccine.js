@@ -8,6 +8,7 @@
 // exported so they can be unit-tested in Node without a DOM.
 
 import { escapeHtml } from './medicine.js';
+import { icon } from '../icons.js';
 
 const STORAGE_KEY = 'blogco.health.vaccines.v1';
 const BACKUP_KEY = 'blogco.health.vaccines.backup.v1';
@@ -222,9 +223,9 @@ function todayKey() {
 }
 
 const STATUS_META = {
-  overdue: { label: '⚠️ Quá hạn tiêm nhắc', badge: 'vaccine-badge--danger' },
-  due: { label: '🔔 Sắp đến hạn', badge: 'vaccine-badge--warning' },
-  scheduled: { label: '🗓️ Đã lên lịch', badge: 'vaccine-badge--muted' },
+  overdue: { label: `${icon('alertTriangle', { size: 15 })} Quá hạn tiêm nhắc`, badge: 'vaccine-badge--danger' },
+  due: { label: `${icon('calendar', { size: 15 })} Sắp đến hạn`, badge: 'vaccine-badge--warning' },
+  scheduled: { label: `${icon('calendar', { size: 15 })} Đã lên lịch`, badge: 'vaccine-badge--muted' },
 };
 
 function statusText(nextDate, today) {
@@ -265,8 +266,8 @@ function renderReminderBanner(records) {
     </li>`;
   }).join('');
   const headline = overdue.length
-    ? `⚠️ ${overdue.length} mũi tiêm đã quá hạn nhắc lại`
-    : `🔔 ${due.length} mũi tiêm sắp đến hạn`;
+    ? `${icon('alertTriangle', { size: 16 })} ${overdue.length} mũi tiêm đã quá hạn nhắc lại`
+    : `${icon('calendar', { size: 16 })} ${due.length} mũi tiêm sắp đến hạn`;
   return `<aside class="vaccine-reminder${overdue.length ? ' is-overdue' : ''}" role="status">
     <p class="vaccine-reminder__title">${headline}</p>
     <ul class="vaccine-reminder__list">${chips}</ul>
@@ -308,7 +309,7 @@ function renderForm(record = {}) {
         </label>
       </div>
       <div class="health-toolbar vaccine-form__actions">
-        <button type="submit" class="health-primary-button">${editing ? '💾 Lưu thay đổi' : '＋ Thêm mũi tiêm'}</button>
+        <button type="submit" class="health-primary-button">${editing ? `${icon('save', { size: 16 })} Lưu thay đổi` : `${icon('plus', { size: 16 })} Thêm mũi tiêm`}</button>
         <button type="button" class="health-ghost-button" data-vaccine-cancel>Huỷ</button>
       </div>
     </fieldset>
@@ -324,7 +325,7 @@ function renderRecordCard(record) {
   return `<li class="vaccine-card">
     <div class="vaccine-card__top">
       <div>
-        <h3 class="vaccine-card__title">💉 ${escapeHtml(record.vaccine)}</h3>
+        <h3 class="vaccine-card__title">${icon('shield', { size: 18 })} ${escapeHtml(record.vaccine)}</h3>
         <p class="vaccine-card__meta">${formatDate(record.date)}${meta.length ? ` · ${meta.join(' · ')}` : ''}</p>
       </div>
       ${status ? `<span class="vaccine-badge ${status.badge}">${status.label} · ${status.detail}</span>` : ''}
@@ -332,8 +333,8 @@ function renderRecordCard(record) {
     ${record.nextDate ? `<p class="vaccine-card__next">Mũi kế tiếp: <strong>${formatDate(record.nextDate)}</strong></p>` : ''}
     ${record.notes ? `<p class="vaccine-card__notes">${escapeHtml(record.notes)}</p>` : ''}
     <div class="vaccine-card__actions">
-      <button type="button" class="health-ghost-button" data-vaccine-edit="${id}">✏️ Sửa</button>
-      <button type="button" class="health-ghost-button health-ghost-button--danger" data-vaccine-delete="${id}">🗑️ Xoá</button>
+      <button type="button" class="health-ghost-button" data-vaccine-edit="${id}">${icon('fileText', { size: 16 })} Sửa</button>
+      <button type="button" class="health-ghost-button health-ghost-button--danger" data-vaccine-delete="${id}">${icon('trash', { size: 16 })} Xoá</button>
     </div>
   </li>`;
 }
@@ -342,7 +343,7 @@ function renderResults(records) {
   const filtered = filterVaccines(records, filterState);
   let list;
   if (!records.length) {
-    list = '<p class="health-empty">Chưa có mũi tiêm nào. Bấm “＋ Thêm mũi tiêm” để bắt đầu ghi lại.</p>';
+    list = `<p class="health-empty">Chưa có mũi tiêm nào. Bấm “${icon('plus', { size: 15 })} Thêm mũi tiêm” để bắt đầu ghi lại.</p>`;
   } else if (!filtered.length) {
     list = '<p class="health-empty">Không tìm thấy mũi tiêm phù hợp với bộ lọc.</p>';
   } else {
@@ -371,8 +372,8 @@ function renderVaccineView(root) {
     <p class="vaccine-status" data-vaccine-status role="status" aria-live="polite"></p>
 
     <div class="health-toolbar">
-      <button type="button" class="health-primary-button" data-vaccine-add>＋ Thêm mũi tiêm</button>
-      <a class="health-secondary-button" href="#/health/history">🩺 Lịch sử khám bệnh</a>
+      <button type="button" class="health-primary-button" data-vaccine-add>${icon('plus', { size: 16 })} Thêm mũi tiêm</button>
+      <a class="health-secondary-button" href="#/health/history">${icon('stethoscope', { size: 16 })} Lịch sử khám bệnh</a>
     </div>
 
     <section class="health-card vaccine-form-card" data-vaccine-form-card${editing ? '' : ' hidden'} aria-label="Biểu mẫu mũi tiêm">
@@ -381,7 +382,7 @@ function renderVaccineView(root) {
 
     <div class="health-card health-search">
       <label class="health-field health-field--full">
-        <span class="health-search__label">🔍 Tìm kiếm</span>
+        <span class="health-search__label">${icon('search', { size: 16 })} Tìm kiếm</span>
         <input type="search" data-vaccine-search value="${escapeHtml(filterState.query)}" placeholder="Tên vắc xin / mũi / cơ sở / ghi chú…">
       </label>
       <div class="health-search__filters">

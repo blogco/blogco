@@ -11,6 +11,7 @@ import { escapeHtml, formatVnd, toNumber } from './store.js';
 import { normalizeName, classifyItem, CATEGORY_LABELS } from './menu.js';
 import { seasonOf, SEASON_LABELS } from './season.js';
 import { progressMeter, horizontalBarChart, donutChart, legend, colorAt, formatShort } from './charts.js';
+import { icon } from '../icons.js';
 
 // ---------------------------------------------------------------------------
 // Nhận diện thành phần theo tên món (đã bỏ dấu, chữ thường)
@@ -304,7 +305,7 @@ export function renderAiInsights(receipts = [], options = {}) {
   const head = `<div class="coffee-ai-insights__head">
       <div>
         <p class="coffee-eyebrow">BLOGCO · AI</p>
-        <h2 id="ai-insights-title">💡 AI Insights &amp; Smart Analytics Dashboard</h2>
+        <h2 id="ai-insights-title">${icon('sparkles', { size: 20 })} Smart Analytics Dashboard</h2>
         <p class="coffee-muted">Phân tích chuyên sâu thời gian thực về tài chính và thói quen tiêu dùng.</p>
       </div>
       <button type="button" class="coffee-secondary-button" data-ai-refresh>🔄 Làm mới Insights</button>
@@ -364,13 +365,13 @@ export function renderAiInsights(receipts = [], options = {}) {
 
     <section class="coffee-card coffee-insight-card">
       <p class="coffee-eyebrow">BIỂU ĐỒ 1 · TẦN SUẤT GỌI MÓN</p>
-      <h3 class="coffee-insight-card__title">📊 Top món uống &amp; tần suất</h3>
+      <h3 class="coffee-insight-card__title">${icon('barChart', { size: 18 })} Top món uống &amp; tần suất</h3>
       ${itemBars}
     </section>
 
     <section class="coffee-card coffee-insight-card">
       <p class="coffee-eyebrow">BIỂU ĐỒ 2 · TỶ TRỌNG CHI TIÊU THEO BRAND</p>
-      <h3 class="coffee-insight-card__title">💰 Phân bổ ngân sách thương hiệu &amp; tổng tiền “cúng”</h3>
+      <h3 class="coffee-insight-card__title">${icon('wallet', { size: 18 })} Phân bổ ngân sách thương hiệu &amp; tổng tiền “cúng”</h3>
       <div class="coffee-donut-wrap">${brandDonut}
         ${legend(data.brandSegments, { valueFormatter: formatVnd, percentOf: data.brandTotal })}
       </div>
@@ -379,7 +380,7 @@ export function renderAiInsights(receipts = [], options = {}) {
 
     <section class="coffee-card coffee-insight-card coffee-insight-health">
       <p class="coffee-eyebrow">BIỂU ĐỒ 3 · CHỈ SỐ DINH DƯỠNG &amp; CẢNH BÁO SỨC KHỎE</p>
-      <h3 class="coffee-insight-card__title">🩺 Đường, Caffeine &amp; cảnh báo từ AI</h3>
+      <h3 class="coffee-insight-card__title">${icon('heartPulse', { size: 18 })} Đường, Caffeine &amp; cảnh báo tự động</h3>
       <div class="coffee-meter-grid">
         ${progressMeter({
           label: 'Lượng đường tuần này',
@@ -406,7 +407,7 @@ export function renderAiInsights(receipts = [], options = {}) {
 
     <section class="coffee-card coffee-insight-card coffee-insight-reco">
       <p class="coffee-eyebrow">AI RECOMMENDATIONS</p>
-      <h3 class="coffee-insight-card__title">💡 Đề xuất thay thế thông minh</h3>
+      <h3 class="coffee-insight-card__title">${icon('sparkles', { size: 18 })} Đề xuất thay thế thông minh</h3>
       <ul class="coffee-insight-alt">
         ${data.alternatives.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}
       </ul>

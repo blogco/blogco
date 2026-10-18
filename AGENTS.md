@@ -40,11 +40,11 @@ CSS/JS được nạp qua `layouts/partials/extend_head.html` từ Vite manifest
 - Layout gốc là `layouts/baseof.html`; thứ tự chung là Header → `main` → Footer.
 - Navbar là Hugo partial `layouts/_partials/header.html`, không phải React component.
 - Footer là Hugo partial `layouts/_partials/footer.html`; các link lấy từ `data/footer-links.yaml`. Thêm link mới bằng một object YAML, không hardcode lại trong markup nếu không cần.
-- Navbar/Footer dùng chung nền trắng, viền mảnh và các token `--blogco-*`; mint chỉ dùng làm accent.
+- Navbar/Footer dùng chung token `--blogco-*`; Navbar là floating surface bo tròn, nền trắng trong suốt nhẹ và `backdrop-filter`, Footer là surface trắng có shadow mềm.
 - Health mega menu hiện tại:
   - Rộng tối đa khoảng `480px`, grid 2 cột desktop.
   - Không dùng tagline phụ.
-  - Icon hiện dùng emoji/Unicode; không giả định có Lucide React.
+  - Menu dùng inline SVG phong cách Lucide, không dùng emoji/Unicode hoặc ảnh AI.
 - Không đổi cấu trúc layout gốc hoặc đường dẫn partial nếu chưa có sự đồng ý.
 
 ## 3. UI/UX Conventions
@@ -57,15 +57,16 @@ Nguồn sự thật duy nhất là `assets/css/brand/brand-guidelines.css`:
 
 - Primary/text chính: `#111827`.
 - Secondary/dark text: `#1F2937`.
-- Accent mint đậm: `#4DA0AA` — active state, progress bar, số liệu và điểm nhấn.
-- Accent mint nhạt: `#E7F3F4` — tag/badge và trạng thái active nhẹ.
-- Accent/background phụ: `#F3F4F6`.
-- Page background: `#FFFFFF`.
-- Card background: `#F3F4F6`.
+- Accent emerald/mint: `#10B981` — active state, progress bar, số liệu và điểm nhấn.
+- Accent mint nhạt: `#ECFDF5` — tag/badge và trạng thái active nhẹ.
+- Accent/background phụ: `#F8F9FA`.
+- Page background: `#FAFAFA`.
+- Card background: `#FFFFFF`.
 - Main text: `#111827`.
 - Body text: `#374151`.
 - Muted text: `#4B5563`.
-- Border: `#D1D5DB`.
+- Border: `#E5E7EB`.
+- Depth: card dùng `--blogco-shadow-soft`, hover dùng `--blogco-shadow-hover`, radius card `16px`, radius control `12px`.
 - Font toàn site: `Inter`, fallback `Helvetica Neue`, `Arial`, sans-serif.
 - Display font: `Inter`, fallback system.
 - Health palette kế thừa mint/corporate tokens; danger/warning chỉ dùng cho trạng thái lỗi hoặc cảnh báo.
@@ -79,14 +80,14 @@ Không hardcode màu mới nếu token hiện có phù hợp. Nếu cần màu �
 - Footer link: khoảng `13px`; footer meta: khoảng `12px`.
 - Heading toàn site: H1 dùng `clamp(40px, 5vw, 64px)`, H2 khoảng `32px`, H3 khoảng `24px`, nhưng health screen có override H1 `1.7rem–2.5rem` và H2 `1.15rem`.
 - Ưu tiên spacing theo `rem`, `clamp()` và token hiện có; không áp dụng máy móc `p-4/m-4` của Tailwind.
-- Card phổ biến: border 1px, radius tối đa `4px`, không shadow hoặc shadow rất nhẹ, padding khoảng `1rem–1.25rem`.
+- Card phổ biến: nền trắng, border 1px, radius `16px`, shadow mềm, padding khoảng `1.25rem–1.5rem`; hover nâng nhẹ tối đa `4px`.
 - Health screen rộng tối đa khoảng `1040px`, padding dưới khoảng `4rem`.
 
 ### Icons và responsive
 
-- Hiện chưa có thư viện icon chuẩn. Dùng inline SVG cho icon điều hướng đơn giản hoặc emoji/Unicode theo pattern hiện tại.
-- Không thêm Lucide/Font Awesome chỉ để thay icon nhỏ nếu chưa được approve.
-- Kích thước đang dùng: hamburger `22px`, icon health mega menu khoảng `14px`, icon mega menu chung khoảng `20px`.
+- Icon chuẩn là inline SVG theo phong cách Lucide trong `assets/js/icons.js` và các Hugo partial; không dùng icon ảnh, emoji hoặc icon AI cho UI.
+- Không thêm React icon package vì runtime là vanilla JS; helper SVG dùng `currentColor`, stroke `1.75–2px`.
+- Kích thước icon mặc định `16px–20px`, hamburger `22px`, icon health mega menu khoảng `18px`.
 - Navbar desktop từ `min-width: 1025px`; mobile/tablet dùng menu accordion từ `max-width: 1024px`.
 - Footer chuyển thành cột ở `max-width: 767px`.
 - Health: form/grid thường thu về 2 cột ở desktop, 1 cột ở `max-width: 767px`; một số bảng thống kê có breakpoint `860px`.

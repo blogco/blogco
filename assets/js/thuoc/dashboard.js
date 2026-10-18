@@ -3,6 +3,7 @@
 
 import { computeThuocStats } from './stats.js';
 import { escapeHtml } from './store.js';
+import { categoryIcon } from './catalog.js';
 
 function meter(label, count, max) {
   const width = max ? Math.max(4, Math.round((count / max) * 100)) : 0;
@@ -27,7 +28,7 @@ export function renderThuocDashboard(entries = []) {
     .join('');
 
   const categoryBars = stats.byCategory
-    .map((category) => meter(`${category.emoji} ${escapeHtml(category.label)}`, category.count, maxCategory))
+    .map((category) => meter(`${categoryIcon(category.category)} ${escapeHtml(category.label)}`, category.count, maxCategory))
     .join('');
 
   return `<section class="thuoc-card thuoc-insight-card" aria-label="Bảng tổng quan thuốc">
@@ -36,11 +37,11 @@ export function renderThuocDashboard(entries = []) {
     </div>
     <div class="thuoc-insight-grid">
       <div>
-        <h3 class="thuoc-insight-card__title thuoc-insight-card__title--sub">📅 Theo tháng</h3>
+        <h3 class="thuoc-insight-card__title thuoc-insight-card__title--sub">${categoryIcon('other', 17)} Theo tháng</h3>
         ${monthBars ? `<ul class="thuoc-insight-list">${monthBars}</ul>` : '<p class="thuoc-muted">Chưa có dữ liệu.</p>'}
       </div>
       <div>
-        <h3 class="thuoc-insight-card__title thuoc-insight-card__title--sub">💊 Theo nhóm thuốc</h3>
+        <h3 class="thuoc-insight-card__title thuoc-insight-card__title--sub">${categoryIcon('pain', 17)} Theo nhóm thuốc</h3>
         ${categoryBars ? `<ul class="thuoc-insight-list">${categoryBars}</ul>` : '<p class="thuoc-muted">Chưa có dữ liệu.</p>'}
       </div>
     </div>

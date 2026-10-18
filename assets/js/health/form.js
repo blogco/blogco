@@ -2,6 +2,7 @@
 // router so the markup can be reused for the add and edit routes.
 
 import { escapeHtml, renderMedicineRow, readMedicines, emptyMedicineHtml } from './medicine.js';
+import { icon } from '../icons.js';
 
 function value(field, fallback = '') {
   return field === null || field === undefined ? fallback : escapeHtml(field);
@@ -28,13 +29,13 @@ export function renderInvoiceBlock(kind, title, invoiceUrl = '', ocrText = '') {
       <input type="file" accept="image/*" data-invoice-input hidden aria-label="Chọn ảnh ${escapeHtml(title)}">
       ${hasImage ? `<img data-invoice-preview src="${previewSrc}" alt="Xem trước ${escapeHtml(title)}">` : '<img data-invoice-preview alt="Xem trước hoá đơn" hidden>'}
       <span class="health-dropzone__hint"${hasImage ? ' hidden' : ''}>
-        <span aria-hidden="true">📎</span>
+        ${icon('upload', { size: 18 })}
         <span>Kéo ảnh vào đây hoặc bấm để chọn</span>
         <small>JPG · PNG · WEBP</small>
       </span>
     </label>
     <div class="health-invoice__actions">
-      <button type="button" class="health-secondary-button" data-invoice-ocr>🔍 OCR tự động</button>
+      <button type="button" class="health-secondary-button" data-invoice-ocr>${icon('search', { size: 16 })} OCR tự động</button>
       <button type="button" class="health-ghost-button" data-invoice-clear${hasImage ? '' : ' hidden'}>Xoá ảnh</button>
     </div>
     <p class="health-invoice__status" data-invoice-status role="status" aria-live="polite"></p>
@@ -111,7 +112,7 @@ export function renderVisitForm(visit = {}, { mode = 'add', nextId = '' } = {}) 
               <input name="icd" type="text" maxlength="20" required value="${value(diagnosis.icd)}" placeholder="J06.9 hoặc tên bệnh, ví dụ: viêm da tiết bã" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="health-icd-menu">
               <div class="health-icd-menu" id="health-icd-menu" data-icd-menu role="listbox" aria-label="Kết quả tra cứu mã ICD-10" hidden></div>
             </span>
-            <button type="button" class="health-ghost-button" data-icd-lookup aria-label="Tra cứu mã ICD-10">🔍 Tra cứu</button>
+            <button type="button" class="health-ghost-button" data-icd-lookup aria-label="Tra cứu mã ICD-10">${icon('search', { size: 16 })} Tra cứu</button>
           </span>
         </label>
         <label class="health-field health-field--full">Triệu chứng
@@ -130,7 +131,7 @@ export function renderVisitForm(visit = {}, { mode = 'add', nextId = '' } = {}) 
     <fieldset class="health-fieldset">
       <legend>Thuốc điều trị</legend>
       <div data-medicine-list>${medicines.map((med, index) => renderMedicineRow(med, index)).join('')}</div>
-      <button type="button" class="health-secondary-button" data-add-medicine>＋ Thêm thuốc</button>
+      <button type="button" class="health-secondary-button" data-add-medicine>${icon('plus', { size: 16 })} Thêm thuốc</button>
       <p class="health-empty" data-medicine-empty hidden>Chưa thêm thuốc nào. Bấm “Thêm thuốc” để ghi từng loại với công dụng riêng.</p>
       <div class="health-interactions" data-interactions role="status" aria-live="polite" hidden></div>
     </fieldset>
@@ -167,7 +168,7 @@ export function renderVisitForm(visit = {}, { mode = 'add', nextId = '' } = {}) 
 
     <div class="health-actions">
       <a class="health-secondary-button" href="#/health/history">❌ Huỷ</a>
-      <button class="health-primary-button" type="submit">💾 ${mode === 'edit' ? 'Cập nhật lần khám' : 'Lưu lần khám'}</button>
+      <button class="health-primary-button" type="submit">${icon('save', { size: 16 })} ${mode === 'edit' ? 'Cập nhật lần khám' : 'Lưu lần khám'}</button>
     </div>
   </form>`;
 }

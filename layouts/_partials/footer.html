@@ -3,7 +3,7 @@
     <div class="footer__inner">
         <div class="footer__identity">
             <a class="footer__brand" href="{{ "" | absLangURL }}" aria-label="BlogCo — trang chủ">
-                <span class="footer__brand-mark" aria-hidden="true">◆</span>Blog<span class="footer__brand-accent">Co</span>
+                <span class="footer__brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m12 3-1.2 4.1a4 4 0 0 1-2.7 2.7L4 11l4.1 1.2a4 4 0 0 1 2.7 2.7L12 19l1.2-4.1a4 4 0 0 1 2.7-2.7L20 11l-4.1-1.2a4 4 0 0 1-2.7-2.7Z"/></svg></span>Blog<span class="footer__brand-accent">Co</span>
             </a>
             {{- if not site.Params.footer.hideCopyright }}
                 <span class="footer__copyright">
@@ -17,7 +17,12 @@
             {{- range $index, $link := $footerLinks }}
                 {{- if $index }}<span class="footer__divider" aria-hidden="true">|</span>{{ end }}
                 <a href="{{ $link.href | relURL }}">
-                    {{- with $link.icon }}<span class="footer__link-icon" aria-hidden="true">{{ . }}</span>{{ end -}}
+                    {{- with $link.icon }}<span class="footer__link-icon" aria-hidden="true">
+                      {{- if eq . "home" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-6h6v6"/></svg>
+                      {{- else if eq . "stethoscope" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M6 3v5a4 4 0 0 0 8 0V3M4 3h4M12 3h4M6 12v1a6 6 0 0 0 12 0v-1"/><circle cx="18" cy="8" r="3"/></svg>
+                      {{- else if eq . "pill" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m10.5 20.5 9-9a4.95 4.95 0 0 0-7-7l-9 9a4.95 4.95 0 0 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                      {{- else }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>{{ end -}}
+                    </span>{{ end -}}
                     {{ $link.label }}
                 </a>
             {{- end }}

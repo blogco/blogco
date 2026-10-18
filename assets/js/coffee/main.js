@@ -16,8 +16,10 @@ import {
 import { categoryLabel } from './menu.js';
 import {
   EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORIES, buildExpenseReview, classifyExpense,
-  expenseCategoryMeta, normalizeExpenseCategory, receiptExpenseCategory,
+  expenseCategoryMeta, expenseCategoryIcon, normalizeExpenseCategory, receiptExpenseCategory,
 } from './expense.js';
+import { icon } from '../icons.js';
+import { seasonIcon } from './season.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats, computeBudgetProgress } from './stats.js';
 import {
@@ -151,7 +153,7 @@ function renderReceiptRow(receipt) {
   const meta = expenseCategoryMeta(receiptExpenseCategory(receipt));
   return `<tr>
     <td><span class="coffee-datatable__date">${escapeHtml(formatDate(receipt.date))}</span>${receipt.time ? `<span class="coffee-datatable__time">${escapeHtml(receipt.time)}</span>` : ''}</td>
-    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span><span class="coffee-cat-chip">${meta.emoji} ${escapeHtml(meta.label)}</span>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : ''}</td>
+    <td><span class="coffee-datatable__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span><span class="coffee-cat-chip">${expenseCategoryIcon(meta.key)} ${escapeHtml(meta.label)}</span>${receipt.orderCode ? `<span class="coffee-code">${escapeHtml(receipt.orderCode)}</span>` : ''}</td>
     <td><span class="coffee-datatable__items">${escapeHtml(itemSummary(receipt))}</span></td>
     <td class="coffee-num">${qty}</td>
     <td class="coffee-num">${escapeHtml(formatVnd(receipt.subtotal))}</td>
@@ -177,8 +179,8 @@ function renderRecordCard(receipt) {
       <span class="coffee-record-card__store">${escapeHtml(receipt.store || 'Không rõ quán')}</span>
       <strong class="coffee-record-card__total">${escapeHtml(formatVnd(receipt.total))}</strong>
     </div>
-    <p class="coffee-record-card__meta"><span class="coffee-cat-chip">${meta.emoji} ${escapeHtml(meta.label)}</span></p>
-    <p class="coffee-record-card__meta">📅 ${escapeHtml(formatDate(receipt.date))}${receipt.time ? ` · ${escapeHtml(receipt.time)}` : ''} · ${items.length} món${receipt.paymentMethod ? ` · ${escapeHtml(PAYMENT_LABELS[receipt.paymentMethod])}` : ''}${receipt.orderCode ? ` · ${escapeHtml(receipt.orderCode)}` : ''}</p>
+    <p class="coffee-record-card__meta"><span class="coffee-cat-chip">${expenseCategoryIcon(meta.key)} ${escapeHtml(meta.label)}</span></p>
+    <p class="coffee-record-card__meta">${icon('calendar', { size: 16 })} ${escapeHtml(formatDate(receipt.date))}${receipt.time ? ` · ${escapeHtml(receipt.time)}` : ''} · ${items.length} món${receipt.paymentMethod ? ` · ${escapeHtml(PAYMENT_LABELS[receipt.paymentMethod])}` : ''}${receipt.orderCode ? ` · ${escapeHtml(receipt.orderCode)}` : ''}</p>
     <p class="coffee-record-card__meta">${escapeHtml(itemSummary(receipt))}</p>
     ${discount ? `<p class="coffee-record-card__meta">Thành tiền ${escapeHtml(formatVnd(receipt.subtotal))} · Giảm giá −${escapeHtml(formatVnd(discount))} · Thanh toán ${escapeHtml(formatVnd(receipt.total))}</p>` : ''}
     <div class="coffee-record-card__actions">
@@ -278,7 +280,7 @@ function budgetOverviewMarkup(progress) {
   return `<section class="coffee-card coffee-budget-overview" aria-label="Tiến độ ngân sách">
     <div class="coffee-card-heading">
       <div><p class="coffee-eyebrow">NGÂN SÁCH &amp; HẠN MỨC</p><h2>Theo dõi chi tiêu so với hạn mức</h2></div>
-      <button type="button" class="coffee-secondary-button" data-budget-settings>⚙️ Thiết lập Ngân sách</button>
+      <button type="button" class="coffee-secondary-button" data-budget-settings>${icon('wallet', { size: 16 })} Thiết lập Ngân sách</button>
     </div>
     <div class="coffee-budget-grid">
       ${budgetCardMarkup(progress.month)}
@@ -293,8 +295,8 @@ function budgetModalMarkup(profile = {}) {
   return `<div class="coffee-review-overlay" data-budget-modal>
     <div class="coffee-review-modal" role="dialog" aria-modal="true" aria-labelledby="coffee-budget-title">
       <div class="coffee-review-modal__head">
-        <span id="coffee-budget-title">⚙️ Thiết lập ngân sách</span>
-        <button type="button" class="coffee-ghost-button" data-budget-modal-close>✖ Đóng</button>
+        <span id="coffee-budget-title">${icon('wallet', { size: 17 })} Thiết lập ngân sách</span>
+        <button type="button" class="coffee-ghost-button" data-budget-modal-close>${icon('x', { size: 16 })} Đóng</button>
       </div>
       <div class="coffee-review-modal__body">
         <p class="coffee-muted">Nhập hạn mức chi tiêu cho tháng, quý và năm. Để trống hoặc 0 nghĩa là không đặt hạn mức. Dữ liệu chỉ lưu trên thiết bị này.</p>
@@ -341,13 +343,13 @@ function renderHistory(root) {
     </div>
 
     <div class="coffee-toolbar">
-      <a class="coffee-primary-button" href="#/coffee/add">✍️ Nhập chi phí</a>
-      <a class="coffee-secondary-button" href="#/coffee/stats">📊 Thống kê chi phí</a>
-      <button type="button" class="coffee-secondary-button" data-budget-settings>⚙️ Thiết lập Ngân sách</button>
-      <button type="button" class="coffee-secondary-button" data-export>⬇ Export JSON</button>
-      <button type="button" class="coffee-secondary-button" data-import-trigger>⬆ Import</button>
-      <button type="button" class="coffee-secondary-button" data-export-csv>⬇ CSV</button>
-      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>🗑️ Xóa toàn bộ dữ liệu / Reset</button>
+      <a class="coffee-primary-button" href="#/coffee/add">${icon('plus', { size: 16 })} Nhập chi phí</a>
+      <a class="coffee-secondary-button" href="#/coffee/stats">${icon('barChart', { size: 16 })} Thống kê chi phí</a>
+      <button type="button" class="coffee-secondary-button" data-budget-settings>${icon('wallet', { size: 16 })} Thiết lập Ngân sách</button>
+      <button type="button" class="coffee-secondary-button" data-export>${icon('arrowDown', { size: 16 })} Export JSON</button>
+      <button type="button" class="coffee-secondary-button" data-import-trigger>${icon('upload', { size: 16 })} Import</button>
+      <button type="button" class="coffee-secondary-button" data-export-csv>${icon('arrowDown', { size: 16 })} CSV</button>
+      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>${icon('trash', { size: 16 })} Xóa toàn bộ dữ liệu / Reset</button>
       <input type="file" accept="application/json,.json" data-import-input hidden aria-label="Chọn file JSON để nhập">
     </div>
 
@@ -362,7 +364,7 @@ function renderHistory(root) {
 
     <div class="coffee-card coffee-search">
       <label class="coffee-field coffee-field--full">
-        <span class="coffee-search__label">🔍 Tìm kiếm</span>
+        <span class="coffee-search__label">${icon('search', { size: 16 })} Tìm kiếm</span>
         <input type="search" data-search-input value="${escapeHtml(searchState.query)}" placeholder="Tên quán / mã hoá đơn / tên món / ghi chú...">
       </label>
       <div class="coffee-search__filters">
@@ -381,7 +383,7 @@ function renderHistory(root) {
         <label class="coffee-field">Danh mục chi phí
           <select data-filter-category>
             <option value="">Tất cả</option>
-            ${categories.map((category) => `<option value="${category.key}"${searchState.category === category.key ? ' selected' : ''}>${category.emoji} ${escapeHtml(category.label)}</option>`).join('')}
+            ${categories.map((category) => `<option value="${category.key}"${searchState.category === category.key ? ' selected' : ''}>${escapeHtml(category.label)}</option>`).join('')}
           </select>
         </label>
       </div>
@@ -486,8 +488,8 @@ function renderStats(root) {
     ${renderDashboard(state.receipts)}
     ${renderAiInsights(state.receipts)}`}
 
-    <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">← Danh sách</a>
-      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>🗑️ Xóa toàn bộ dữ liệu / Reset</button></div>
+    <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">${icon('arrowLeft', { size: 16 })} Danh sách</a>
+      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>${icon('trash', { size: 16 })} Xóa toàn bộ dữ liệu / Reset</button></div>
   </section>${toastMarkup()}`;
 }
 
@@ -577,7 +579,7 @@ function refreshManualSeason(row) {
   const cell = row.querySelector('[data-season-cell]');
   if (!cell) return;
   const season = seasonOf(row.querySelector('[name="date"]')?.value || '');
-  cell.textContent = season ? `${season.emoji} ${season.label}` : '—';
+  cell.innerHTML = season ? `${seasonIcon(season.key)} ${escapeHtml(season.label)}` : '—';
   cell.classList.toggle('is-empty', !season);
 }
 
@@ -591,7 +593,7 @@ function refreshManualExpenseChip(row) {
     row.querySelector('[name="brand"]')?.value || '',
     row.querySelector('[name="items"]')?.value || '',
   ));
-  chip.textContent = `${meta.emoji} ${meta.label}`;
+  chip.innerHTML = `${expenseCategoryIcon(meta.key)} ${escapeHtml(meta.label)}`;
   chip.dataset.auto = explicit ? 'false' : 'true';
   chip.title = explicit ? 'Danh mục bạn chọn' : 'Danh mục AI tự phân loại';
 }
@@ -655,7 +657,7 @@ function expenseContext() {
 function renderExpenseReview(review) {
   const cards = review.advices.map((advice) => `<article class="coffee-review-cat is-${advice.tone}">
       <div class="coffee-review-cat__head">
-        <span class="coffee-review-cat__emoji" aria-hidden="true">${advice.emoji}</span>
+        <span class="coffee-review-cat__emoji" aria-hidden="true">${expenseCategoryIcon(advice.category, 22)}</span>
         <div>
           <h3 class="coffee-review-cat__title">${escapeHtml(advice.headline)}</h3>
           <p class="coffee-review-cat__sub">${advice.count} giao dịch · ${escapeHtml(formatVnd(advice.total))}${advice.stores.length ? ` · ${escapeHtml(advice.stores.slice(0, 3).join(', '))}` : ''}</p>
@@ -663,15 +665,15 @@ function renderExpenseReview(review) {
       </div>
       <p class="coffee-review-cat__message">${escapeHtml(advice.message)}</p>
       ${advice.notes.length ? `<ul class="coffee-review-notes">${advice.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
-      <p class="coffee-review-cat__tips-label">💡 Gợi ý cho bạn</p>
+      <p class="coffee-review-cat__tips-label">${icon('sparkles', { size: 16 })} Gợi ý cho bạn</p>
       <ul class="coffee-review-tips">${advice.tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}</ul>
     </article>`).join('');
 
   return `<div class="coffee-review-overlay" data-expense-review-overlay>
     <div class="coffee-review-modal" role="dialog" aria-modal="true" aria-labelledby="coffee-review-title">
       <div class="coffee-review-modal__head">
-        <span id="coffee-review-title">🤖 AI phân tích chi tiêu</span>
-        <button type="button" class="coffee-ghost-button" data-expense-review-close>✖ Đóng</button>
+        <span id="coffee-review-title">${icon('sparkles', { size: 17 })} Phân tích chi tiêu</span>
+        <button type="button" class="coffee-ghost-button" data-expense-review-close>${icon('x', { size: 16 })} Đóng</button>
       </div>
       <div class="coffee-review-modal__body">
         <div class="coffee-review-hero">
@@ -681,8 +683,8 @@ function renderExpenseReview(review) {
         <p class="coffee-muted">AI đã đọc từng khoản chi và phản hồi theo đúng loại chi phí bạn vừa nhập.</p>
         <div class="coffee-review-cats">${cards || '<p class="coffee-empty">Không có giao dịch nào để phân tích.</p>'}</div>
         <div class="coffee-review-actions">
-          <a class="coffee-primary-button" href="#/coffee/stats" data-expense-review-stats>📊 Xem thống kê</a>
-          <a class="coffee-secondary-button" href="#/coffee" data-expense-review-list>🧾 Danh sách chi phí</a>
+          <a class="coffee-primary-button" href="#/coffee/stats" data-expense-review-stats>${icon('barChart', { size: 16 })} Xem thống kê</a>
+          <a class="coffee-secondary-button" href="#/coffee" data-expense-review-list>${icon('receipt', { size: 16 })} Danh sách chi phí</a>
           <button type="button" class="coffee-ghost-button" data-expense-review-close>Đóng</button>
         </div>
       </div>

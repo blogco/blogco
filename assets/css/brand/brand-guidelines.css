@@ -19,18 +19,22 @@
   /* Corporate palette: high-contrast ink, neutral surfaces, deep mint accent. */
   --blogco-primary: #111827;
   --blogco-primary-hover: #1F2937;
-  --blogco-accent-sky: #4DA0AA;
-  --blogco-accent-bg: #F3F4F6;
-  --blogco-accent-soft: #E7F3F4;
+  --blogco-accent-sky: #10B981;
+  --blogco-accent-bg: #F8F9FA;
+  --blogco-accent-soft: #ECFDF5;
   /* Nền trang chính */
-  --blogco-bg: #FFFFFF;
+  --blogco-bg: #FAFAFA;
   /* Nền card, nền bảng biểu dữ liệu */
-  --blogco-card-bg: #F3F4F6;
+  --blogco-card-bg: #FFFFFF;
   --blogco-text-main: #111827;
   --blogco-text-body: #374151;
   --blogco-text-muted: #4B5563;
-  --blogco-border: #D1D5DB;
-  --blogco-shadow: 0 1px 3px rgb(17 24 39 / 6%);
+  --blogco-border: #E5E7EB;
+  --blogco-shadow: 0 8px 30px rgb(17 24 39 / 6%);
+  --blogco-shadow-soft: 0 8px 30px rgb(17 24 39 / 6%);
+  --blogco-shadow-hover: 0 18px 42px rgb(17 24 39 / 12%);
+  --blogco-radius-card: 16px;
+  --blogco-radius-control: 12px;
   --blogco-dark-neutral: #111827;
   --blogco-font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --blogco-font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
@@ -48,9 +52,9 @@
   --samsung-border: var(--blogco-border);
   --samsung-font-display: var(--blogco-font-display);
   --samsung-font-body: var(--blogco-font-family);
-  --samsung-shadow: 0 1px 3px rgb(0 0 0 / 4%);
-  --samsung-radius-card: 4px;
-  --samsung-radius-btn: 4px;
+  --samsung-shadow: var(--blogco-shadow-soft);
+  --samsung-radius-card: var(--blogco-radius-card);
+  --samsung-radius-btn: var(--blogco-radius-control);
 }
 
 /* Route: ẩn mọi thứ khác trên trang chủ khi mở #/brand-guidelines --------- */
@@ -510,4 +514,223 @@ body.brand-route .brand-table thead th { background: var(--blogco-accent-bg); }
 
 @media (prefers-reduced-motion: reduce) {
   .brand-card, .brand-btn { transition: none; }
+}
+
+/* 2026 interaction system: depth, motion and vector-first controls. */
+:root {
+  --blogco-motion: 300ms cubic-bezier(.2, .75, .25, 1);
+}
+
+body,
+body.health-route,
+body.brand-route,
+body.water-route,
+body.coffee-route,
+body.thuoc-route {
+  min-height: 100vh;
+  color: var(--blogco-text-main);
+  background: var(--blogco-bg);
+  font-family: var(--blogco-font-family);
+  line-height: 1.65;
+}
+
+body h1,
+body h2,
+body h3,
+body h4 { color: var(--blogco-text-main); font-weight: 800; letter-spacing: -.025em; }
+body p,
+body li,
+body label { color: var(--blogco-text-body); font-weight: 500; }
+
+.ui-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: -.18em;
+}
+
+body .blogco-header,
+body.article-body .blogco-header {
+  top: 12px;
+  left: 50%;
+  right: auto;
+  width: min(calc(100% - 32px), 1240px);
+  min-height: 64px;
+  transform: translateX(-50%);
+  border: 1px solid rgb(17 24 39 / 9%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 84%);
+  box-shadow: var(--blogco-shadow-soft);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  transition: box-shadow var(--blogco-motion), border-color var(--blogco-motion), background var(--blogco-motion);
+}
+
+body .blogco-header:hover { border-color: rgb(16 185 129 / 24%); box-shadow: var(--blogco-shadow-hover); }
+body .blogco-header .header-nav { min-height: 64px; padding: 8px 20px; }
+.blogco-header .navbar__logo,
+.blogco-header .navbar__link { gap: 7px; transition: color var(--blogco-motion), background var(--blogco-motion), transform var(--blogco-motion); }
+.blogco-header .navbar__link { border-radius: 999px; }
+.blogco-header .navbar__link:hover,
+.blogco-header .navbar__link:focus-visible { background: var(--blogco-accent-soft); transform: translateY(-1px); }
+.blogco-header .navbar__mega {
+  border: 1px solid var(--blogco-border);
+  border-radius: 20px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: var(--blogco-shadow-hover);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+.blogco-header .navbar__mega-item { border-radius: 12px; transition: transform var(--blogco-motion), background var(--blogco-motion), box-shadow var(--blogco-motion); }
+.blogco-header .navbar__mega-item:hover,
+.blogco-header .navbar__mega-item:focus-visible { transform: translateY(-2px); box-shadow: 0 8px 18px rgb(17 24 39 / 7%); }
+.blogco-header .navbar__mega-icon { color: var(--blogco-accent-sky); font-size: 1rem; }
+
+.hero.first-entry.home-info,
+.brand-hero,
+.health-page-heading,
+.health-screen .health-card,
+.health-screen .health-visit-card,
+.health-screen .health-summary-card,
+.health-screen .health-fieldset,
+.health-screen .health-invoice,
+.health-screen .medical-info-card,
+.health-screen .medical-result-card,
+.health-screen .medical-recommendation,
+.health-screen .medical-sync-prompt__dialog,
+.coffee-card,
+.thuoc-card,
+.water-card,
+.coffee-summary-card,
+.thuoc-summary-card,
+.water-summary-grid > div,
+.post-card,
+.posts-index__card,
+.search-area,
+.search-area__results a {
+  border: 1px solid var(--blogco-border);
+  border-radius: var(--blogco-radius-card);
+  background: var(--blogco-card-bg);
+  box-shadow: var(--blogco-shadow-soft);
+  transition: transform var(--blogco-motion), box-shadow var(--blogco-motion), border-color var(--blogco-motion);
+}
+
+.hero.first-entry.home-info,
+.brand-hero { padding: clamp(2rem, 5vw, 5rem); }
+.health-screen .health-card,
+.health-screen .health-page-heading,
+.health-screen .health-fieldset,
+.health-screen .medical-info-card { padding: clamp(1.15rem, 2vw, 1.75rem); }
+
+body.water-route,
+body.coffee-route,
+body.thuoc-route { background: var(--blogco-bg); }
+
+.coffee-summary-card,
+.thuoc-summary-card,
+.water-summary-grid > div { padding: 1rem; }
+
+.health-screen .health-card:hover,
+.health-screen .health-visit-card:hover,
+.health-screen .medical-result-card:hover,
+.health-screen .medical-recommendation:hover,
+.coffee-card:hover,
+.thuoc-card:hover,
+.water-card:hover,
+.coffee-summary-card:hover,
+.thuoc-summary-card:hover,
+.water-summary-grid > div:hover,
+.post-card:hover,
+.brand-card:hover { transform: translateY(-4px); border-color: rgb(16 185 129 / 42%); box-shadow: var(--blogco-shadow-hover); }
+
+button,
+input,
+select,
+textarea,
+.health-primary-button,
+.health-secondary-button,
+.health-ghost-button,
+.brand-btn,
+.coffee-primary-button,
+.coffee-secondary-button,
+.thuoc-primary-button,
+.water-primary-button {
+  transition: color var(--blogco-motion), background var(--blogco-motion), border-color var(--blogco-motion), box-shadow var(--blogco-motion), transform var(--blogco-motion);
+}
+
+input,
+select,
+textarea { border-color: var(--blogco-border); background: #fff; color: var(--blogco-text-main); }
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible { outline: none; border-color: var(--blogco-accent-sky); box-shadow: 0 0 0 4px rgb(16 185 129 / 16%); }
+
+.health-screen .health-primary-button,
+.brand-btn--primary,
+.coffee-primary-button,
+.thuoc-primary-button,
+.water-primary-button {
+  border-color: var(--blogco-accent-sky);
+  border-radius: var(--blogco-radius-control);
+  color: #fff !important;
+  background: var(--blogco-accent-sky);
+  font-weight: 700;
+}
+.health-screen .health-primary-button:hover,
+.brand-btn--primary:hover,
+.coffee-primary-button:hover,
+.thuoc-primary-button:hover,
+.water-primary-button:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 10px 24px rgb(16 185 129 / 23%); }
+.health-screen .health-secondary-button,
+.health-screen .health-ghost-button,
+.brand-btn--secondary,
+.brand-btn--outline { border-radius: var(--blogco-radius-control); font-weight: 700; }
+
+.medical-info-card__summary,
+.medical-info-card__summary > span,
+.medical-recommendations__head h2,
+.medical-results__head h2,
+.medical-original-badge,
+.medical-management-unique,
+.medical-management-duplicate,
+.health-actions > button,
+.health-actions > a { display: inline-flex; align-items: center; gap: .45rem; }
+.medical-info-card__summary-icon { color: var(--blogco-accent-sky); }
+.medical-info-card__summary-icon .ui-icon { transition: transform var(--blogco-motion); }
+.medical-info-card[open] .medical-info-card__summary-icon .ui-icon { transform: rotate(45deg); }
+
+.medical-info-tag,
+.medical-chip,
+.medical-original-badge,
+.medical-sync-badge,
+.health-badge { border-color: rgb(16 185 129 / 42%); background: var(--blogco-accent-soft); color: #047857; }
+.medical-info-tag,
+.medical-chip { border-radius: 999px; font-weight: 700; }
+.medical-original-badge { border-radius: 999px; }
+
+.home-posts__grid { gap: 1.25rem; }
+.home-posts__grid > .post-card:first-child { grid-column: span 2; grid-row: span 2; }
+.post-card__media { min-height: 150px; }
+.post-card__media > .ui-icon { color: var(--blogco-accent-sky); }
+
+@media (max-width: 1024px) {
+  body .blogco-header { width: calc(100% - 20px); }
+  body .blogco-header .header-nav { padding-inline: 14px; }
+  body .blogco-header .navbar__menu { border: 1px solid var(--blogco-border); border-radius: 20px; background: rgb(255 255 255 / 96%); box-shadow: var(--blogco-shadow-hover); }
+  .home-posts__grid > .post-card:first-child { grid-column: auto; grid-row: auto; }
+}
+
+@media (max-width: 767px) {
+  body .blogco-header { top: 8px; }
+  .hero.first-entry.home-info,
+  .brand-hero { padding: 2rem 1.25rem; }
+  .home-posts__grid { grid-template-columns: 1fr; }
+  .health-screen .health-card,
+  .health-screen .health-page-heading,
+  .health-screen .health-fieldset,
+  .health-screen .medical-info-card { padding: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
