@@ -8,6 +8,7 @@ import { rawFileUrl } from '../blog/lib.js';
 
 const STORAGE_KEY = 'blogco.health.medical.v1';
 const BACKUP_KEY = 'blogco.health.medical.backup.v1';
+const SEED_KEY = 'blogco.health.medical.seeded.v1';
 export const MEDICAL_REPO_PATH = 'static/data/medical-knowledge.json';
 
 const SAMPLE_ENTRY = {
@@ -21,6 +22,11 @@ const SAMPLE_ENTRY = {
 };
 
 let memoryCache;
+let storageError = '';
+
+function medicalStorage() {
+  try { return globalThis.localStorage; } catch { return undefined; }
+}
 
 function text(value, max = 500) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -76,40 +82,62 @@ export function normalizeMedicalEntry(input = {}, existing = {}) {
 
 function readState() {
   if (memoryCache) return clone(memoryCache);
+  const storage = medicalStorage();
+  let raw = null;
   let parsed = null;
-  try { parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { parsed = null; }
+  let hasStoredValue = false;
+  try {
+    raw = storage?.getItem(STORAGE_KEY) || null;
+    hasStoredValue = raw !== null;
+    if (hasStoredValue) parsed = JSON.parse(raw);
+  } catch {
+    storageError = 'Không đọc được dữ liệu tri thức y khoa. Dữ liệu lỗi đã được tạm reset về rỗng.';
+  }
   const hasStoredState = parsed && parsed.version === 1 && Array.isArray(parsed.items);
+  if (hasStoredState) storageError = '';
   memoryCache = hasStoredState
     ? { ...blankState(), ...parsed, items: parsed.items.map((item) => normalizeMedicalEntry(item, item)) }
     : blankState();
-  if (hasStoredState && typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryCache));
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(memoryCache));
-    } catch { /* keep the in-memory migration when storage is unavailable */ }
+  if (hasStoredValue && !hasStoredState && !storageError) {
+    storageError = 'Dữ liệu tri thức y khoa không đúng định dạng. Dữ liệu đã được tạm reset về rỗng.';
   }
-  if (!parsed && typeof localStorage !== 'undefined') {
-    memoryCache.items = [normalizeMedicalEntry(SAMPLE_ENTRY, SAMPLE_ENTRY)];
-    memoryCache.nextId = 2;
-    writeState(memoryCache);
+  if (hasStoredState && storage) {
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify(memoryCache));
+      storage.setItem(BACKUP_KEY, JSON.stringify(memoryCache));
+      storage.setItem(SEED_KEY, '1');
+    } catch { /* keep the in-memory migration when storage is unavailable */ }
   }
   return clone(memoryCache);
 }
 
 function writeState(state) {
   const serialized = JSON.stringify(state);
+  const storage = medicalStorage();
   try {
-    localStorage.setItem(BACKUP_KEY, serialized);
-    localStorage.setItem(STORAGE_KEY, serialized);
+    if (!storage) throw new Error('localStorage unavailable');
+    storage.setItem(BACKUP_KEY, serialized);
+    storage.setItem(STORAGE_KEY, serialized);
+    storage.setItem(SEED_KEY, '1');
   } catch {
     throw new Error('Không thể lưu tri thức y khoa trên thiết bị này.');
   }
+  storageError = '';
   memoryCache = clone(state);
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('health:data-changed'));
 }
 
 export function getMedicalEntries() {
   return readState().items;
+}
+
+export function reloadMedicalEntries() {
+  memoryCache = undefined;
+  return getMedicalEntries();
+}
+
+export function getMedicalStorageError() {
+  return storageError;
 }
 
 export function saveMedicalKnowledge(input = {}) {
@@ -205,7 +233,7 @@ export function detectAllDuplicates(records = getMedicalEntries()) {
 }
 
 function recommendationStorage() {
-  try { return globalThis.localStorage; } catch { return undefined; }
+  return medicalStorage();
 }
 
 const RECOMMENDATION_SKIP_KEY = 'blogco.health.medical.recommendation-skips.v1';
@@ -303,7 +331,10 @@ export function markMedicalEntriesSynced(entries = [], commitId = '') {
 
 export function seedMedicalKnowledge() {
   const state = readState();
-  if (!state.items.length) {
+  const storage = medicalStorage();
+  let wasSeeded = false;
+  try { wasSeeded = storage?.getItem(SEED_KEY) === '1'; } catch { /* ignore unavailable storage */ }
+  if (!state.items.length && !storageError && !wasSeeded) {
     state.items = [normalizeMedicalEntry(SAMPLE_ENTRY, SAMPLE_ENTRY)];
     state.nextId = 2;
     writeState(state);

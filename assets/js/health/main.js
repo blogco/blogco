@@ -21,12 +21,13 @@ import { mountVaccineView } from './vaccine.js';
 import { renderMedicalInfographic } from './MedicalInfographic.js';
 import { renderDataManagement } from './DataManagement.js';
 import {
-  deleteMultiple, deleteRecord, detectAllDuplicates, detectDuplicate, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
+  deleteRecord, detectAllDuplicates, detectDuplicate, extractMedicalKnowledge, getMedicalEntries, renderMedicalEntry,
   loadRemoteMedicalKnowledge, mergeMedicalEntries, saveMedicalKnowledge,
   searchMedicalKnowledge, seedMedicalKnowledge, syncMedicalKnowledge, generateRecommendations,
   getSkippedRecommendationKeys, skipRecommendation,
 } from './medical.js';
 import { getSessionGitHubSettings, saveSessionGitHubSettings } from './github-sync.js';
+import { useMedicalRecords } from './useMedicalRecords.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -38,6 +39,7 @@ let medicalRemotePromise = null;
 let medicalManagementQuery = '';
 let medicalManagementSelected = new Set();
 const medicalDrafts = new WeakMap();
+const medicalRecordStores = new WeakMap();
 
 // ---------------------------------------------------------------------------
 // Small formatting helpers
@@ -358,9 +360,19 @@ function renderMedicalSync(root) {
   root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
 
+function getMedicalRecordsStore(root) {
+  if (!medicalRecordStores.has(root)) {
+    medicalRecordStores.set(root, useMedicalRecords(() => {
+      if (routeName(root) === '/health/medical/manage') renderMedicalManagement(root);
+    }));
+  }
+  return medicalRecordStores.get(root);
+}
+
 function renderMedicalManagement(root) {
-  seedMedicalKnowledge();
-  const records = getMedicalEntries();
+  const recordsStore = getMedicalRecordsStore(root);
+  if (!recordsStore.getRecords().length && !recordsStore.getError()) seedMedicalKnowledge();
+  const records = recordsStore.reload();
   const duplicates = detectAllDuplicates(records);
   const allRecommendations = generateRecommendations(duplicates);
   root.innerHTML = `${renderDataManagement({
@@ -372,6 +384,7 @@ function renderMedicalManagement(root) {
     selectedIds: medicalManagementSelected,
     tabs: medicalTabs('manage'),
   })}${toastMarkup()}`;
+  if (recordsStore.getError()) showToast(root, recordsStore.getError(), true);
   root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
 
@@ -1070,7 +1083,7 @@ export function mountHealthApp(root) {
     if (deleteSelected) {
       const inputIds = [...medicalManagementSelected];
       if (!inputIds.length || !confirmOriginalSelection(inputIds) || !window.confirm(`Xoá ${inputIds.length} bản ghi đã chọn khỏi thiết bị này?`)) return;
-      const removed = deleteMultiple(inputIds);
+      const removed = getMedicalRecordsStore(root).deleteMultiple(inputIds);
       medicalManagementSelected = new Set();
       if (Array.isArray(medicalRemoteEntries)) {
         medicalRemoteEntries = medicalRemoteEntries.filter((entry) => !inputIds.includes(entry.inputId));
@@ -1084,7 +1097,10 @@ export function mountHealthApp(root) {
     if (medicalDelete) {
       const inputId = medicalDelete.dataset.medicalDelete;
       if (!inputId || !confirmOriginalSelection([inputId]) || !window.confirm(`Xoá bản ghi ${inputId} khỏi thiết bị này?`)) return;
-      if (!deleteRecord(inputId)) return;
+      const removed = routeName(root) === '/health/medical/manage'
+        ? getMedicalRecordsStore(root).deleteRecord(inputId)
+        : deleteRecord(inputId);
+      if (!removed) return;
       medicalDrafts.delete(root);
       if (Array.isArray(medicalRemoteEntries)) {
         medicalRemoteEntries = medicalRemoteEntries.filter((entry) => entry.inputId !== inputId);
