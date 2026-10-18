@@ -724,14 +724,22 @@ body .main .post-header .post-description {
 .post-single .post-content,
 .blogco-article .article-content {
   box-sizing: border-box;
-  width: min(100%, 720px);
-  max-width: 720px;
   margin: 0 auto;
   padding: 0 24px;
   color: var(--blogco-text-main);
   font-size: 18px !important;
   font-weight: 500 !important;
   line-height: 1.75 !important;
+}
+
+.post-single .post-content {
+  width: min(100%, 1200px);
+  max-width: 1200px;
+}
+
+.blogco-article .article-content {
+  width: min(100%, 720px);
+  max-width: 720px;
 }
 
 .post-single .post-content p,
@@ -811,6 +819,7 @@ body .main .post-header .post-description {
   .search-area__input { min-height: 50px; }
   .water-page-heading,
   .post-header { padding: 24px 20px; }
+  .post-single .post-content { width: 100%; max-width: 100%; padding-inline: 16px; }
 
   .water-page-heading .water-eyebrow,
   .post-header__label { margin-bottom: 12px !important; }
