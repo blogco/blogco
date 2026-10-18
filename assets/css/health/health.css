@@ -315,6 +315,31 @@ body.health-route .category-bar { display: none; }
 .health-toast.is-visible { opacity: 1; transform: translateY(0); }
 .health-toast.is-error { background: var(--health-danger); }
 
+.medical-sync-prompt {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .48);
+}
+.medical-sync-prompt[hidden] { display: none; }
+.medical-sync-prompt__dialog {
+  display: grid;
+  gap: .8rem;
+  width: min(32rem, 100%);
+  padding: 1.25rem;
+  border: 1px solid var(--health-border);
+  border-radius: 16px;
+  background: var(--health-surface, #fff);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .25);
+}
+.medical-sync-prompt__dialog h2,
+.medical-sync-prompt__dialog p { margin: 0; }
+.medical-sync-prompt__dialog h2 { color: var(--health-ink); }
+.medical-sync-prompt__dialog > p:not(.health-eyebrow) { color: var(--health-muted); line-height: 1.55; }
+
 /* Responsive ---------------------------------------------------------------- */
 @media (max-width: 860px) {
   .health-form-grid--medicine { grid-template-columns: repeat(2, minmax(0, 1fr)); }

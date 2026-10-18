@@ -275,6 +275,67 @@ function setMedicalProgress(root, visible) {
   else progress.complete();
 }
 
+function medicalDeleteSyncPromptMarkup() {
+  return `<div class="medical-sync-prompt" data-medical-delete-sync-prompt hidden>
+    <div class="medical-sync-prompt__dialog" role="dialog" aria-modal="true" aria-labelledby="medical-delete-sync-title">
+      <p class="health-eyebrow">ĐÃ XOÁ THÀNH CÔNG</p>
+      <h2 id="medical-delete-sync-title">Đã xoá dữ liệu</h2>
+      <p data-medical-delete-sync-message>Bạn có muốn đồng bộ lên GitHub ngay bây giờ không?</p>
+      <div class="health-actions">
+        <button type="button" class="health-primary-button" data-medical-delete-sync-now>⇅ Đồng bộ ngay</button>
+        <button type="button" class="health-ghost-button" data-medical-delete-sync-later>Để sau</button>
+      </div>
+      <div class="medical-progress is-indeterminate" data-medical-progress hidden aria-hidden="true" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+    </div>
+  </div>`;
+}
+
+function openMedicalDeleteSyncPrompt(root, count) {
+  const prompt = root.querySelector('[data-medical-delete-sync-prompt]');
+  if (!prompt) return;
+  const message = prompt.querySelector('[data-medical-delete-sync-message]');
+  if (message) message.textContent = `Đã xoá ${count} bản ghi thành công. Bạn có muốn đồng bộ lên GitHub ngay bây giờ không?`;
+  prompt.hidden = false;
+  prompt.querySelector('[data-medical-delete-sync-now]')?.focus();
+}
+
+function closeMedicalDeleteSyncPrompt(root) {
+  const prompt = root.querySelector('[data-medical-delete-sync-prompt]');
+  if (prompt) prompt.hidden = true;
+}
+
+async function syncAfterMedicalDelete(root) {
+  const prompt = root.querySelector('[data-medical-delete-sync-prompt]');
+  const syncButton = prompt?.querySelector('[data-medical-delete-sync-now]');
+  const laterButton = prompt?.querySelector('[data-medical-delete-sync-later]');
+  if (!prompt || !syncButton || syncButton.disabled) return;
+  const settings = getSessionGitHubSettings();
+  if (!settings.token) {
+    closeMedicalDeleteSyncPrompt(root);
+    pendingToast = 'Vui lòng nhập GitHub Token ở tab Đồng bộ trước.';
+    location.hash = '#/health/medical/sync';
+    return;
+  }
+
+  syncButton.disabled = true;
+  if (laterButton) laterButton.disabled = true;
+  const progress = medicalProgressController(root);
+  progress.start();
+  progress.step(15);
+  try {
+    const result = await syncMedicalKnowledge(settings);
+    progress.step(95);
+    progress.complete();
+    closeMedicalDeleteSyncPrompt(root);
+    if (routeName(root) === '/health/medical/manage') renderMedicalManagement(root);
+    showToast(root, `Đồng bộ thành công! Commit ID: #${result.commitId || 'unknown'}`);
+  } catch {
+    progress.complete();
+    closeMedicalDeleteSyncPrompt(root);
+    showToast(root, 'Đồng bộ thất bại. Vui lòng thử lại.', true);
+  }
+}
+
 function renderMedicalPreview(root, entry, collapsed = false, saved = false, duplicate = null) {
   const preview = root.querySelector('[data-medical-preview]');
   if (!preview) return;
@@ -383,7 +444,7 @@ function renderMedicalManagement(root) {
     query: medicalManagementQuery,
     selectedIds: medicalManagementSelected,
     tabs: medicalTabs('manage'),
-  })}${toastMarkup()}`;
+  })}${medicalDeleteSyncPromptMarkup()}${toastMarkup()}`;
   if (recordsStore.getError()) showToast(root, recordsStore.getError(), true);
   root.querySelector('h1')?.focus?.({ preventScroll: true });
 }
@@ -1049,6 +1110,15 @@ export function mountHealthApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    if (target.closest('[data-medical-delete-sync-now]')) {
+      await syncAfterMedicalDelete(root);
+      return;
+    }
+    if (target.closest('[data-medical-delete-sync-later]')) {
+      closeMedicalDeleteSyncPrompt(root);
+      return;
+    }
+
     const applyAllRecommendations = target.closest('[data-medical-recommend-apply-all]');
     if (applyAllRecommendations) {
       const records = getMedicalEntries();
@@ -1090,6 +1160,7 @@ export function mountHealthApp(root) {
       }
       renderMedicalManagement(root);
       showToast(root, `Đã xoá ${removed} bản ghi.`);
+      if (removed > 0) openMedicalDeleteSyncPrompt(root, removed);
       return;
     }
 
@@ -1105,8 +1176,9 @@ export function mountHealthApp(root) {
       if (Array.isArray(medicalRemoteEntries)) {
         medicalRemoteEntries = medicalRemoteEntries.filter((entry) => entry.inputId !== inputId);
       }
+      const isMedicalManage = routeName(root) === '/health/medical/manage';
       if (routeName(root) === '/health/medical/search') renderMedicalSearch(root);
-      else if (routeName(root) === '/health/medical/manage') {
+      else if (isMedicalManage) {
         medicalManagementSelected.delete(inputId);
         renderMedicalManagement(root);
       }
@@ -1115,6 +1187,7 @@ export function mountHealthApp(root) {
         if (preview) preview.hidden = true;
       }
       showToast(root, `Đã xoá ${inputId}.`);
+      if (isMedicalManage) openMedicalDeleteSyncPrompt(root, 1);
       return;
     }
 
