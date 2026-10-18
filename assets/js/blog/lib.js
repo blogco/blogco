@@ -91,10 +91,10 @@ function parseInlineList(value = '') {
 }
 
 // Parse a post written by buildFrontMatter (or hand-written in the same shape):
-// returns { title, date, tags, author, cover, body }. Best-effort on unknown keys.
+// returns { title, date, tags, author, cover, url, body }. Best-effort on unknown keys.
 export function parsePostMarkdown(markdown = '') {
   const text = String(markdown).replace(/\r\n?/g, '\n');
-  const out = { title: '', date: '', tags: [], author: '', cover: '', body: '' };
+  const out = { title: '', date: '', tags: [], author: '', cover: '', url: '', body: '' };
   const match = /^---\n([\s\S]*?)\n---\n?/.exec(text);
   if (!match) { out.body = text.replace(/^\n+/, ''); return out; }
   out.body = text.slice(match[0].length).replace(/^\n+/, '');
@@ -122,6 +122,7 @@ export function parsePostMarkdown(markdown = '') {
     if (key === 'title') out.title = unquoteYaml(value);
     else if (key === 'date') out.date = value;
     else if (key === 'author') out.author = unquoteYaml(value);
+    else if (key === 'url') out.url = unquoteYaml(value);
   }
   return out;
 }

@@ -1158,6 +1158,23 @@ function managerShellHtml(settings) {
   </section>`;
 }
 
+function blogSiteUrl() {
+  return document.querySelector('meta[name="blogco-site-url"]')?.content?.trim()
+    || `${location.origin}${location.pathname}`;
+}
+
+function postPublicUrl(post) {
+  const explicitUrl = String(post.url || '').trim();
+  const slug = slugFromPostPath(post.path) || slugify(post.title || post.name);
+  const href = explicitUrl || new URL(`posts/${encodeURIComponent(slug)}/`, blogSiteUrl()).toString();
+  let label = href;
+  try {
+    const parsed = new URL(href, location.href);
+    label = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch { /* keep the source URL as the label when it is not a valid URL */ }
+  return { href, label };
+}
+
 function postCardHtml(post) {
   const tags = (post.tags || []).map((tag) => `#${tag}`).join(' ');
   const date = post.date ? new Date(post.date).toLocaleDateString('vi-VN') : '';
@@ -1166,10 +1183,12 @@ function postCardHtml(post) {
     ? `<img src="${escapeHtml(post.cover)}" alt="" loading="lazy">`
     : '<span aria-hidden="true">📝</span>';
   const href = `#/blog/edit/${post.path.split('/').map(encodeURIComponent).join('/')}`;
+  const publicUrl = postPublicUrl(post);
   return `<li class="blog-manage__item" data-blog-post data-blog-path="${escapeHtml(post.path)}" data-blog-sha="${escapeHtml(post.sha || '')}">
     <span class="blog-manage__media">${cover}</span>
     <div class="blog-manage__body">
       <h2 class="blog-manage__title">${escapeHtml(post.title || post.name || 'Không có tiêu đề')}</h2>
+      <p class="blog-manage__url-row"><a class="blog-manage__url" href="${escapeHtml(publicUrl.href)}" target="_blank" rel="noopener" title="Mở bài viết trong tab mới"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 5h5v5"/><path d="m19 5-8 8"/><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg><span>${escapeHtml(publicUrl.label)}</span></a></p>
       ${meta ? `<p class="blog-manage__meta">${escapeHtml(meta)}</p>` : ''}
     </div>
     <div class="blog-manage__actions">
