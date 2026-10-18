@@ -4,7 +4,6 @@
 import {
   deleteMultiple as deleteMedicalMultiple,
   deleteRecord as deleteMedicalRecord,
-  getMedicalEntries,
   getMedicalStorageError,
   MEDICAL_STORAGE_KEY,
   reloadMedicalEntries,
@@ -29,6 +28,13 @@ export function useMedicalRecords(onChange = () => {}) {
     onChange(records);
   };
 
+  const commitDeletion = (removed) => {
+    records = reloadMedicalEntries();
+    lastError = getMedicalStorageError();
+    onChange(records);
+    return { removed, records: [...records] };
+  };
+
   reload();
   if (typeof window !== 'undefined') {
     window.addEventListener('health:data-changed', handleStorageChange);
@@ -47,9 +53,7 @@ export function useMedicalRecords(onChange = () => {}) {
       writing = true;
       try {
         const removed = deleteMedicalMultiple(ids);
-        records = getMedicalEntries();
-        lastError = getMedicalStorageError();
-        return removed;
+        return commitDeletion(removed);
       } finally {
         writing = false;
       }
@@ -58,9 +62,7 @@ export function useMedicalRecords(onChange = () => {}) {
       writing = true;
       try {
         const removed = deleteMedicalRecord(inputId);
-        records = getMedicalEntries();
-        lastError = getMedicalStorageError();
-        return removed;
+        return commitDeletion(removed);
       } finally {
         writing = false;
       }

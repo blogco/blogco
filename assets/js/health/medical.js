@@ -219,10 +219,11 @@ export function detectDuplicate(newRecord = {}, existingRecords = getMedicalEntr
 
 export function detectAllDuplicates(records = getMedicalEntries()) {
   const duplicates = [];
-  for (let leftIndex = 0; leftIndex < records.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < records.length; rightIndex += 1) {
-      const first = records[leftIndex];
-      const second = records[rightIndex];
+  const orderedRecords = [...records].sort(compareCreatedAt);
+  for (let leftIndex = 0; leftIndex < orderedRecords.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < orderedRecords.length; rightIndex += 1) {
+      const first = orderedRecords[leftIndex];
+      const second = orderedRecords[rightIndex];
       const similarity = recordSimilarity(first, second);
       if (similarity > .8) {
         duplicates.push({ first, second, similarity, percentage: Math.round(similarity * 100) });
@@ -254,11 +255,26 @@ export function skipRecommendation(key) {
 }
 
 function createdAtValue(record = {}) {
-  return Date.parse(record.createdAt || '') || 0;
+  const value = String(record.createdAt || '').trim();
+  const parsed = Date.parse(value);
+  if (Number.isFinite(parsed)) return parsed;
+  const localDate = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (localDate) return Date.parse(`${localDate[3]}-${localDate[2]}-${localDate[1]}T00:00:00Z`);
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function compareCreatedAt(left = {}, right = {}) {
+  return createdAtValue(left) - createdAtValue(right)
+    || String(left.inputId || left.id || '').localeCompare(String(right.inputId || right.id || ''));
 }
 
 export function generateRecommendations(duplicatePairs = []) {
   if (!duplicatePairs.length) return [];
+  const orderedPairs = duplicatePairs.map((pair) => {
+    const endpoints = [pair.first, pair.second].sort(compareCreatedAt);
+    return { ...pair, first: endpoints[0], second: endpoints[1] };
+  }).sort((left, right) => compareCreatedAt(left.first, right.first)
+    || compareCreatedAt(left.second, right.second));
   const records = new Map();
   const parent = new Map();
   const find = (inputId) => {
@@ -272,7 +288,7 @@ export function generateRecommendations(duplicatePairs = []) {
     if (leftRoot !== rightRoot) parent.set(rightRoot, leftRoot);
   };
 
-  duplicatePairs.forEach((pair) => {
+  orderedPairs.forEach((pair) => {
     [pair.first, pair.second].forEach((record) => {
       records.set(record.inputId, record);
       if (!parent.has(record.inputId)) parent.set(record.inputId, record.inputId);
@@ -292,7 +308,7 @@ export function generateRecommendations(duplicatePairs = []) {
       || String(left.inputId).localeCompare(String(right.inputId)));
     const original = { ...ordered[0], isOriginal: true };
     const clusterIds = ordered.map((record) => record.inputId).sort();
-    const pairs = duplicatePairs.filter((pair) => clusterIds.includes(pair.first.inputId) && clusterIds.includes(pair.second.inputId));
+    const pairs = orderedPairs.filter((pair) => clusterIds.includes(pair.first.inputId) && clusterIds.includes(pair.second.inputId));
     const toDelete = ordered.slice(1).map((record) => {
       const relatedPair = pairs
         .filter((pair) => pair.first.inputId === record.inputId || pair.second.inputId === record.inputId)

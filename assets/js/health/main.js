@@ -435,6 +435,8 @@ function renderMedicalManagement(root) {
   const recordsStore = getMedicalRecordsStore(root);
   if (!recordsStore.getRecords().length && !recordsStore.getError()) seedMedicalKnowledge();
   const records = recordsStore.reload();
+  const recordIds = new Set(records.map((record) => record.inputId));
+  medicalManagementSelected = new Set([...medicalManagementSelected].filter((inputId) => recordIds.has(inputId)));
   const duplicates = detectAllDuplicates(records);
   const allRecommendations = generateRecommendations(duplicates);
   root.innerHTML = `${renderDataManagement({
@@ -1157,7 +1159,8 @@ export function mountHealthApp(root) {
     if (deleteSelected) {
       const inputIds = [...medicalManagementSelected];
       if (!inputIds.length || !confirmOriginalSelection(inputIds) || !window.confirm(`Xoá ${inputIds.length} bản ghi đã chọn khỏi thiết bị này?`)) return;
-      const removed = getMedicalRecordsStore(root).deleteMultiple(inputIds);
+      const deletion = getMedicalRecordsStore(root).deleteMultiple(inputIds);
+      const removed = deletion.removed;
       medicalManagementSelected = new Set();
       if (Array.isArray(medicalRemoteEntries)) {
         medicalRemoteEntries = medicalRemoteEntries.filter((entry) => !inputIds.includes(entry.inputId));
@@ -1172,9 +1175,10 @@ export function mountHealthApp(root) {
     if (medicalDelete) {
       const inputId = medicalDelete.dataset.medicalDelete;
       if (!inputId || !confirmOriginalSelection([inputId]) || !window.confirm(`Xoá bản ghi ${inputId} khỏi thiết bị này?`)) return;
-      const removed = routeName(root) === '/health/medical/manage'
+      const deletion = routeName(root) === '/health/medical/manage'
         ? getMedicalRecordsStore(root).deleteRecord(inputId)
-        : deleteRecord(inputId);
+        : { removed: deleteRecord(inputId) };
+      const removed = deletion.removed;
       if (!removed) return;
       medicalDrafts.delete(root);
       if (Array.isArray(medicalRemoteEntries)) {
