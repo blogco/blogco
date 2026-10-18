@@ -22,9 +22,6 @@ export function defaultSettings() {
     token: '',
     author: '',
     imageMode: 'auto',
-    aiProvider: 'gemini',
-    aiModel: '',
-    aiKey: '',
   };
 }
 

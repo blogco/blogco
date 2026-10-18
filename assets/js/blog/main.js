@@ -2,8 +2,9 @@
 // contents API. Mounted at #/blog/new (the "Viết blog mới" entry).
 //
 // The body is a contenteditable "rich text" surface: authors paste ordinary
-// prose (no Markdown syntax), format with the toolbar if they want, and the
-// editor converts everything to clean Markdown on save. Cover image still comes
+// prose, format with the toolbar if they want, and the editor converts
+// everything to clean Markdown on save. Tables have a separate local GFM
+// Markdown builder with a live preview. Cover image still comes
 // from one of two modes (see the “Ảnh đại diện” panel):
 //   • upload — pick/drag a file; it is committed to the repo (static/uploads)
 //              and reused as both the cover and the first image of the post.
@@ -28,7 +29,7 @@ import {
   figureShortcode, expandFigureShortcodes, FIGURE_ALIGNMENTS,
 } from './rich.js';
 import { scoreArticle } from './score.js';
-import { convertToTableViaAI, extractTableMarkdown, looksLikeMarkdownTable, parseMarkdownTable, rowsToMarkdown, toMarkdownTable } from './table.js';
+import { looksLikeMarkdownTable, parseMarkdownTable, rowsToMarkdown } from './table.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 const DEFAULT_ALIGN = 'center';
@@ -61,7 +62,7 @@ function markdownFromHtml(html = '') {
         return block ? `\n\n${block}\n\n` : '';
       },
     });
-    // A Markdown table (from “AI tạo bảng”) must survive the Goldmark build,
+    // A Markdown table must survive the Goldmark build,
     // which strips raw HTML with `unsafe = false`, so serialize it to GFM.
     turndown.addRule('blogTable', {
       filter: (node) => node.nodeName === 'TABLE',
@@ -99,7 +100,7 @@ const TOOLBAR = [
   { action: 'link', label: '🔗', title: 'Chèn liên kết', link: true },
   { action: 'image', label: '🖼️', title: 'Chèn ảnh vào bài (chọn nhiều ảnh)', image: true },
   { action: 'wipe', label: '🧹 Xoá trắng', title: 'Xoá trắng khung soạn thảo (làm mới bài viết)', wipe: true },
-  { action: 'table', label: '📊 Tạo bảng', title: 'AI: chuyển đoạn văn bản bôi đen thành bảng Markdown', table: true },
+  { action: 'table', label: '📊 Bảng Markdown', title: 'Mở trình tạo bảng Markdown', table: true },
 ];
 
 const BUBBLE = ['bold', 'italic', 'h2', 'quote', 'link'];
@@ -146,7 +147,7 @@ function renderEditor(root, state) {
       <a class="blog-back" href="#" data-blog-home>← Trang chủ</a>
       <p class="blog-eyebrow">BLOGCO · STUDIO</p>
       <h1 id="blog-title" tabindex="-1">Viết blog mới</h1>
-      <p>Dán nội dung, chọn ảnh rồi sync thẳng lên GitHub. Không cần gõ Markdown.</p>
+      <p>Soạn nội dung, tạo bảng bằng Markdown cục bộ, chọn ảnh rồi sync thẳng lên GitHub.</p>
     </header>
 
     <div class="blog-layout">
@@ -180,6 +181,23 @@ function renderEditor(root, state) {
           <div class="blog-bubble" data-blog-bubble hidden role="toolbar" aria-label="Định dạng nhanh">${bubbleHtml()}</div>
           <div class="blog-figurebar" data-blog-figurebar hidden role="toolbar" aria-label="Tuỳ chỉnh ảnh">${figurebarHtml()}</div>
         </div>
+
+        <section class="blog-table-builder" aria-labelledby="blog-table-builder-title">
+          <div class="blog-table-builder__head">
+            <div>
+              <p class="blog-eyebrow">GFM TABLE</p>
+              <h2 id="blog-table-builder-title">Tạo bảng bằng Markdown</h2>
+            </div>
+            <span class="blog-table-builder__badge">Offline · Không cần API</span>
+          </div>
+          <label class="blog-field" for="blog-table-markdown">Cú pháp Markdown</label>
+          <textarea id="blog-table-markdown" class="blog-table-builder__input" data-blog-table-markdown rows="7" spellcheck="false" placeholder="| Cột 1 | Cột 2 |\n| --- | --- |\n| Dữ liệu 1 | Dữ liệu 2 |">${escapeHtml(draft.tableMarkdown || '')}</textarea>
+          <div class="blog-table-preview" data-blog-table-preview aria-live="polite"><p class="blog-table-preview__empty">Nhập Markdown chuẩn để xem bảng ngay tại đây.</p></div>
+          <div class="blog-actions blog-table-builder__actions">
+            <button type="button" class="blog-primary" data-blog-table-insert>Chèn bảng vào bài viết</button>
+            <button type="button" class="blog-ghost" data-blog-table-clear>Xoá nội dung bảng</button>
+          </div>
+        </section>
 
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>Lưu &amp; đồng bộ GitHub</button>
@@ -230,22 +248,6 @@ function renderEditor(root, state) {
           <p class="blog-thumb__credit" data-blog-credit></p>
         </fieldset>
 
-        <fieldset class="blog-media blog-ai">
-          <legend class="blog-media__legend">🤖 AI tạo bảng</legend>
-          <label class="blog-field">Nhà cung cấp
-            <select data-blog-ai-provider>
-              <option value="gemini" ${settings.aiProvider === 'gemini' ? 'selected' : ''}>Google Gemini</option>
-              <option value="openai" ${settings.aiProvider === 'openai' ? 'selected' : ''}>OpenAI</option>
-            </select>
-          </label>
-          <label class="blog-field">API key
-            <input type="password" data-blog-ai-key value="${escapeHtml(settings.aiKey)}" placeholder="Dán API key (chỉ lưu trên máy bạn)" autocomplete="off">
-          </label>
-          <label class="blog-field">Model (tuỳ chọn)
-            <input type="text" data-blog-ai-model value="${escapeHtml(settings.aiModel)}" placeholder="gemini-2.0-flash">
-          </label>
-          <p class="blog-ai__hint">Bôi đen văn bản trong editor rồi bấm <b>📊 Tạo bảng</b>. Không có key vẫn dùng được bản chuyển cục bộ.</p>
-        </fieldset>
       </aside>
 
       <!-- Preview is a right slide-over drawer over a dimmed backdrop; it never
@@ -294,6 +296,7 @@ function renderEditor(root, state) {
   syncImageMode(root, state);
   syncEmptyState(root);
   updateWordCount(root);
+  void renderTableMarkdownPreview(root);
   root.querySelector('#blog-title')?.focus({ preventScroll: true });
 }
 
@@ -363,6 +366,7 @@ function readForm(root) {
   return {
     title: root.querySelector('[data-blog-title]')?.value?.trim() || '',
     html: richEl(root)?.innerHTML || '',
+    tableMarkdown: root.querySelector('[data-blog-table-markdown]')?.value || '',
     tags: root.querySelector('[data-blog-tags]')?.value || '',
     token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
     repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
@@ -374,7 +378,7 @@ function readForm(root) {
 
 function persistDraft(root) {
   const form = readForm(root);
-  saveDraft({ title: form.title, body: form.html, tags: form.tags });
+  saveDraft({ title: form.title, body: form.html, tableMarkdown: form.tableMarkdown, tags: form.tags });
 }
 
 // Wipe the whole working surface: title, body, staged inline images, the cover
@@ -389,6 +393,8 @@ function resetEditor(root, state, { tags = false } = {}) {
   }
   const rich = richEl(root);
   if (rich) rich.innerHTML = '';
+  const tableMarkdown = root.querySelector('[data-blog-table-markdown]');
+  if (tableMarkdown) tableMarkdown.value = '';
   clearDraft();
 
   if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
@@ -409,6 +415,7 @@ function resetEditor(root, state, { tags = false } = {}) {
   syncImageMode(root, state);
   syncEmptyState(root);
   updateWordCount(root);
+  void renderTableMarkdownPreview(root);
 }
 
 // Toolbar "Xoá trắng": wipe everything after a quick confirmation.
@@ -514,17 +521,9 @@ function applyTool(root, action) {
 }
 
 // ---------------------------------------------------------------------------
-// "Convert to table" — replace the current selection with a Markdown table.
+// Markdown table builder: parse locally, render a live preview, then insert a
+// safe table node into the rich editor. No remote model or API key is involved.
 // ---------------------------------------------------------------------------
-
-function editorSelectionRange(root) {
-  const rich = richEl(root);
-  const sel = window.getSelection();
-  if (!rich || !sel || sel.rangeCount === 0) return null;
-  const range = sel.getRangeAt(0);
-  if (range.collapsed || !rich.contains(range.commonAncestorContainer)) return null;
-  return range;
-}
 
 function buildTableNode(markdown) {
   const rows = parseMarkdownTable(markdown);
@@ -553,47 +552,75 @@ function buildTableNode(markdown) {
   return table;
 }
 
-async function convertSelectionToTable(root, state, button) {
-  const range = editorSelectionRange(root);
-  if (!range) { setStatus(root, 'Hãy bôi đen đoạn văn bản muốn chuyển thành bảng.', 'error'); return; }
-  const text = range.toString().trim();
-  if (!text) { setStatus(root, 'Đoạn bôi đen đang trống.', 'error'); return; }
-
-  const settings = getSettings();
-  const label = button?.textContent;
-  if (button) { button.disabled = true; button.textContent = '⏳ Đang tạo…'; }
-  setStatus(root, settings.aiKey ? 'AI đang phân tích đoạn văn bản…' : 'Đang chuyển cục bộ…');
+async function renderTableMarkdownPreview(root) {
+  const input = root.querySelector('[data-blog-table-markdown]');
+  const preview = root.querySelector('[data-blog-table-preview]');
+  if (!input || !preview) return;
+  const source = input.value.trim();
+  if (!source) {
+    preview.innerHTML = '<p class="blog-table-preview__empty">Nhập Markdown chuẩn để xem bảng ngay tại đây.</p>';
+    return;
+  }
+  if (!looksLikeMarkdownTable(source)) {
+    preview.innerHTML = '<p class="blog-table-preview__error">Chưa nhận diện được bảng. Hãy dùng dòng tiêu đề, dòng phân cách và ít nhất một dòng dữ liệu.</p>';
+    return;
+  }
   try {
-    let markdown;
-    if (settings.aiKey) {
-      markdown = await convertToTableViaAI(text, { provider: settings.aiProvider, model: settings.aiModel, key: settings.aiKey });
-    } else {
-      markdown = toMarkdownTable(text);
-      setStatus(root, 'Chưa có API key AI — dùng bộ chuyển cục bộ, kết quả có thể kém chính xác hơn.');
-    }
-    markdown = extractTableMarkdown(markdown) || markdown;
-    const node = buildTableNode(markdown);
-    if (!node) throw new Error('Không nhận diện được cấu trúc bảng từ đoạn văn bản này.');
+    const marked = await loadMarked();
+    if (input.value.trim() !== source) return;
+    const render = typeof marked === 'function' ? marked : marked.parse;
+    preview.innerHTML = render(source, { gfm: true, breaks: false });
+    preview.querySelectorAll('table').forEach((table) => table.classList.add('blog-table'));
+  } catch (error) {
+    preview.innerHTML = `<p class="blog-table-preview__error">Không thể dựng bản xem trước: ${escapeHtml(error.message || 'Markdown không hợp lệ.')}</p>`;
+  }
+}
 
+function insertTableNodeAtCursor(root, node) {
+  const rich = richEl(root);
+  if (!rich) return;
+  rich.focus({ preventScroll: true });
+  const selection = window.getSelection();
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+  const hasCaret = range && rich.contains(range.commonAncestorContainer);
+  if (hasCaret) {
     range.deleteContents();
     range.insertNode(node);
-    const sel = window.getSelection();
-    if (sel) {
-      const after = document.createRange();
-      after.setStartAfter(node);
-      after.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(after);
-    }
-    syncEmptyState(root);
-    updateWordCount(root);
-    persistDraft(root);
-    setStatus(root, 'Đã tạo bảng. Bấm “Lưu & đồng bộ GitHub” để cập nhật bài.', 'ok');
-  } catch (error) {
-    setStatus(root, error.message || 'Không chuyển được thành bảng.', 'error');
-  } finally {
-    if (button) { button.disabled = false; button.textContent = label; }
+    const after = document.createRange();
+    after.setStartAfter(node);
+    after.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(after);
+  } else {
+    rich.appendChild(node);
   }
+  syncEmptyState(root);
+  updateWordCount(root);
+  persistDraft(root);
+}
+
+function focusTableBuilder(root) {
+  const input = root.querySelector('[data-blog-table-markdown]');
+  if (!input) return;
+  input.focus();
+  setStatus(root, 'Nhập cú pháp Markdown chuẩn để xem bảng trực tiếp bên dưới.');
+}
+
+function insertMarkdownTable(root) {
+  const input = root.querySelector('[data-blog-table-markdown]');
+  const source = input?.value?.trim() || '';
+  if (!looksLikeMarkdownTable(source)) {
+    setStatus(root, 'Hãy nhập bảng Markdown gồm tiêu đề, dòng phân cách và dữ liệu.', 'error');
+    input?.focus();
+    return;
+  }
+  const node = buildTableNode(source);
+  if (!node) {
+    setStatus(root, 'Không nhận diện được cấu trúc bảng Markdown.', 'error');
+    return;
+  }
+  insertTableNodeAtCursor(root, node);
+  setStatus(root, 'Đã chèn bảng Markdown vào bài viết.', 'ok');
 }
 
 // ---------------------------------------------------------------------------
@@ -1245,8 +1272,18 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       const tool = event.target.closest('[data-blog-tool]');
       if (tool) {
         if (tool.dataset.blogTool === 'wipe') { wipeEditor(root, state); return; }
-        if (tool.dataset.blogTool === 'table') { void convertSelectionToTable(root, state, tool); return; }
+        if (tool.dataset.blogTool === 'table') { focusTableBuilder(root); return; }
         applyTool(root, tool.dataset.blogTool); hideBubble(root); return;
+      }
+
+      if (event.target.closest('[data-blog-table-insert]')) { insertMarkdownTable(root); return; }
+      if (event.target.closest('[data-blog-table-clear]')) {
+        const input = root.querySelector('[data-blog-table-markdown]');
+        if (input) input.value = '';
+        persistDraft(root);
+        void renderTableMarkdownPreview(root);
+        setStatus(root, 'Đã xoá nội dung bảng.');
+        return;
       }
 
       const align = event.target.closest('[data-blog-fig-align]');
@@ -1325,6 +1362,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       if (event.target.matches?.('input[name="blog-image-mode"]')) return;
       if (!richEl(root)) return; // manager view has no draft
       if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
+      if (event.target.matches?.('[data-blog-table-markdown]')) void renderTableMarkdownPreview(root);
       updateWordCount(root);
       persistDraft(root);
     });
@@ -1395,15 +1433,12 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       }
       if (target.matches?.('[data-blog-file]')) { acceptFile(root, target.files?.[0], state); return; }
       if (target.matches?.('[data-blog-image-input]')) { acceptToolbarImages(root, target.files, state); return; }
-      if (target.matches?.('[data-blog-token], [data-blog-repo], [data-blog-branch], [data-blog-author], [data-blog-ai-provider], [data-blog-ai-model], [data-blog-ai-key]')) {
+      if (target.matches?.('[data-blog-token], [data-blog-repo], [data-blog-branch], [data-blog-author]')) {
         saveSettings({
           token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
           repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
           branch: root.querySelector('[data-blog-branch]')?.value?.trim() || '',
           author: root.querySelector('[data-blog-author]')?.value?.trim() || '',
-          aiProvider: root.querySelector('[data-blog-ai-provider]')?.value || 'gemini',
-          aiModel: root.querySelector('[data-blog-ai-model]')?.value?.trim() || '',
-          aiKey: root.querySelector('[data-blog-ai-key]')?.value?.trim() || '',
         });
       }
     });
