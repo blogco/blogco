@@ -1,6 +1,6 @@
 ---
 title: "Tất cả những điều bạn cần biết về dịch cúm mùa"
-date: 2026-10-18T00:36:42.280Z
+date: 2026-10-18T00:37:23.353Z
 draft: false
 cover:
   image: "https://picsum.photos/seed/tat-ca-nhung-dieu-ban-can-biet-ve-dich-cum-mua/1200/630"
@@ -16,17 +16,9 @@ cover:
 
 Cúm mùa có xu hướng lan rộng thành dịch vào mùa đông, bệnh có khả năng lây nhiễm rất qua đường hô hấp, qua các giọt nhỏ nước bọt hay dịch tiết mũi họng do hắt hơi. Dưới đây là những thông tin cơ bản và cách phòng tránh bệnh cúm mùa.
 
-## 1\. Bệnh cúm là gì?
-
-Bệnh cúm là một bệnh truyền nhiễm [virus cúm](https://www.vinmec.com/vie/benh/cum-3162) tấn công hệ hô hấp của người bệnh - mũi, cổ họng và phổi. Đối với hầu hết mọi người, cúm sẽ tự khỏi. Nhưng đôi khi, cúm và các biến chứng của nó có thể gây tử vong ở những đối tượng có nguy cơ cao bị biến chứng cúm.
-
-\>>>> [Tất cả những điều bạn cần biết về cúm](https://www.vinmec.com/vie/bai-viet/tat-ca-nhung-dieu-ban-can-biet-ve-cum-vi)
-
-## 2\. Nguyên nhân cảm cúm
-
-Nguyên nhân của bệnh cúm là do Vi rút cúm (Influenza virus), virus này liên tục biến thể với các chủng mới xuất hiện thường xuyên.
-
-Những biến đổi nhỏ liên tục gọi là “trôi” kháng nguyên (antigenic drift) gây nên các vụ dịch vừa và nhỏ. Khi những biến đổi nhỏ và dần dần tích tụ lại thành những biến đổi lớn, tạo nên type kháng nguyên mới, đó là do sự tái tổ hợp giữa các chủng vi rút cúm động vật và cúm người. Những phân type kháng nguyên mới này sẽ gây đại dịch cúm trên toàn cầu.
+| 1. Bệnh cúm là gì? | Bệnh cúm là một bệnh truyền nhiễm virus cúm tấn công hệ hô hấp của người bệnh - mũi, cổ họng và phổi. Đối với hầu hết mọi người, cúm sẽ tự khỏi. Nhưng đôi khi, cúm và các biến chứng của nó có thể gây tử vong ở những đối tượng có nguy cơ cao bị biến chứng cúm. | >>>> Tất cả những điều bạn cần biết về cúm |
+| --- | --- | --- |
+| 2. Nguyên nhân cảm cúm | Nguyên nhân của bệnh cúm là do Vi rút cúm (Influenza virus), virus này liên tục biến thể với các chủng mới xuất hiện thường xuyên. | Những biến đổi nhỏ liên tục gọi là “trôi” kháng nguyên (antigenic drift) gây nên các vụ dịch vừa và nhỏ. Khi những biến đổi nhỏ và dần dần tích tụ lại thành những biến đổi lớn, tạo nên type kháng nguyên mới, đó là do sự tái tổ hợp giữa các chủng vi rút cúm động vật và cúm người. Những phân type kháng nguyên mới này sẽ gây đại dịch cúm trên toàn cầu. |
 
 \>>> [Sự hình thành bệnh cúm](https://www.vinmec.com/vie/bai-viet/su-hinh-thanh-benh-cum-vi)
 
