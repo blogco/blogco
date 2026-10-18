@@ -168,12 +168,14 @@ State được lưu dưới dạng:
 
 - Static GitHub Pages không chạy API backend/serverless POST của project. Không gọi `/api/...` nội bộ từ frontend để xử lý Y Học.
 - Extraction hiện tại chạy offline bằng `extractMedicalKnowledge()` từ nhãn và keyword; không gọi API AI trả phí trong static runtime.
-- `syncToGitHub()` trong `assets/js/health/github-sync.js`:
-  1. GET `repos/{owner}/{repo}/contents/{path}?ref={branch}` để lấy SHA nếu file tồn tại.
-  2. PUT cùng endpoint với `Authorization: Bearer <token>`, `X-GitHub-Api-Version: 2022-11-28`, `branch`, nội dung Base64 và `sha` khi update.
-  3. Đọc `commit.sha`, rút gọn 7 ký tự thành `commitId`.
-- `syncMedicalKnowledge()` lấy record mới nhất từ Local Storage, merge payload và đánh dấu `commitId` cho các item đã sync.
-- Dữ liệu remote tra cứu là JSON public từ GitHub raw URL; không coi remote data là local write nếu chưa merge theo logic hiện có.
+- `syncToGitHub()` trong `assets/js/health/github-sync.js` chỉ được dùng cho luồng **Local → GitHub**:
+  1. Đọc payload hiện tại từ Local Storage và gửi `PUT` trực tiếp tới `repos/{owner}/{repo}/contents/{path}`.
+  2. Gửi `Authorization: Bearer <token>`, `X-GitHub-Api-Version: 2022-11-28`, `branch`, nội dung Base64 và `sha` đã biết khi update.
+  3. Không được gọi `GET`, merge hoặc tải dữ liệu remote trong luồng sync; nếu thiếu SHA của file cũ, báo người dùng dùng nút khôi phục riêng.
+  4. Đọc `commit.sha`, rút gọn 7 ký tự thành `commitId` và lưu SHA file trong session để lần PUT sau cập nhật đúng file.
+- `syncMedicalKnowledge()` chỉ lấy record mới nhất từ Local Storage, ghi đè toàn bộ file GitHub bằng dữ liệu local và đánh dấu `commitId` cho item đã sync. Nếu PUT thất bại, không được thay đổi dữ liệu local.
+- `pullFromGitHub()`/`pullMedicalKnowledge()` là luồng **GitHub → Local** riêng, chỉ gọi `GET` khi người dùng bấm “Khôi phục từ GitHub” và xác nhận cảnh báo ghi đè toàn bộ Local Storage. GET phải có cache-busting và parse JSON an toàn.
+- Trang Tra cứu luôn đọc lại Local Storage khi render/tìm kiếm; không dùng danh sách remote hoặc search index tĩnh có thể giữ record đã xoá.
 - GitHub PAT chỉ được lưu ở `sessionStorage` với key `blogco.health.github-sync.session.v1`; tuyệt đối không lưu token vào Local Storage, cookie, log hoặc repo.
 - Không commit token, repo secret, passcode plaintext hoặc API key. Nếu credential bị lộ, phải revoke ngay.
 - Với mọi fetch: kiểm tra `response.ok`, xử lý 401/403/404/409, lỗi mạng và hiển thị thông báo thân thiện. Không log PAT.

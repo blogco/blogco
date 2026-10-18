@@ -19,6 +19,7 @@ export function getDefaultGitHubSettings() {
     repo,
     branch: meta('blogco-gh-branch') || 'main',
     filePath: 'static/data/medical-knowledge.json',
+    fileSha: '',
   };
 }
 
@@ -71,6 +72,7 @@ async function githubError(response) {
   if (response.status === 403) return `PAT thiếu quyền Contents: Read and write.${detail ? ` ${detail}` : ''}`;
   if (response.status === 404) return 'Không tìm thấy repo, branch hoặc đường dẫn file.';
   if (response.status === 409) return 'GitHub báo xung đột cập nhật. Hãy thử đồng bộ lại.';
+  if (response.status === 422) return `GitHub không nhận được SHA của file hiện tại. Hãy bấm “Khôi phục từ GitHub” một lần để lấy phiên bản mới nhất rồi thử đồng bộ lại.${detail ? ` ${detail}` : ''}`;
   return `GitHub API lỗi ${response.status}.${detail ? ` ${detail}` : ''}`;
 }
 
@@ -81,27 +83,19 @@ function encodeBase64(value) {
   return btoa(binary);
 }
 
-export async function syncToGitHub(token, owner, repo, branch, filePath, content) {
+export async function syncToGitHub(token, owner, repo, branch, filePath, content, fileSha = '') {
   if (!token) throw new Error('Vui lòng nhập GitHub PAT.');
   if (!owner || !repo) throw new Error('Thiếu owner/repo GitHub.');
   if (!branch) throw new Error('Vui lòng nhập branch.');
   if (!filePath) throw new Error('Vui lòng nhập đường dẫn file.');
 
   const endpoint = apiUrl(owner, repo, filePath);
-  const existing = await fetch(`${endpoint}?ref=${encodeURIComponent(branch)}`, {
-    headers: authHeaders(token),
-    cache: 'no-store',
-  });
-  let sha = null;
-  if (existing.status === 200) sha = (await existing.json())?.sha || null;
-  else if (existing.status !== 404) throw new Error(await githubError(existing));
-
   const body = {
     message: 'feat: sync medical knowledge',
     content: encodeBase64(content),
     branch,
   };
-  if (sha) body.sha = sha;
+  if (fileSha) body.sha = fileSha;
   const response = await fetch(endpoint, {
     method: 'PUT',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
@@ -110,12 +104,40 @@ export async function syncToGitHub(token, owner, repo, branch, filePath, content
   if (!response.ok) throw new Error(await githubError(response));
   const data = await response.json();
   return {
-    created: !sha,
+    created: !fileSha,
     path: filePath,
     sha: data?.content?.sha || null,
     commitSha: data?.commit?.sha || '',
     commitId: data?.commit?.sha ? data.commit.sha.slice(0, 7) : '',
     commit: data?.commit?.html_url || '',
     contentUrl: data?.content?.html_url || '',
+  };
+}
+
+function decodeBase64(value) {
+  const binary = atob(String(value || '').replace(/\s/g, ''));
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+export async function pullFromGitHub(token, owner, repo, branch, filePath) {
+  if (!token) throw new Error('Vui lòng nhập GitHub PAT.');
+  if (!owner || !repo) throw new Error('Thiếu owner/repo GitHub.');
+  if (!branch) throw new Error('Vui lòng nhập branch.');
+  if (!filePath) throw new Error('Vui lòng nhập đường dẫn file.');
+
+  const endpoint = apiUrl(owner, repo, filePath);
+  const response = await fetch(`${endpoint}?ref=${encodeURIComponent(branch)}&t=${Date.now()}`, {
+    headers: authHeaders(token),
+    cache: 'no-store',
+  });
+  if (response.status === 404) return { content: '', sha: '', missing: true };
+  if (!response.ok) throw new Error(await githubError(response));
+  const data = await response.json();
+  return {
+    content: decodeBase64(data?.content || ''),
+    sha: data?.sha || '',
+    commitSha: data?.commit?.sha || '',
+    path: filePath,
   };
 }

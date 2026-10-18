@@ -4,8 +4,9 @@
 
 import { escapeHtml } from './medicine.js';
 import { icon } from '../icons.js';
-import { getDefaultGitHubSettings, getSessionGitHubSettings, parseRepo, syncToGitHub } from './github-sync.js';
-import { rawFileUrl } from '../blog/lib.js';
+import {
+  getSessionGitHubSettings, parseRepo, pullFromGitHub, saveSessionGitHubSettings, syncToGitHub,
+} from './github-sync.js';
 
 export const MEDICAL_STORAGE_KEY = 'blogco.health.medical.v1';
 const BACKUP_KEY = 'blogco.health.medical.backup.v1';
@@ -153,6 +154,14 @@ export function saveMedicalKnowledge(input = {}) {
   }
   writeState(state);
   return clone(entry);
+}
+
+export function replaceMedicalEntries(entries = []) {
+  const state = readState();
+  const normalized = entries.map((item) => normalizeMedicalEntry(item, item));
+  const nextId = Math.max(state.nextId, normalized.length + 1);
+  writeState({ ...state, nextId, items: normalized });
+  return clone(normalized);
 }
 
 export function deleteMultiple(inputIds = []) {
@@ -391,49 +400,62 @@ export function searchMedicalKnowledge(query = '', source = getMedicalEntries())
   }).filter((result) => result.score > 0).sort((a, b) => b.score - a.score).map((result) => result.entry);
 }
 
-export function mergeMedicalEntries(...collections) {
-  const byId = new Map();
-  collections.flat().filter(Boolean).forEach((item) => {
-    const entry = normalizeMedicalEntry(item, item);
-    const current = byId.get(entry.id);
-    if (!current || new Date(entry.updatedAt || 0) >= new Date(current.updatedAt || 0)) byId.set(entry.id, entry);
-  });
-  return [...byId.values()].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+function parseMedicalPayload(content = '') {
+  try {
+    const payload = JSON.parse(content || '{}');
+    return { ...payload, items: Array.isArray(payload) ? payload : (payload.items || []) };
+  } catch {
+    throw new Error('File JSON trên GitHub không hợp lệ.');
+  }
 }
 
-async function fetchRemotePayload(settings = getDefaultGitHubSettings()) {
-  const repo = settings.repo || 'blogco/blogco';
-  const branch = settings.branch || 'main';
-  const filePath = settings.filePath || MEDICAL_REPO_PATH;
-  const url = `${rawFileUrl(repo, branch, filePath)}?t=${Date.now()}`;
-  const response = await fetch(url, { cache: 'no-store' });
-  if (response.status === 404) return { items: [] };
-  if (!response.ok) throw new Error(`Không tải được kho tri thức online (${response.status}).`);
-  const payload = await response.json();
-  return { ...payload, items: Array.isArray(payload) ? payload : (payload.items || []) };
-}
-
-export async function loadRemoteMedicalKnowledge(settings = getDefaultGitHubSettings()) {
-  const payload = await fetchRemotePayload(settings);
-  return mergeMedicalEntries(payload.items);
+export async function pullMedicalKnowledge(syncSettings = getSessionGitHubSettings()) {
+  const settings = { ...getSessionGitHubSettings(), ...syncSettings };
+  if (!settings.token) throw new Error('Chưa có GitHub PAT. Mở tab “Đồng bộ” để nhập token trong phiên này.');
+  const { owner, name } = parseRepo(settings.repo);
+  const result = await pullFromGitHub(
+    settings.token,
+    owner,
+    name,
+    settings.branch || 'main',
+    settings.filePath || MEDICAL_REPO_PATH,
+  );
+  if (result.missing) {
+    saveSessionGitHubSettings({ ...settings, fileSha: '' });
+    return { ...result, items: [], count: 0 };
+  }
+  const payload = parseMedicalPayload(result.content);
+  const items = replaceMedicalEntries(payload.items);
+  saveSessionGitHubSettings({ ...settings, fileSha: result.sha || '' });
+  return { ...result, items, count: items.length };
 }
 
 export async function syncMedicalKnowledge(syncSettings = getSessionGitHubSettings()) {
-  const settings = { ...getSessionGitHubSettings(), ...syncSettings };
+  const storedSettings = getSessionGitHubSettings();
+  const settings = { ...storedSettings, ...syncSettings };
   if (!settings.token) throw new Error('Chưa có GitHub PAT. Mở tab “Đồng bộ” để nhập token trong phiên này.');
+  const targetChanged = ['repo', 'branch', 'filePath'].some((key) => settings[key] !== storedSettings[key]);
+  const fileSha = targetChanged ? '' : (settings.fileSha || '');
   const localItems = getMedicalEntries();
-  const remotePayload = await fetchRemotePayload(settings);
-  const items = mergeMedicalEntries(remotePayload.items, localItems);
   const payload = {
     app: 'BlogCo',
     feature: 'medical-knowledge',
     version: 1,
     updatedAt: new Date().toISOString(),
-    items,
+    items: localItems,
   };
   const { owner, name } = parseRepo(settings.repo);
-  const result = await syncToGitHub(settings.token, owner, name, settings.branch || 'main', settings.filePath || MEDICAL_REPO_PATH, JSON.stringify(payload, null, 2));
-  const syncedItems = result.commitId ? markMedicalEntriesSynced(items, result.commitId) : items;
+  const result = await syncToGitHub(
+    settings.token,
+    owner,
+    name,
+    settings.branch || 'main',
+    settings.filePath || MEDICAL_REPO_PATH,
+    JSON.stringify(payload, null, 2),
+    fileSha,
+  );
+  const syncedItems = result.commitId ? markMedicalEntriesSynced(localItems, result.commitId) : localItems;
+  saveSessionGitHubSettings({ ...settings, fileSha: result.sha || fileSha || '' });
   return { ...result, items: syncedItems, count: syncedItems.length };
 }
 
