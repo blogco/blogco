@@ -14,26 +14,32 @@ const COLOR_TOKENS = [
   {
     name: 'Primary — Ink',
     token: '--blogco-primary',
-    hex: '#1A1A1A',
+    hex: '#111827',
     usage: 'Tiêu đề, nội dung chính, logo và các điểm cần độ tương phản cao.',
   },
   {
     name: 'Primary Hover — Slate',
     token: '--blogco-primary-hover',
-    hex: '#2C3E50',
+    hex: '#1F2937',
     usage: 'Trạng thái hover, pressed và nội dung phụ có độ tương phản cao.',
   },
   {
     name: 'Accent — Mint',
     token: '--blogco-accent-sky',
-    hex: '#6DC2CA',
+    hex: '#4DA0AA',
     usage: 'Active state, số liệu, viền nhấn, link hover và thanh tiến trình.',
   },
   {
     name: 'Accent Background — Mist',
     token: '--blogco-accent-bg',
-    hex: '#F4F8F9',
+    hex: '#F3F4F6',
     usage: 'Nền card, section xen kẽ, badge nhẹ và trạng thái hover của bảng.',
+  },
+  {
+    name: 'Accent Soft — Mint Mist',
+    token: '--blogco-accent-soft',
+    hex: '#E7F3F4',
+    usage: 'Nền tag, badge và active state nhẹ cần giữ sắc mint.',
   },
   {
     name: 'Background — Pure White',
@@ -44,46 +50,47 @@ const COLOR_TOKENS = [
   {
     name: 'Surface — Card Background',
     token: '--blogco-card-bg',
-    hex: '#F4F8F9',
+    hex: '#F3F4F6',
     usage: 'Nền card và vùng dữ liệu cần phân tách nhẹ khỏi nền trắng.',
   },
   {
     name: 'Text — Title / High Contrast',
     token: '--blogco-text-main',
-    hex: '#1A1A1A',
+    hex: '#111827',
     usage: 'Tiêu đề H1, H2, H3 và các nhãn quan trọng.',
   },
   {
     name: 'Text — Body',
     token: '--blogco-text-body',
-    hex: '#2C3E50',
+    hex: '#374151',
     usage: 'Nội dung bài viết, đoạn văn bản chính.',
   },
   {
     name: 'Text — Muted / Secondary',
     token: '--blogco-text-muted',
-    hex: '#7B8790',
+    hex: '#4B5563',
     usage: 'Ngày tháng, tác giả, ghi chú phụ, chú thích.',
   },
   {
     name: 'Border — Hairline',
     token: '--blogco-border',
-    hex: '#E0E0E0',
+    hex: '#D1D5DB',
     usage: 'Viền mảnh phân tách card, bảng và các khối nội dung.',
   },
 ];
 
 const CSS_TOKENS = `:root {
-  --blogco-primary: #1A1A1A;
-  --blogco-primary-hover: #2C3E50;
-  --blogco-accent-sky: #6DC2CA;
-  --blogco-accent-bg: #F4F8F9;
+  --blogco-primary: #111827;
+  --blogco-primary-hover: #1F2937;
+  --blogco-accent-sky: #4DA0AA;
+  --blogco-accent-bg: #F3F4F6;
+  --blogco-accent-soft: #E7F3F4;
   --blogco-bg: #FFFFFF;
-  --blogco-card-bg: #F4F8F9;
-  --blogco-text-main: #1A1A1A;
-  --blogco-text-body: #2C3E50;
-  --blogco-text-muted: #7B8790;
-  --blogco-border: #E0E0E0;
+  --blogco-card-bg: #F3F4F6;
+  --blogco-text-main: #111827;
+  --blogco-text-body: #374151;
+  --blogco-text-muted: #4B5563;
+  --blogco-border: #D1D5DB;
   --blogco-font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --blogco-font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
 }`;
@@ -174,13 +181,13 @@ function renderTypography() {
       <code>'Inter', 'Helvetica Neue', Arial, sans-serif</code>
     </div>
     <div class="brand-type-list">
-      ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #1A1A1A', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
-      ${typeRow('H2', '1.75rem (28px) · 600 · lh 1.3 · #1A1A1A', '<h2 class="brand-demo-h2">Kết nối con người, vận hành thông minh</h2>')}
-      ${typeRow('H3', '1.25rem (20px) · 600 · lh 1.4 · #2C3E50', '<h3 class="brand-demo-h3">Kết nối người dùng với mọi dịch vụ</h3>')}
-      ${typeRow('Body', '1.0rem (16px) · 400 · lh 1.6 · #2C3E50', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
-      ${typeRow('Link', 'Inherit body · #2C3E50 · accent #6DC2CA', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
-      ${typeRow('Blockquote', 'Body · viền trái 4px #6DC2CA · nền #F4F8F9', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
-      ${typeRow('Small', '0.875rem (14px) · 400 · #7B8790', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
+      ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #111827', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
+      ${typeRow('H2', '1.75rem (28px) · 700 · lh 1.3 · #111827', '<h2 class="brand-demo-h2">Kết nối con người, vận hành thông minh</h2>')}
+      ${typeRow('H3', '1.25rem (20px) · 700 · lh 1.4 · #1F2937', '<h3 class="brand-demo-h3">Kết nối người dùng với mọi dịch vụ</h3>')}
+      ${typeRow('Body', '1.0rem (16px) · 500 · lh 1.6 · #374151', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
+      ${typeRow('Link', 'Inherit body · #374151 · accent #4DA0AA', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
+      ${typeRow('Blockquote', 'Body · viền trái 4px #4DA0AA · nền #E7F3F4', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
+      ${typeRow('Small', '0.875rem (14px) · 500 · #4B5563', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
     </div>
   </section>`;
 }

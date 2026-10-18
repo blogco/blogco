@@ -16,21 +16,22 @@
      #/brand-guidelines — phải luôn khớp với assets/js/brand/main.js.
      ──────────────────────────────────────────────────────────────────────── */
 
-  /* Sembcorp-inspired corporate palette: calm, minimal, mint-led. */
-  --blogco-primary: #1A1A1A;
-  --blogco-primary-hover: #2C3E50;
-  --blogco-accent-sky: #6DC2CA;
-  --blogco-accent-bg: #F4F8F9;
+  /* Corporate palette: high-contrast ink, neutral surfaces, deep mint accent. */
+  --blogco-primary: #111827;
+  --blogco-primary-hover: #1F2937;
+  --blogco-accent-sky: #4DA0AA;
+  --blogco-accent-bg: #F3F4F6;
+  --blogco-accent-soft: #E7F3F4;
   /* Nền trang chính */
   --blogco-bg: #FFFFFF;
   /* Nền card, nền bảng biểu dữ liệu */
-  --blogco-card-bg: #F4F8F9;
-  --blogco-text-main: #1A1A1A;
-  --blogco-text-body: #2C3E50;
-  --blogco-text-muted: #7B8790;
-  --blogco-border: #E0E0E0;
-  --blogco-shadow: 0 1px 3px rgb(0 0 0 / 4%);
-  --blogco-dark-neutral: #1A1A1A;
+  --blogco-card-bg: #F3F4F6;
+  --blogco-text-main: #111827;
+  --blogco-text-body: #374151;
+  --blogco-text-muted: #4B5563;
+  --blogco-border: #D1D5DB;
+  --blogco-shadow: 0 1px 3px rgb(17 24 39 / 6%);
+  --blogco-dark-neutral: #111827;
   --blogco-font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --blogco-font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
 
@@ -303,19 +304,19 @@ body.brand-route .brand-screen .brand-demo-h1 {
 }
 body.brand-route .brand-screen .brand-demo-h2 {
   margin: 0 !important; color: var(--blogco-text-main) !important;
-  font-size: 1.75rem !important; font-weight: 600 !important; line-height: 1.3 !important;
+  font-size: 1.75rem !important; font-weight: 700 !important; line-height: 1.3 !important;
 }
 body.brand-route .brand-screen .brand-demo-h3 {
   margin: 0 !important; color: var(--blogco-primary) !important;
-  font-size: 1.25rem !important; font-weight: 600 !important; line-height: 1.4 !important;
+  font-size: 1.25rem !important; font-weight: 700 !important; line-height: 1.4 !important;
 }
 body.brand-route .brand-screen .brand-demo-p {
   margin: 0 !important; color: var(--blogco-text-body) !important;
-  font-size: 1rem !important; font-weight: 400 !important; line-height: 1.6 !important;
+  font-size: 1rem !important; font-weight: 500 !important; line-height: 1.6 !important;
 }
 body.brand-route .brand-screen .brand-demo-small {
   margin: 0 !important; color: var(--blogco-text-muted) !important;
-  font-size: .875rem !important; font-weight: 400 !important; line-height: 1.5 !important;
+  font-size: .875rem !important; font-weight: 500 !important; line-height: 1.5 !important;
 }
 body.brand-route .brand-screen .brand-demo-p a,
 body.brand-route .brand-screen .brand-demo-quote a {
@@ -329,9 +330,9 @@ body.brand-route .brand-screen .brand-demo-p a:hover { color: var(--blogco-prima
 body.brand-route .brand-screen .brand-demo-quote {
   margin: 0 !important;
   padding: 14px 20px !important;
-  border-left: 4px solid var(--blogco-primary) !important;
+  border-left: 4px solid var(--blogco-accent-sky) !important;
   border-radius: 0 8px 8px 0;
-  background: var(--blogco-accent-bg);
+  background: var(--blogco-accent-soft);
   color: var(--blogco-text-body) !important;
   font-size: 1rem !important;
   font-style: italic;
@@ -491,8 +492,8 @@ body.brand-route .brand-hero,
 body.brand-route .brand-card { background: #fff; }
 body.brand-route .brand-card:hover { border-color: var(--blogco-accent-sky); box-shadow: none; transform: none; }
 body.brand-route .brand-btn { border-radius: 4px; box-shadow: none; }
-body.brand-route .brand-btn--primary { color: var(--blogco-text-main); background: var(--blogco-accent-sky); }
-body.brand-route .brand-btn--primary:hover { background: #58b4bd; }
+body.brand-route .brand-btn--primary { color: #fff; background: var(--blogco-accent-sky); font-weight: 600; }
+body.brand-route .brand-btn--primary:hover { color: #fff; background: var(--blogco-primary-hover); }
 body.brand-route .brand-btn--secondary { color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
 body.brand-route .brand-btn--outline { color: var(--blogco-text-main); border-color: var(--blogco-accent-sky); }
 body.brand-route .brand-btn--outline:hover { color: var(--blogco-text-main); background: var(--blogco-accent-bg); }

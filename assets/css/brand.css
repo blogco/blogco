@@ -1423,28 +1423,40 @@ body .footer,
   transform: none;
 }
 .health-screen .health-primary-button { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-sky); }
-.health-screen .health-primary-button:hover { color: var(--blogco-text-main) !important; background: #58b4bd; }
-.health-screen .health-secondary-button { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: transparent; }
+.health-screen .health-primary-button { color: #fff !important; font-weight: 600; }
+.health-screen .health-primary-button:hover { color: #fff !important; background: var(--blogco-primary-hover); }
+.health-screen .health-secondary-button { border-color: var(--blogco-primary-hover); color: var(--blogco-primary-hover) !important; background: transparent; font-weight: 600; }
 .health-screen .health-secondary-button:hover,
-.health-screen .health-ghost-button:hover { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-bg); }
+.health-screen .health-ghost-button:hover { border-color: var(--blogco-accent-sky); color: var(--blogco-primary) !important; background: var(--blogco-accent-bg); }
 .health-screen .health-ghost-button { border-color: var(--blogco-border); color: var(--blogco-text-main) !important; background: #fff; }
 .health-screen a:hover { text-decoration-color: var(--blogco-accent-sky); }
+
+.health-screen input,
+.health-screen textarea,
+.health-screen select {
+  border-color: var(--blogco-border);
+  color: var(--blogco-text-main);
+  background: #fff;
+}
+.health-screen input:focus,
+.health-screen textarea:focus,
+.health-screen select:focus { border-color: var(--blogco-accent-sky); outline-color: var(--blogco-accent-sky); }
 
 .medical-tabs { border-color: var(--blogco-border); border-radius: 4px; background: #fff; }
 .medical-tab { border-radius: 4px; color: var(--blogco-text-body) !important; }
 .medical-tab:hover,
-.medical-tab:focus-visible { color: var(--blogco-text-main) !important; background: var(--blogco-accent-bg); }
-.medical-tab.is-active { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-bg); }
+.medical-tab:focus-visible { color: var(--blogco-text-main) !important; background: var(--blogco-accent-soft); }
+.medical-tab.is-active { border-color: var(--blogco-accent-sky); color: var(--blogco-text-main) !important; background: var(--blogco-accent-soft); font-weight: 700; }
 
 .medical-data-table-wrap { border: 0; border-radius: 0; background: transparent; }
-.medical-data-table th { color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+.medical-data-table th { color: var(--blogco-text-main); background: #E5E7EB; font-weight: 700; }
 .medical-data-table th,
 .medical-data-table td { border-bottom-color: var(--blogco-border); }
 .medical-data-table tbody tr:hover { background: var(--blogco-accent-bg); }
 .medical-management-unique { color: var(--blogco-text-body); }
 .medical-management-duplicate { color: var(--blogco-text-main); }
 .medical-original-badge,
-.medical-sync-badge { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+.medical-sync-badge { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-primary-hover); background: var(--blogco-accent-soft); }
 .medical-duplicate-map__list li { border-color: var(--blogco-border); border-radius: 4px; color: var(--blogco-text-body); background: var(--blogco-accent-bg); }
 .medical-recommendation { border-color: var(--blogco-border); border-radius: 4px; background: var(--blogco-accent-bg); }
 .medical-recommendation__pair,
@@ -1467,7 +1479,7 @@ body .footer,
 .medical-medication-checklist li > details > summary .medical-info-card__summary-icon { margin-left: auto; font-size: 1rem; }
 .medical-medication-checklist li > details[open] > summary .medical-info-card__summary-icon { transform: rotate(45deg); }
 .medical-medication-checklist li > details p { margin: .45rem 0 0 1.25rem; color: var(--blogco-text-body); font-size: .86rem; }
-.medical-info-tag { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-text-main); background: var(--blogco-accent-bg); }
+.medical-info-tag { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-primary-hover); background: var(--blogco-accent-soft); font-weight: 600; }
 .medical-info-card__toggle { border-color: var(--blogco-accent-sky); border-radius: 4px; color: var(--blogco-text-main); background: #fff; }
 .medical-info-card__toggle:hover { background: var(--blogco-accent-bg); }
 .medical-progress span { background: var(--blogco-accent-sky); }
@@ -1492,6 +1504,27 @@ body.coffee-route .coffee-page-heading--hero > p:last-child { color: var(--blogc
 
 .auth-lock__backdrop { background: rgb(244 248 249 / 94%); backdrop-filter: blur(6px); }
 .auth-lock__card { border-radius: 4px; box-shadow: none; }
+
+body.brand-route .brand-table thead th {
+  color: var(--blogco-text-main);
+  background: #E5E7EB;
+  font-weight: 700;
+}
+
+.coffee-datatable thead th,
+.coffee-table th,
+.coffee-manual-table thead th,
+.thuoc-datatable thead th,
+.thuoc-table th,
+.thuoc-manual-table thead th,
+.blog-rich table thead th,
+.blog-table thead th,
+.post-content table thead th {
+  color: var(--blogco-text-main);
+  background: #E5E7EB;
+  border-bottom-color: var(--blogco-border);
+  font-weight: 700;
+}
 
 @media (max-width: 1024px) {
   .blogco-header .navbar__menu { border-color: var(--blogco-border); border-radius: 0 0 4px 4px; background: #fff; box-shadow: none; }

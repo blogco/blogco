@@ -55,16 +55,17 @@ Ngôn ngữ thiết kế hiện tại là corporate tối giản, hiện đại,
 
 Nguồn sự thật duy nhất là `assets/css/brand/brand-guidelines.css`:
 
-- Primary/text chính: `#1A1A1A`.
-- Secondary/dark text: `#2C3E50`.
-- Accent mint: `#6DC2CA` — active state, progress bar, số liệu và điểm nhấn.
-- Accent/background phụ: `#F4F8F9`.
+- Primary/text chính: `#111827`.
+- Secondary/dark text: `#1F2937`.
+- Accent mint đậm: `#4DA0AA` — active state, progress bar, số liệu và điểm nhấn.
+- Accent mint nhạt: `#E7F3F4` — tag/badge và trạng thái active nhẹ.
+- Accent/background phụ: `#F3F4F6`.
 - Page background: `#FFFFFF`.
-- Card background: `#F4F8F9`.
-- Main text: `#1A1A1A`.
-- Body text: `#2C3E50`.
-- Muted text: `#7B8790`.
-- Border: `#E0E0E0`.
+- Card background: `#F3F4F6`.
+- Main text: `#111827`.
+- Body text: `#374151`.
+- Muted text: `#4B5563`.
+- Border: `#D1D5DB`.
 - Font toàn site: `Inter`, fallback `Helvetica Neue`, `Arial`, sans-serif.
 - Display font: `Inter`, fallback system.
 - Health palette kế thừa mint/corporate tokens; danger/warning chỉ dùng cho trạng thái lỗi hoặc cảnh báo.
@@ -73,7 +74,7 @@ Không hardcode màu mới nếu token hiện có phù hợp. Nếu cần màu �
 
 ### Typography và spacing
 
-- Body toàn site: `18px`, weight tối thiểu 500, line-height `1.6`.
+- Body toàn site: `18px`, weight tối thiểu 500, line-height `1.6`, màu `#374151`.
 - Navbar: `Inter`, `14px`, weight 700, uppercase, letter-spacing khoảng `.06em`.
 - Footer link: khoảng `13px`; footer meta: khoảng `12px`.
 - Heading toàn site: H1 dùng `clamp(40px, 5vw, 64px)`, H2 khoảng `32px`, H3 khoảng `24px`, nhưng health screen có override H1 `1.7rem–2.5rem` và H2 `1.15rem`.
