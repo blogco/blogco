@@ -2,12 +2,12 @@
   "app": "BlogCo",
   "feature": "medical-knowledge",
   "version": 1,
-  "updatedAt": "2026-10-18T00:20:41.102Z",
+  "updatedAt": "2026-10-18T00:20:53.347Z",
   "items": [
     {
       "id": "medical-cum-mua",
       "inputId": "INPUT-20261018-B4906FEE",
-      "commitId": "6fc4020",
+      "commitId": "a57437d",
       "title": "Cúm mùa",
       "category": "Bệnh lý",
       "symptoms": [
@@ -28,7 +28,7 @@
     {
       "id": "medical-tat-ca-nhung-ieu-ban-can-biet-ve-dich-cum-mua-1792280936663",
       "inputId": "INPUT-20261018-A9D01FD7",
-      "commitId": "6fc4020",
+      "commitId": "6162598",
       "title": "Tất cả những điều bạn cần biết về dịch cúm mùa",
       "category": "Bệnh lý",
       "symptoms": [
@@ -51,7 +51,7 @@
     {
       "id": "medical-tat-ca-nhung-ieu-ban-can-biet-ve-dich-cum-mua-1792280469528",
       "inputId": "INPUT-20261018-30B69E64",
-      "commitId": "6fc4020",
+      "commitId": "6162598",
       "title": "Tất cả những điều bạn cần biết về dịch cúm mùa",
       "category": "Bệnh lý",
       "symptoms": [
@@ -74,7 +74,7 @@
     {
       "id": "medical-tat-ca-nhung-ieu-ban-can-biet-ve-dich-cum-mua-1792279996533",
       "inputId": "INPUT-20261018-9B03A156",
-      "commitId": "6fc4020",
+      "commitId": "a57437d",
       "title": "Tất cả những điều bạn cần biết về dịch cúm mùa",
       "category": "Bệnh lý",
       "symptoms": [
