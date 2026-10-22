@@ -10,6 +10,9 @@
 - label: Travel Studio
   href: /#/travel
   icon: plane
+- label: Ảnh hộ chiếu & visa
+  href: /#/tools/passport-photo
+  icon: camera
 - label: Về chúng tôi
   href: /about/
   icon: info

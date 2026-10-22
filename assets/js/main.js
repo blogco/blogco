@@ -14,6 +14,7 @@ let thuocAppPromise;
 let brandAppPromise;
 let blogAppPromise;
 let travelAppPromise;
+let passportPhotoAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -109,6 +110,17 @@ function syncTravelRoute() {
   void travelAppPromise.then(({ mountTravelApp }) => mountTravelApp(root));
 }
 
+function syncPassportPhotoRoute() {
+  const root = document.querySelector('[data-passport-photo-app]');
+  if (!root) return;
+  const active = location.hash.startsWith('#/tools/passport-photo');
+  root.hidden = !active;
+  document.body.classList.toggle('passport-photo-route', active);
+  if (!active) return;
+  passportPhotoAppPromise ??= import('./passport-photo/main.js');
+  void passportPhotoAppPromise.then(({ mountPassportPhotoApp }) => mountPassportPhotoApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncCoffeeRoute);
@@ -116,6 +128,7 @@ window.addEventListener('hashchange', syncThuocRoute);
 window.addEventListener('hashchange', syncBrandRoute);
 window.addEventListener('hashchange', syncBlogRoute);
 window.addEventListener('hashchange', syncTravelRoute);
+window.addEventListener('hashchange', syncPassportPhotoRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncCoffeeRoute();
@@ -123,6 +136,7 @@ syncThuocRoute();
 syncBrandRoute();
 syncBlogRoute();
 syncTravelRoute();
+syncPassportPhotoRoute();
 
 // Unlock/lock → re-evaluate the sensitive apps; leave the home/brand pages
 // without a lingering lock overlay when no personal route is active.
