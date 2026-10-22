@@ -40,7 +40,7 @@ test('computeReceiptTotals derives subtotal and grand total', () => {
 });
 
 test('store CRUD: save, read, update, remove, import and validate', () => {
-  localStorage.clear();
+  clearCoffeeData();
   const base = {
     store: 'Highlands Coffee - Landmark 81',
     date: '2026-10-15', time: '09:30',
@@ -68,6 +68,20 @@ test('store CRUD: save, read, update, remove, import and validate', () => {
 
   assert.throws(() => validateReceipt({ date: '2026-10-15' }), /tên quán/);
   assert.doesNotThrow(() => validateReceipt({ store: 'A', date: '2026-10-15', items: [], total: 1000 }));
+});
+
+test('merchant records are canonical, persisted with receipts, and do not alter transaction IDs', () => {
+  clearCoffeeData();
+  const first = saveReceipt({ store: '  Cà Phê   Mộc ', date: '2026-10-15', total: 50000 });
+  const equivalent = saveReceipt({ store: 'CA PHE MOC', date: '2026-10-16', total: 40000 });
+  assert.equal(first.store, 'Cà Phê Mộc');
+  assert.equal(equivalent.merchantId, first.merchantId);
+  assert.equal(getCoffeeState().merchants.length, 1);
+  const distinct = saveReceipt({ store: 'Cà Phê Mộc Landmark', date: '2026-10-17', total: 30000 });
+  assert.notEqual(distinct.merchantId, first.merchantId);
+  assert.equal(getReceiptById(first.id).id, first.id);
+  assert.equal(getCoffeeState().merchants.length, 2);
+  clearCoffeeData();
 });
 
 test('clearCoffeeData wipes receipts and profile back to defaults', () => {

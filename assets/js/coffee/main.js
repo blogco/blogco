@@ -29,6 +29,7 @@ import { renderAiInsights } from './insights.js';
 import { renderFinancialDashboard } from './financial-dashboard.js';
 import { analyzeSmartExpense } from './manual.js';
 import { getMerchantLearning, learnMerchantCategory, detectReceiptDuplicate } from './smart-entry.js';
+import { merchantCreateOption, merchantSuggestions } from './merchant.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -563,6 +564,62 @@ function reindexManualRows(form) {
   });
 }
 
+function renderMerchantOptions(input) {
+  const row = input.closest('[data-manual-row]');
+  const list = row?.querySelector('.coffee-merchant-options');
+  if (!row || !list) return;
+  const query = input.value.trim();
+  const state = getCoffeeState();
+  const matches = merchantSuggestions(query, state.merchants || [], state.receipts || []);
+  const options = matches.map((merchant, index) => `<button type="button" id="${list.id}-option-${index}" role="option" aria-selected="false" class="coffee-merchant-option${merchant.exact ? ' is-exact' : ''}" data-merchant-pick="${escapeHtml(merchant.id)}" data-merchant-name="${escapeHtml(merchant.name)}" data-merchant-category="${escapeHtml(merchant.category || '')}"><span>${escapeHtml(merchant.name)}</span><small>${merchant.exact ? 'Khớp chính xác' : 'Có thể trùng · chọn để dùng merchant này'}${merchant.usage.count ? ` · ${merchant.usage.count} lần dùng` : ''}</small></button>`);
+  if (merchantCreateOption(query, state.merchants || [])) options.push(`<button type="button" id="${list.id}-option-${options.length}" role="option" aria-selected="false" class="coffee-merchant-option is-create" data-merchant-create><span>＋ Thêm “${escapeHtml(query.replace(/\s+/g, ' '))}”</span><small>${matches.some((item) => item.possible) ? 'Tạo merchant riêng, không gộp với mục tương tự' : 'Tạo khi lưu giao dịch'}</small></button>`);
+  list.innerHTML = options.length ? options.join('') : '<p class="coffee-merchant-empty">Chưa có merchant gần đây. Bạn có thể nhập tên mới.</p>';
+  list.hidden = false;
+  positionMerchantOptions(input);
+  input.setAttribute('aria-expanded', 'true');
+  row.dataset.merchantActiveIndex = '-1';
+}
+
+function positionMerchantOptions(input) {
+  const list = input?.closest('[data-manual-row]')?.querySelector('.coffee-merchant-options');
+  if (!input || !list) return;
+  const rect = input.getBoundingClientRect();
+  const width = Math.min(Math.max(rect.width, 220), window.innerWidth - 16);
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+  const top = rect.bottom + 3 + 260 <= window.innerHeight ? rect.bottom + 3 : Math.max(8, rect.top - 263);
+  Object.assign(list.style, { position: 'fixed', left: `${left}px`, top: `${top}px`, width: `${width}px` });
+}
+
+function closeMerchantOptions(input) {
+  const row = input.closest('[data-manual-row]');
+  const list = row?.querySelector('.coffee-merchant-options');
+  if (list) list.hidden = true;
+  input?.setAttribute('aria-expanded', 'false');
+  input?.removeAttribute('aria-activedescendant');
+}
+
+function chooseMerchantOption(button) {
+  const row = button.closest('[data-manual-row]');
+  const input = row?.querySelector('[name="brand"]');
+  if (!row || !input) return;
+  const idField = row.querySelector('[name="merchantId"]');
+  const createField = row.querySelector('[name="merchantCreateNew"]');
+  if (button.hasAttribute('data-merchant-pick')) {
+    input.value = button.dataset.merchantName || '';
+    idField.value = button.dataset.merchantPick || '';
+    createField.value = 'false';
+    const category = button.dataset.merchantCategory;
+    const categoryField = row.querySelector('[name="category"]');
+    if (category && categoryField) { categoryField.value = category; refreshManualExpenseChip(row); }
+  } else {
+    input.value = input.value.replace(/\s+/g, ' ').trim();
+    idField.value = '';
+    createField.value = 'true';
+  }
+  closeMerchantOptions(input);
+  input.focus();
+}
+
 function refreshManualSeason(row) {
   const cell = row.querySelector('[data-season-cell]');
   if (!cell) return;
@@ -797,10 +854,57 @@ export function mountCoffeeApp(root) {
     if (manualForm && (event.target.name === 'brand' || event.target.name === 'items')) {
       refreshManualExpenseChip(event.target.closest('[data-manual-row]'));
     }
+    if (manualForm && event.target.name === 'brand') {
+      const row = event.target.closest('[data-manual-row]');
+      row.querySelector('[name="merchantId"]').value = '';
+      row.querySelector('[name="merchantCreateNew"]').value = 'false';
+      renderMerchantOptions(event.target);
+    }
     if (event.target.matches('[data-search-input]')) {
       searchState.query = event.target.value;
       searchState.page = 1;
       refreshHistoryResults(root);
+    }
+  });
+
+  root.addEventListener('focusin', (event) => {
+    if (event.target.matches('#coffee-manual-form [name="brand"]')) renderMerchantOptions(event.target);
+  });
+  root.addEventListener('focusout', (event) => {
+    if (event.target.matches('#coffee-manual-form [name="brand"]')) setTimeout(() => closeMerchantOptions(event.target), 120);
+  });
+  root.addEventListener('scroll', () => {
+    const input = root.querySelector('#coffee-manual-form [name="brand"][aria-expanded="true"]');
+    if (input) positionMerchantOptions(input);
+  }, true);
+  window.addEventListener('resize', () => {
+    const input = root.querySelector('#coffee-manual-form [name="brand"][aria-expanded="true"]');
+    if (input) positionMerchantOptions(input);
+  });
+  root.addEventListener('mousedown', (event) => {
+    if (event.target.closest('.coffee-merchant-options')) event.preventDefault();
+  });
+  root.addEventListener('keydown', (event) => {
+    const input = event.target;
+    if (!input.matches('#coffee-manual-form [name="brand"]')) return;
+    const row = input.closest('[data-manual-row]');
+    const list = row.querySelector('.coffee-merchant-options');
+    let options = [...list.querySelectorAll('[role="option"]')];
+    if (event.key === 'Escape') { closeMerchantOptions(input); return; }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (list.hidden) { renderMerchantOptions(input); options = [...list.querySelectorAll('[role="option"]')]; }
+      const active = Number(row.dataset.merchantActiveIndex || -1);
+      const next = event.key === 'ArrowDown' ? Math.min(options.length - 1, active + 1) : Math.max(0, active - 1);
+      row.dataset.merchantActiveIndex = String(next);
+      options.forEach((option, index) => option.setAttribute('aria-selected', String(index === next)));
+      if (options[next]) { input.setAttribute('aria-activedescendant', options[next].id); options[next].scrollIntoView?.({ block: 'nearest' }); }
+      return;
+    }
+    if (event.key === 'Enter' && !list.hidden && options.length) {
+      event.preventDefault();
+      const active = Number(row.dataset.merchantActiveIndex || -1);
+      chooseMerchantOption(options[active >= 0 ? active : options.length - 1]);
     }
   });
 
@@ -857,6 +961,15 @@ export function mountCoffeeApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    if (target.closest('[data-merchant-clear]')) {
+      const row = target.closest('[data-manual-row]');
+      const input = row?.querySelector('[name="brand"]');
+      if (input) { input.value = ''; row.querySelector('[name="merchantId"]').value = ''; row.querySelector('[name="merchantCreateNew"]').value = 'false'; closeMerchantOptions(input); input.focus(); }
+      return;
+    }
+    const merchantOption = target.closest('[data-merchant-pick], [data-merchant-create]');
+    if (merchantOption) { chooseMerchantOption(merchantOption); return; }
+
     if (target.closest('[data-fin-mode]')) {
       financialFilters = { ...financialFilters, mode: target.closest('[data-fin-mode]').dataset.finMode };
       const dashboard = root.querySelector('[data-fin-dashboard]');
@@ -870,6 +983,7 @@ export function mountCoffeeApp(root) {
       if (dashboard) dashboard.outerHTML = renderFinancialDashboard(getCoffeeState().receipts, financialFilters);
       return;
     }
+
     const financialCategory = target.closest('[data-fin-category]');
     if (financialCategory) {
       financialFilters = { ...financialFilters, category: financialCategory.dataset.finCategory };
@@ -999,6 +1113,7 @@ export function mountCoffeeApp(root) {
     const form = event.target;
     event.preventDefault();
     if (form.id === 'coffee-manual-form') {
+      if (form.dataset.saving === 'true') return;
       try {
         const rows = readManualRows(form);
         if (!rows.length) throw new Error('Hãy nhập ít nhất một giao dịch (thương hiệu và số tiền).');
@@ -1009,12 +1124,26 @@ export function mountCoffeeApp(root) {
           else if (!/^\d{4}-\d{2}-\d{2}$/.test(row.date)) problems.push(`Dòng ${index + 1}: ngày giao dịch chưa hợp lệ`);
         });
         if (problems.length) throw new Error(problems.join(' · '));
+        form.dataset.saving = 'true';
+        const submitButton = form.querySelector('[type="submit"]');
+        if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Đang lưu…'; }
+        rows.forEach((row) => {
+          if (row.merchantId || row.merchantCreateNew) return;
+          const state = getCoffeeState();
+          const possible = merchantSuggestions(row.brand, state.merchants || [], state.receipts || []).find((merchant) => merchant.possible);
+          if (!possible) return;
+          const reuse = window.confirm(`Tên “${row.brand}” có thể là merchant “${possible.name}”. Chọn OK để dùng merchant có sẵn; Cancel để tạo merchant riêng.`);
+          if (reuse) { row.brand = possible.name; row.merchantId = possible.id; }
+          else row.merchantCreateNew = true;
+        });
         const saved = [];
         rows.forEach((row) => {
           const duplicate = detectReceiptDuplicate({ store: row.brand, total: row.total, date: row.date }, getCoffeeState().receipts);
           if (duplicate && !window.confirm(`Có thể trùng giao dịch ${duplicate.id} (${duplicate.store}, ${formatVnd(duplicate.total)}). Vẫn lưu dòng ${row.brand}?`)) return;
           saved.push(saveReceipt({
             store: row.brand,
+            merchantId: row.merchantId,
+            merchantCreateNew: row.merchantCreateNew,
             date: row.date,
             subtotal: row.subtotal,
             discount: row.discount,
@@ -1026,10 +1155,13 @@ export function mountCoffeeApp(root) {
           }));
           if (row.expenseCategoryRaw) learnMerchantCategory(row.brand, row.expenseCategoryRaw, { alias: row.brand });
         });
-        if (!saved.length) { showToast(root, 'Không có giao dịch nào được lưu.'); return; }
+        if (!saved.length) { form.dataset.saving = 'false'; if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'Lưu giao dịch'; } showToast(root, 'Không có giao dịch nào được lưu.'); return; }
         resetSearchState();
         showExpenseReview(root, saved);
       } catch (error) {
+        form.dataset.saving = 'false';
+        const submitButton = form.querySelector('[type="submit"]');
+        if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'Lưu giao dịch'; }
         showToast(root, error.message || 'Không lưu được dữ liệu.', true);
       }
       return;

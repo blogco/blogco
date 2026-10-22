@@ -529,6 +529,18 @@ body.coffee-route .category-bar { display: none; }
 .coffee-manual-input:focus { outline: none; border-color: var(--coffee-primary); background: #fff; box-shadow: 0 0 0 3px rgba(6, 137, 216, .16); }
 .coffee-manual-input--amount { padding-right: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .coffee-manual-input--qty { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.coffee-merchant-combobox { position: relative; min-width: 170px; }
+.coffee-merchant-combobox [name="brand"] { padding-right: 1.8rem; }
+.coffee-merchant-clear { position: absolute; z-index: 1; top: 50%; right: .35rem; transform: translateY(-50%); width: 24px; height: 24px; border: 0; border-radius: 50%; background: transparent; color: var(--coffee-muted); font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.coffee-merchant-clear:hover { background: var(--coffee-primary-soft-2); color: var(--coffee-ink); }
+.coffee-merchant-options { position: absolute; z-index: 30; top: calc(100% + 3px); left: 0; right: 0; max-height: 260px; overflow: auto; padding: .25rem; border: 1px solid var(--coffee-border); border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(17, 24, 39, .14); }
+.coffee-merchant-options[hidden] { display: none; }
+.coffee-merchant-option { display: grid; width: 100%; gap: .12rem; padding: .55rem .65rem; border: 0; border-radius: 7px; background: #fff; color: var(--coffee-ink); text-align: left; cursor: pointer; }
+.coffee-merchant-option:hover, .coffee-merchant-option[aria-selected="true"] { background: var(--coffee-primary-soft-2); }
+.coffee-merchant-option span { font-weight: 700; }
+.coffee-merchant-option small, .coffee-merchant-empty { color: var(--coffee-muted); font-size: .72rem; }
+.coffee-merchant-option.is-create { border-top: 1px solid var(--coffee-border); color: var(--coffee-primary); }
+.coffee-merchant-empty { margin: 0; padding: .65rem; }
 .coffee-manual-total-cell { display: inline-block; min-width: 100%; color: var(--coffee-primary-deep); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
 .coffee-manual-cell--amount { position: relative; }
 .coffee-manual-currency { position: absolute; top: 50%; right: .7rem; transform: translateY(-50%); color: var(--coffee-muted); font-size: .8rem; pointer-events: none; }

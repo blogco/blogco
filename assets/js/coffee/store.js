@@ -7,6 +7,7 @@
 import { CATEGORY_LABELS, classifyItem } from './menu.js';
 import { seasonOf } from './season.js';
 import { classifyExpense, normalizeExpenseCategory, EXPENSE_CATEGORY_LABELS } from './expense.js';
+import { merchantIdForName, normalizeMerchantName } from './merchant.js';
 
 const STORAGE_KEY = 'blogco.coffee.receipts.v1';
 const BACKUP_KEY = 'blogco.coffee.receipts.backup.v1';
@@ -32,7 +33,7 @@ export function escapeHtml(value = '') {
 }
 
 function blankState() {
-  return { version: 1, nextId: 1, receipts: [], profile: { ...DEFAULT_PROFILE } };
+  return { version: 2, nextId: 1, receipts: [], merchants: [], profile: { ...DEFAULT_PROFILE } };
 }
 
 function text(value, max = 500) {
@@ -41,6 +42,27 @@ function text(value, max = 500) {
 
 function multiline(value, max = 2000) {
   return String(value ?? '').replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim().slice(0, max);
+}
+
+function ensureMerchant(state, name, { merchantId = '', forceNew = false, category = '', source = 'manual' } = {}) {
+  const cleanName = text(name, 160);
+  const normalizedName = normalizeMerchantName(cleanName);
+  if (!normalizedName) return '';
+  const selected = merchantId && state.merchants.find((item) => item.id === merchantId);
+  if (selected && normalizeMerchantName(selected.name) === normalizedName) return selected.id;
+  if (!forceNew) {
+    const exact = state.merchants.find((item) => normalizeMerchantName(item.normalizedName || item.name) === normalizedName);
+    if (exact) {
+      if (!exact.aliases?.includes(cleanName)) exact.aliases = [...new Set([...(exact.aliases || []), cleanName])];
+      exact.updatedAt = new Date().toISOString();
+      return exact.id;
+    }
+  }
+  const now = new Date().toISOString();
+  const sourceValue = String(source).toLowerCase() === 'ocr' ? 'OCR' : ['import', 'imported'].includes(String(source).toLowerCase()) ? 'imported' : 'manual';
+  const record = { id: merchantIdForName(cleanName, state.merchants), name: cleanName, normalizedName, category: text(category, 80), aliases: [cleanName], createdAt: now, updatedAt: now, source: sourceValue };
+  state.merchants.push(record);
+  return record.id;
 }
 
 export function toNumber(value) {
@@ -110,6 +132,7 @@ function normalizeReceipt(input = {}, existing = {}) {
   return {
     id: existing.id || text(input.id, 80),
     store: text(input.store, 160),
+    merchantId: text(input.merchantId ?? existing.merchantId, 180),
     address: text(input.address, 240),
     date,
     time: text(input.time, 10),
@@ -153,9 +176,12 @@ function readState() {
   if (memoryCache) return structuredClone(memoryCache);
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    memoryCache = parsed && parsed.version === 1 && Array.isArray(parsed.receipts)
-      ? { ...blankState(), ...parsed, profile: { ...DEFAULT_PROFILE, ...parsed.profile } }
-      : blankState();
+    if (parsed && [1, 2].includes(parsed.version) && Array.isArray(parsed.receipts)) {
+      memoryCache = { ...blankState(), ...parsed, version: 2, merchants: Array.isArray(parsed.merchants) ? parsed.merchants : [], profile: { ...DEFAULT_PROFILE, ...parsed.profile } };
+      memoryCache.receipts.forEach((receipt) => {
+        if (!receipt.merchantId) receipt.merchantId = ensureMerchant(memoryCache, receipt.store, { source: String(receipt.source || '').toLowerCase() === 'ocr' ? 'OCR' : 'manual' });
+      });
+    } else memoryCache = blankState();
   } catch {
     memoryCache = blankState();
   }
@@ -201,6 +227,8 @@ export function saveReceipt(input = {}, id = '') {
   const existing = existingIndex >= 0 ? state.receipts[existingIndex] : {};
   validateReceipt(input);
   const record = normalizeReceipt(input, existing);
+  record.merchantId = ensureMerchant(state, record.store, { merchantId: input.merchantId, forceNew: input.merchantCreateNew === true || input.merchantCreateNew === 'true', source: record.source });
+  if (existingIndex < 0) record.store = state.merchants.find((merchant) => merchant.id === record.merchantId)?.name || record.store;
   if (!record.id) record.id = nextReceiptId(state, record.date);
   record.updatedAt = new Date().toISOString();
   if (existingIndex >= 0) {
@@ -296,9 +324,11 @@ export function importReceipts(payload) {
     if (!candidate.id) candidate.id = nextReceiptId(state, candidate.date);
     const current = byId.get(candidate.id);
     if (!current) {
+      candidate.merchantId = ensureMerchant(state, candidate.store, { merchantId: raw.merchantId, source: 'imported' });
       byId.set(candidate.id, candidate);
       added += 1;
     } else if (new Date(candidate.updatedAt) > new Date(current.updatedAt || 0)) {
+      candidate.merchantId = ensureMerchant(state, candidate.store, { merchantId: raw.merchantId, source: 'imported' });
       byId.set(candidate.id, { ...candidate, createdAt: current.createdAt || candidate.createdAt });
       updated += 1;
     }

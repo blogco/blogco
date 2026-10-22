@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { seasonOf, seasonLabel, seasonKey, SEASONS } from './season.js';
-import { formatAmountInput, readManualRows, BRAND_SUGGESTIONS, parseItemNames, distributeAmount, rowToItems } from './manual.js';
+import { formatAmountInput, readManualRows, parseItemNames, distributeAmount, rowToItems } from './manual.js';
+import { merchantCreateOption, merchantIdForName, merchantSuggestions, normalizeMerchantName } from './merchant.js';
 
 test('seasonOf maps each month to the conventional season', () => {
   assert.equal(seasonOf('2026-01-15')?.label, 'Xuân');
@@ -36,10 +37,18 @@ test('formatAmountInput formats thousands and strips non-digits', () => {
   assert.equal(formatAmountInput('abc'), '');
 });
 
-test('BRAND_SUGGESTIONS includes the popular chains', () => {
-  ['Highlands Coffee', 'Starbucks', 'Phúc Long', 'The Coffee House'].forEach((brand) => {
-    assert.ok(BRAND_SUGGESTIONS.includes(brand), `missing ${brand}`);
-  });
+test('merchant lookup is accent/case insensitive, ranks recent use, and offers free text creation', () => {
+  const merchants = [
+    { id: 'm-a', name: 'Cà Phê Mộc', normalizedName: 'ca phe moc' },
+    { id: 'm-b', name: 'Starbucks Reserve', normalizedName: 'starbucks reserve' },
+    { id: 'm-c', name: 'Starbucks', normalizedName: 'starbucks' },
+  ];
+  assert.equal(normalizeMerchantName('  CA   PHE MOC '), 'ca phe moc');
+  assert.equal(merchantSuggestions('Ca phe Moc', merchants)[0].id, 'm-a');
+  assert.deepEqual(merchantSuggestions('Star', merchants).map((item) => item.name), ['Starbucks', 'Starbucks Reserve']);
+  assert.equal(merchantCreateOption('Starbucks', merchants), false);
+  assert.equal(merchantCreateOption('Tiệm mới', merchants), true);
+  assert.notEqual(merchantIdForName('Tiệm mới', []), merchantIdForName('Quán khác', []));
 });
 
 test('readManualRows parses formatted amounts and drops blank rows', () => {
@@ -64,6 +73,7 @@ test('readManualRows parses formatted amounts and drops blank rows', () => {
   assert.equal(parsed.length, 2);
   assert.deepEqual(parsed[0], {
     brand: 'Highlands Coffee', itemsText: 'Matcha Latte, Bánh dừa', itemNames: ['Matcha Latte', 'Bánh dừa'],
+    merchantId: '', merchantCreateNew: false,
     quantity: 2, subtotal: 100200, discount: 20000, total: 80200, date: '2026-05-10', season: 'summer',
     expenseCategory: 'coffee', expenseCategoryRaw: '',
     categoryDetailId: '', categoryGroupId: '',

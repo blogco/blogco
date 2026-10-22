@@ -18,12 +18,7 @@ import { seasonIcon } from './season.js';
 import { parseSmartExpense, getMerchantLearning } from './smart-entry.js';
 import { getExpenseCatalog } from './smart-entry.js';
 
-export const BRAND_SUGGESTIONS = [
-  'Highlands Coffee', 'Starbucks', 'Phúc Long', 'The Coffee House',
-  'Trung Nguyên Legend', 'Cộng Cà Phê', 'Milano Coffee', 'Passio Coffee',
-  'Katinat Saigon Kafe', 'Cheese Coffee', 'Aha Coffee', 'Ông Bầu Coffee',
-  'Cà phê Muối Chú Long', 'Rang Rang Coffee', 'XLIII Coffee',
-];
+let comboSequence = 0;
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -35,10 +30,6 @@ export function formatAmountInput(value) {
   const digits = String(value ?? '').replace(/[^\d]/g, '');
   if (!digits) return '';
   return Number(digits).toLocaleString('vi-VN');
-}
-
-export function brandOptions() {
-  return BRAND_SUGGESTIONS.map((brand) => `<option value="${escapeHtml(brand)}"></option>`).join('');
 }
 
 export function itemOptions() {
@@ -118,6 +109,7 @@ export function resolveRowExpenseCategory(row = {}) {
 }
 
 export function renderManualRow(row = {}, index = 0) {
+  const comboId = `coffee-merchant-options-${++comboSequence}`;
   const date = row.date || todayKey();
   const subtotalRaw = row.subtotal ?? row.amount ?? '';
   const discountRaw = row.discount ?? '';
@@ -132,7 +124,13 @@ export function renderManualRow(row = {}, index = 0) {
   return `<tr class="coffee-manual-row" data-manual-row data-category-detail-id="${escapeHtml(row.categoryDetailId || '')}" data-category-group-id="${escapeHtml(row.categoryGroupId || '')}">
     <td class="coffee-manual-cell--index"><span data-row-index>${index + 1}</span></td>
     <td>
-      <input class="coffee-manual-input" name="brand" type="text" list="coffee-brand-suggest" maxlength="160" autocomplete="off" value="${escapeHtml(row.brand ?? '')}" placeholder="Highlands Coffee" aria-label="Brand (quán) dòng ${index + 1}">
+      <div class="coffee-merchant-combobox">
+        <input class="coffee-manual-input" name="brand" type="text" maxlength="160" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${comboId}" value="${escapeHtml(row.brand ?? '')}" placeholder="Nhập tên quán hoặc tìm trong danh sách..." aria-label="Tên quán / Cửa hàng dòng ${index + 1}">
+        <input type="hidden" name="merchantId" value="${escapeHtml(row.merchantId || '')}">
+        <input type="hidden" name="merchantCreateNew" value="${row.merchantCreateNew ? 'true' : 'false'}">
+        <button type="button" class="coffee-merchant-clear" data-merchant-clear aria-label="Xóa tên quán">×</button>
+        <div class="coffee-merchant-options" id="${comboId}" role="listbox" hidden></div>
+      </div>
     </td>
     <td class="coffee-manual-cell--category">
       <select class="coffee-manual-select" name="category" data-manual-category aria-label="Danh mục chi phí dòng ${index + 1}">
@@ -176,7 +174,7 @@ export function renderManualTable(rows = [{}]) {
       <thead>
         <tr>
           <th class="coffee-manual-cell--index" scope="col">STT</th>
-          <th scope="col">Quán <span class="coffee-manual-th-sub">brand</span></th>
+      <th scope="col">Tên quán / Cửa hàng</th>
           <th class="coffee-manual-cell--category" scope="col">Danh mục chi phí <span class="coffee-manual-th-sub">AI tự phân loại · hoặc chọn nhanh</span></th>
           <th class="coffee-manual-cell--items" scope="col">Items <span class="coffee-manual-th-sub">tên món, cách nhau dấu phẩy</span></th>
           <th class="coffee-manual-cell--qty" scope="col">Số món</th>
@@ -193,7 +191,6 @@ export function renderManualTable(rows = [{}]) {
       </tbody>
     </table>
   </div>
-  <datalist id="coffee-brand-suggest">${brandOptions()}</datalist>
   <datalist id="coffee-manual-item-suggest">${itemOptions()}</datalist>`;
 }
 
@@ -252,12 +249,16 @@ export function readManualRows(form) {
     const date = row.querySelector('[name="date"]')?.value || '';
     const itemsText = (row.querySelector('[name="items"]')?.value || '').trim();
     const brand = (row.querySelector('[name="brand"]')?.value || '').trim();
+    const merchantId = row.querySelector('[name="merchantId"]')?.value || '';
+    const merchantCreateNew = row.querySelector('[name="merchantCreateNew"]')?.value === 'true';
     const subtotal = toNumber(row.querySelector('[name="subtotal"]')?.value);
     const discount = maxZero(toNumber(row.querySelector('[name="discount"]')?.value));
     const quantity = Math.max(1, Math.round(toNumber(row.querySelector('[name="quantity"]')?.value) || 1));
     const categoryRaw = normalizeExpenseCategory(row.querySelector('[name="category"]')?.value);
     return {
       brand,
+      merchantId,
+      merchantCreateNew,
       itemsText,
       itemNames: parseItemNames(itemsText),
       quantity,
