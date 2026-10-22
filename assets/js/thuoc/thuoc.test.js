@@ -6,7 +6,7 @@ import {
 } from './store.js';
 import { computeThuocStats } from './stats.js';
 import { filterEntries } from './main.js';
-import { extractMedicineFields, findMedicineDuplicates, normalizeMedicineSearch } from './medicine-db.js';
+import { buildDrugSearchUrls, extractMedicineFields, findMedicineDuplicates, normalizeMedicineSearch } from './medicine-db.js';
 
 // Minimal localStorage stub so the store CRUD layer can run in Node.
 globalThis.localStorage = (() => {
@@ -108,4 +108,12 @@ test('medicine duplicate matching requires exact product fields', () => {
   const products = [{ brandName: 'Panadol', genericName: 'Paracetamol', strength: '500 mg', dosageForm: 'tablet', manufacturer: 'ABC', registrationNumber: 'R1' }];
   assert.equal(findMedicineDuplicates(products, products[0]).length, 1);
   assert.equal(findMedicineDuplicates(products, { ...products[0], strength: '250 mg' }).length, 0);
+});
+
+test('medicine web lookup builds free search links without an API request', () => {
+  const urls = buildDrugSearchUrls('Paracetamol 500 mg');
+  assert.equal(urls.length, 3);
+  assert.match(urls[0].url, /^https:\/\/www\.google\.com\/search\?/);
+  assert.match(urls[1].url, /^https:\/\/dailymed\.nlm\.nih\.gov\/dailymed\/search\.cfm\?/);
+  assert.deepEqual(buildDrugSearchUrls(''), []);
 });

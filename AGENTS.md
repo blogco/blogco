@@ -156,6 +156,7 @@ State được lưu dưới dạng:
 - Không dùng IndexedDB hoặc Context khi chưa có yêu cầu/triển khai cụ thể.
 - Kho sản phẩm DB Thuốc là một feature riêng, dùng IndexedDB `blogco.medicine-db` (versioned) để giữ ảnh Blob và hồ sơ sản phẩm; không sửa/xóa Local Storage `blogco.thuoc.entries.v1` vì đó là lịch sử dùng thuốc hiện hữu.
 - OCR bao bì có thể tái sử dụng `assets/js/health/ocr.js` chạy trên thiết bị. Dữ liệu tra cứu ngoài phải gắn nguồn và không được coi nhãn nước ngoài là xác minh sản phẩm Việt Nam; không tạo nội dung AI giả khi chưa có backend an toàn.
+- Tra cứu DB Thuốc ưu tiên liên kết tìm kiếm web miễn phí và ghi chú nguồn do người dùng kiểm tra/lưu. Không phụ thuộc API thương mại hoặc giả định trang tĩnh có thể scrape trang ngoài qua CORS.
 
 ### Duplicate và Recommendation
 

@@ -1,8 +1,9 @@
 import { recognizeImage } from '../health/ocr.js';
 
 const DB_NAME = 'blogco.medicine-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = 'products';
+const REFERENCE_STORE = 'references';
 
 export function normalizeMedicineSearch(value = '') {
   return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -26,21 +27,35 @@ export function findMedicineDuplicates(records, candidate) {
   return records.filter((record) => exact === key(record));
 }
 
+export function buildDrugSearchUrls(query = '') {
+  const term = String(query || '').trim();
+  if (!term) return [];
+  const q = encodeURIComponent(term);
+  return [
+    { name: 'Tìm trên web', url: `https://www.google.com/search?q=${q}+thu%E1%BB%91c+ho%E1%BA%A1t+ch%E1%BA%A5t` },
+    { name: 'DailyMed', url: `https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=${q}` },
+    { name: 'Cục Quản lý Dược Việt Nam', url: `https://dav.gov.vn/` },
+  ];
+}
+
 function openDatabase() {
   if (!globalThis.indexedDB) return Promise.reject(new Error('Trình duyệt không hỗ trợ lưu kho thuốc cục bộ.'));
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE, { keyPath: 'id' }); };
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE, { keyPath: 'id' });
+      if (!request.result.objectStoreNames.contains(REFERENCE_STORE)) request.result.createObjectStore(REFERENCE_STORE, { keyPath: 'id' });
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error || new Error('Không mở được kho thuốc.'));
   });
 }
 
-async function transact(mode, action) {
+async function transact(storeName, mode, action) {
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, mode);
-    const store = tx.objectStore(STORE);
+    const tx = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
     let result;
     try { result = action(store); } catch (error) { db.close(); reject(error); return; }
     tx.oncomplete = () => { db.close(); resolve(result?.result); };
@@ -60,43 +75,30 @@ export async function getMedicineProducts() {
 
 export async function saveMedicineProduct(input, images = [], id = '') {
   const record = { ...input, id: id || input.id || `med-${crypto.randomUUID()}`, images, updatedAt: new Date().toISOString(), createdAt: input.createdAt || new Date().toISOString() };
-  await transact('readwrite', (store) => store.put(record));
+  await transact(STORE, 'readwrite', (store) => store.put(record));
   return record;
 }
 
-export async function deleteMedicineProduct(id) { await transact('readwrite', (store) => store.delete(id)); }
+export async function deleteMedicineProduct(id) { await transact(STORE, 'readwrite', (store) => store.delete(id)); }
+
+export async function saveMedicineReference(input) {
+  const sourceUrl = new URL(String(input.sourceUrl || ''));
+  if (!['http:', 'https:'].includes(sourceUrl.protocol)) throw new Error('URL nguồn phải bắt đầu bằng http hoặc https.');
+  const record = { id: `ref-${crypto.randomUUID()}`, medicineName: String(input.medicineName || '').trim().slice(0, 160), title: String(input.title || '').trim().slice(0, 200), sourceUrl: sourceUrl.href, content: String(input.content || '').trim().slice(0, 20000), createdAt: new Date().toISOString() };
+  if (!record.medicineName || !record.content) throw new Error('Cần tên thuốc và nội dung tham khảo đã kiểm tra.');
+  await transact(REFERENCE_STORE, 'readwrite', (store) => store.put(record));
+  return record;
+}
+
+export async function getMedicineReferences() {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(REFERENCE_STORE, 'readonly').objectStore(REFERENCE_STORE).getAll();
+    request.onsuccess = () => { db.close(); resolve((request.result || []).sort((a, b) => b.createdAt.localeCompare(a.createdAt))); };
+    request.onerror = () => { db.close(); reject(request.error); };
+  });
+}
 
 export async function scanMedicineImage(file, onProgress) {
   return recognizeImage(file, { lang: 'vie+eng', onProgress });
-}
-
-export async function searchOpenFda(query) {
-  const term = String(query || '').trim();
-  if (!term) throw new Error('Nhập tên thuốc để tra cứu nguồn tham khảo.');
-  const encoded = term.replace(/["\\]/g, ' ').trim();
-  const queries = ['brand_name', 'generic_name', 'substance_name'];
-  const responses = await Promise.all(queries.map(async (field) => {
-    const url = `https://api.fda.gov/drug/label.json?search=${encodeURIComponent(`openfda.${field}:"${encoded}"`)}&limit=5`;
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (response.status === 404) return [];
-    if (!response.ok) throw new Error(`Nguồn openFDA trả về lỗi (${response.status}).`);
-    const payload = await response.json();
-    return payload.results || [];
-  }));
-  const unique = new Map();
-  responses.flat().forEach((item) => unique.set(item.id || JSON.stringify(item.openfda || {}), item));
-  return [...unique.values()].map((item) => ({
-    title: item.openfda?.brand_name?.[0] || item.openfda?.generic_name?.[0] || term,
-    genericName: item.openfda?.generic_name?.[0] || '',
-    ingredients: item.openfda?.substance_name || [],
-    manufacturer: item.openfda?.manufacturer_name?.[0] || '',
-    indications: item.indications_and_usage?.[0] || '',
-    clinicalPharmacology: item.clinical_pharmacology?.[0] || '',
-    mechanism: item.mechanism_of_action?.[0] || '',
-    pharmacokinetics: item.pharmacokinetics?.[0] || '',
-    adverseReactions: item.adverse_reactions?.[0] || '',
-    contraindications: item.contraindications?.[0] || '',
-    source: 'Nhãn thuốc Hoa Kỳ trong openFDA; không xác minh tương đương sản phẩm tại Việt Nam.',
-    url: 'https://open.fda.gov/apis/drug/label/',
-  }));
 }

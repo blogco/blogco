@@ -863,6 +863,11 @@ body.thuoc-route .category-bar { display: none; }
 .medicine-db__record p { margin: .2rem 0; }
 .medicine-db__record small { color: var(--thuoc-muted); }
 .medicine-db__reference { display: grid; gap: .55rem; margin-top: 1rem; padding: 1rem; border: 1px solid var(--thuoc-border); border-radius: 12px; }
+.medicine-db__reference-form { display: grid; gap: .7rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--thuoc-border); }
+.medicine-db__saved { display: grid; gap: .65rem; margin-top: 1.2rem; }
+.medicine-db__saved details { padding: .7rem; border: 1px solid var(--thuoc-border); border-radius: 8px; }
+.medicine-db__saved summary { cursor: pointer; font-weight: 700; }
+.medicine-db__saved details p { margin: .6rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .medicine-db__reference h3 { margin: 0; }
 .medicine-db__reference details { padding: .55rem 0; border-top: 1px solid var(--thuoc-border); }
 .medicine-db__reference summary { cursor: pointer; font-weight: 700; }

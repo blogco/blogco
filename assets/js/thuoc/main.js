@@ -19,7 +19,7 @@ import { renderThuocInsights } from './insights.js';
 import { renderThuocDashboard } from './dashboard.js';
 import { icon } from '../icons.js';
 import { renderMedicineDatabase } from './MedicineDatabase.js';
-import { deleteMedicineProduct, extractMedicineFields, getMedicineProducts, findMedicineDuplicates, saveMedicineProduct, scanMedicineImage, searchOpenFda } from './medicine-db.js';
+import { deleteMedicineProduct, extractMedicineFields, getMedicineProducts, findMedicineDuplicates, saveMedicineProduct, scanMedicineImage, buildDrugSearchUrls, saveMedicineReference } from './medicine-db.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 8;
@@ -446,6 +446,25 @@ export function mountThuocApp(root) {
 
   root.addEventListener('submit', async (event) => {
     const form = event.target;
+    if (form.matches('[data-reference-search]')) {
+      event.preventDefault();
+      const query = form.querySelector('[data-reference-query]')?.value.trim() || '';
+      const host = root.querySelector('[data-reference-results]');
+      const links = buildDrugSearchUrls(query);
+      if (host) host.innerHTML = links.map((item) => `<a class="thuoc-secondary-button" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Mở ${escapeHtml(item.name)} ↗</a>`).join(' ');
+      const medicineName = form.closest('.thuoc-card')?.querySelector('[data-reference-save] [name="medicineName"]');
+      if (medicineName && !medicineName.value) medicineName.value = query;
+      return;
+    }
+    if (form.matches('[data-reference-save]')) {
+      event.preventDefault();
+      try {
+        await saveMedicineReference(Object.fromEntries(new FormData(form).entries()));
+        await renderMedicineDatabase(root, 'search');
+        showToast(root, 'Đã lưu ghi chú và URL nguồn trên thiết bị.');
+      } catch (error) { showToast(root, error.message || 'Không lưu được ghi chú.', true); }
+      return;
+    }
     if (form.matches('[data-medicine-form]')) {
       event.preventDefault();
       const fields = Object.fromEntries(new FormData(form).entries());
@@ -460,17 +479,6 @@ export function mountThuocApp(root) {
         await renderMedicineDatabase(root, 'library');
       } catch (error) { showToast(root, error.message || 'Không lưu được kho thuốc.', true); }
       return;
-    }
-    if (form.matches('[data-reference-search]')) {
-      event.preventDefault();
-      const host = root.querySelector('[data-reference-results]');
-      const query = form.querySelector('[data-reference-query]')?.value || '';
-      if (!host) return;
-      host.textContent = 'Đang tra cứu nhãn openFDA…';
-      try {
-        const records = await searchOpenFda(query);
-        host.innerHTML = records.length ? records.map((record) => `<article class="medicine-db__reference"><h3>${escapeHtml(record.title)}</h3><p class="medicine-db__notice">${escapeHtml(record.source)}</p>${[['Hoạt chất',record.ingredients.join(', ')],['Thông tin nhận diện', [record.genericName,record.manufacturer].filter(Boolean).join(' · ')],['Chỉ định trên nhãn',record.indications],['Dược lý lâm sàng',record.clinicalPharmacology],['Cơ chế tác dụng',record.mechanism],['Dược động học',record.pharmacokinetics],['Tác dụng không mong muốn',record.adverseReactions],['Chống chỉ định',record.contraindications]].filter(([,value])=>value).map(([label,value])=>`<details><summary>${label}</summary><p>${escapeHtml(value)}</p></details>`).join('')}<a href="${escapeHtml(record.url)}" target="_blank" rel="noopener noreferrer">Nguồn: openFDA Drug Labeling API</a></article>`).join('') : '<p class="thuoc-empty">Không tìm thấy nhãn phù hợp. Thử tên hoạt chất khác.</p>';
-      } catch (error) { host.textContent = error.message || 'Không thể truy cập openFDA. Hãy thử lại khi có mạng.'; }
     }
   });
 
