@@ -16,12 +16,13 @@
         <nav class="footer__nav" aria-label="Liên kết cuối trang">
             {{- range $index, $link := $footerLinks }}
                 {{- if $index }}<span class="footer__divider" aria-hidden="true">|</span>{{ end }}
-                <a href="{{ $link.href | relURL }}">
+                <a href="{{ $link.href | absLangURL }}">
                     {{- with $link.icon }}<span class="footer__link-icon" aria-hidden="true">
                       {{- if eq . "home" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-6h6v6"/></svg>
                       {{- else if eq . "stethoscope" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M6 3v5a4 4 0 0 0 8 0V3M4 3h4M12 3h4M6 12v1a6 6 0 0 0 12 0v-1"/><circle cx="18" cy="8" r="3"/></svg>
                       {{- else if eq . "pill" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m10.5 20.5 9-9a4.95 4.95 0 0 0-7-7l-9 9a4.95 4.95 0 0 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
                       {{- else if eq . "plane" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m2 16 20-5-20-5 4 5-4 5Z"/><path d="M6 11h16"/></svg>
+                      {{- else if eq . "camera" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 4h-4l-2 3H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4Z"/><circle cx="12" cy="13" r="3"/></svg>
                       {{- else }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>{{ end -}}
                     </span>{{ end -}}
                     {{ $link.label }}
