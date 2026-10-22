@@ -86,7 +86,7 @@ jobs:
         run: python3 scripts/smart_post_footer/build_index.py
 
       - name: Install site dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Build minified JavaScript and CSS
         run: npm run build:assets
