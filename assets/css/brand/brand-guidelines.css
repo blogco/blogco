@@ -588,6 +588,56 @@ body .blogco-header .header-nav { min-height: 64px; padding: 8px 20px; }
 .blogco-header .navbar__mega-item:focus-visible { transform: translateY(-2px); box-shadow: 0 8px 18px rgb(17 24 39 / 7%); }
 .blogco-header .navbar__mega-icon { color: var(--blogco-accent-sky); font-size: 1rem; }
 
+/* Keep the homepage brand and primary navigation in separate layout regions. */
+body .blogco-header .header-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  gap: clamp(2rem, 3vw, 3rem);
+}
+.blogco-header .navbar__brand-region {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-width: max-content;
+}
+.blogco-header .navbar__navigation-region {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+}
+.blogco-header .navbar__menu {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+.blogco-header .navbar__logo {
+  white-space: nowrap;
+}
+
+@media (min-width: 1025px) and (max-width: 1439px) {
+  body .blogco-header .header-nav { gap: 2rem; padding-inline: 1.5rem; }
+  .blogco-header .navbar__menu { gap: 2px; }
+  .blogco-header .navbar__link { padding-inline: 8px; font-size: 12px; letter-spacing: .025em; }
+}
+
+@media (min-width: 1025px) and (max-width: 1199px) {
+  .blogco-header .navbar__menu { display: none; }
+  .blogco-header .navbar__toggle { display: inline-flex; }
+}
+
+@media (min-width: 1200px) {
+  .blogco-header .navbar__toggle { display: none; }
+}
+
+@media (max-width: 1024px) {
+  body .blogco-header .header-nav { gap: 1rem; }
+  .blogco-header .navbar__brand-region { min-width: 0; }
+  .blogco-header .navbar__navigation-region { flex: 0 0 auto; }
+  .blogco-header .navbar__menu { flex: 0 1 auto; }
+}
+
 .hero.first-entry.home-info,
 .brand-hero,
 .health-page-heading,
