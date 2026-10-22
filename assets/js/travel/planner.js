@@ -6,6 +6,56 @@ export const BUDGET_ITEMS = [
 
 export const CURRENCIES = { USD: 'Mỹ', KRW: 'Hàn Quốc', TWD: 'Đài Loan', AUD: 'Úc', JPY: 'Nhật Bản', EUR: 'Châu Âu', SGD: 'Singapore', THB: 'Thái Lan', GBP: 'Anh' };
 
+const MAX_TRIP_BUDGET_VND = 1_000_000_000;
+
+export function parseVnd(value) {
+  if (typeof value === 'number') return Number.isSafeInteger(value) ? value : NaN;
+  const input = String(value ?? '').trim().toLowerCase();
+  if (!input) return NaN;
+  const million = input.match(/^\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|trieu)\s*(?:₫|đ|vnd)?\s*$/i);
+  if (million) {
+    const amount = Number(million[1].replace(',', '.')) * 1_000_000;
+    return Number.isSafeInteger(amount) ? amount : NaN;
+  }
+  if (/^-\d+$/.test(input)) return Number(input);
+  const normalized = input.replace(/\s*(?:₫|đ|vnd)\s*$/i, '').trim();
+  if (!/^(?:\d+|\d{1,3}(?:[.,\s]\d{3})+)$/.test(normalized)) return NaN;
+  const digits = normalized.replace(/[.,\s]/g, '');
+  if (!digits) return NaN;
+  const amount = Number(digits);
+  return Number.isSafeInteger(amount) ? amount : NaN;
+}
+
+export function formatVndInput(value) {
+  const amount = parseVnd(value);
+  return Number.isSafeInteger(amount) && amount > 0 ? `${new Intl.NumberFormat('vi-VN').format(amount)} ₫` : '';
+}
+
+export function validateBudgetVnd(value) {
+  const amount = parseVnd(value);
+  if (!Number.isSafeInteger(amount)) return { valid: false, amount: null, error: 'Vui lòng nhập ngân sách hợp lệ.' };
+  if (amount <= 0) return { valid: false, amount, error: 'Ngân sách phải lớn hơn 0.' };
+  if (amount > MAX_TRIP_BUDGET_VND) return { valid: false, amount, error: 'Ngân sách không được vượt quá 1.000.000.000 ₫.' };
+  return { valid: true, amount, error: '' };
+}
+
+export function buildTripRequest(values) {
+  const destination = String(values.destination || '').trim();
+  if (!destination) throw new Error('Vui lòng nhập điểm đến.');
+  const daysRaw = String(values.days ?? '').trim();
+  if (!/^\d+$/.test(daysRaw)) throw new Error('Vui lòng nhập số ngày du lịch hợp lệ.');
+  const days = Number(daysRaw);
+  if (!Number.isSafeInteger(days) || days < 1 || days > 90) throw new Error('Thời lượng phải từ 1 đến 90 ngày.');
+  const budget = validateBudgetVnd(values.budgetVnd);
+  if (!budget.valid) throw new Error(budget.error);
+  const startDate = String(values.startDate || '').trim();
+  if (startDate) {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? new Date(`${startDate}T00:00:00Z`) : null;
+    if (!date || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== startDate) throw new Error('Vui lòng chọn ngày khởi hành hợp lệ.');
+  }
+  return { ...values, destination, days, budgetVnd: budget.amount, startDate };
+}
+
 export function currencyForDestination(destination = '') {
   const text = destination.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/han quoc|south korea|\bseoul\b|\bbusan\b/.test(text)) return 'KRW';
@@ -23,9 +73,9 @@ export function currencyForDestination(destination = '') {
 export function makeId() { return globalThis.crypto?.randomUUID?.() || `trip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
 
 export function buildTrip({ destination, days, budgetVnd, travelers = 1, departureCity = '', startDate = '', visaMode = false, currency = '', purpose = 'Du lịch', places = '' }) {
-  const dayCount = Math.min(90, Math.max(1, Math.floor(Number(days))));
-  const amount = Math.round(Number(budgetVnd));
-  if (!destination.trim() || !Number.isFinite(dayCount) || !Number.isSafeInteger(amount) || amount <= 0) throw new Error('Nhập điểm đến, số ngày và ngân sách VND hợp lệ (ngân sách là số nguyên an toàn).');
+  const request = buildTripRequest({ destination, days, budgetVnd, startDate });
+  const dayCount = request.days;
+  const amount = request.budgetVnd;
   const endDate = startDate ? addDays(startDate, dayCount - 1) : '';
   return {
     id: makeId(), title: `${destination.trim()} · ${dayCount} ngày`, destination: destination.trim(), daysCount: dayCount,

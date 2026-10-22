@@ -55,6 +55,9 @@
 .travel-check { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0 20px; color: var(--travel-muted); font-size: .9rem; }
 .travel-check input { accent-color: var(--travel-green); }
 .travel-form-error { min-height: 1.3em; color: #b42318; }
+.travel-field-error { min-height: 1em; color: #b42318; font-size: .78rem; font-weight: 600; }
+.travel-field input[aria-invalid="true"] { border-color: #b42318; }
+.travel-button:disabled { cursor: wait; opacity: .72; transform: none; }
 .travel-detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 20px 0; }
 .travel-section--bordered { padding: 22px; border: 1px solid var(--travel-line); border-radius: 17px; background: #fff; }
 .travel-status { padding: 6px 9px; border-radius: 999px; background: #eef7f2; color: var(--travel-green); font-size: .7rem; font-weight: 800; letter-spacing: .07em; }

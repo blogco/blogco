@@ -1,6 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDays, buildTrip, convertVnd, currencyForDestination, sumBudget } from './planner.js';
+import { addDays, buildTrip, buildTripRequest, convertVnd, currencyForDestination, formatVndInput, parseVnd, sumBudget, validateBudgetVnd } from './planner.js';
+
+test('parses and formats common Vietnamese VND input styles', () => {
+  for (const value of ['20000000', '20.000.000', '20,000,000', '20000000 VND', '20 triệu']) assert.equal(parseVnd(value), 20_000_000);
+  assert.equal(formatVndInput('20 triệu'), '20.000.000 ₫');
+  assert.equal(parseVnd('20.00.000'), NaN);
+});
+
+test('validates positive safe budgets against application limits without increments', () => {
+  assert.deepEqual(validateBudgetVnd('19,000,000'), { valid: true, amount: 19_000_000, error: '' });
+  assert.equal(validateBudgetVnd('0').error, 'Ngân sách phải lớn hơn 0.');
+  assert.equal(validateBudgetVnd('-5').error, 'Ngân sách phải lớn hơn 0.');
+  assert.match(validateBudgetVnd('1.001.000.000').error, /vượt quá/);
+  assert.match(validateBudgetVnd('n/a').error, /ngân sách hợp lệ/);
+});
+
+test('constructs normalized trip requests and validates dates and duration', () => {
+  assert.deepEqual(buildTripRequest({ destination: ' Mỹ ', days: '5', budgetVnd: '20 triệu', startDate: '2026-10-23' }), {
+    destination: 'Mỹ', days: 5, budgetVnd: 20_000_000, startDate: '2026-10-23',
+  });
+  assert.throws(() => buildTripRequest({ destination: 'Mỹ', days: '', budgetVnd: '20 triệu' }), /số ngày/);
+  assert.throws(() => buildTripRequest({ destination: 'Mỹ', days: '5', budgetVnd: '20 triệu', startDate: '2026-02-30' }), /ngày khởi hành/);
+});
 
 test('creates a draft from the three required inputs without inventing calendar dates', () => {
   const trip = buildTrip({ destination: 'Seoul, Hàn Quốc', days: 5, budgetVnd: 20_000_000 });

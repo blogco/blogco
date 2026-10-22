@@ -1,5 +1,5 @@
 import { deleteTrip, duplicateTrip, exportTrips, findTrip, importTrips, listTrips, readRateCache, saveTrip, writeRateCache } from './store.js';
-import { BUDGET_ITEMS, CURRENCIES, buildTrip, convertVnd, displayDate, fetchRates, money, sumBudget } from './planner.js';
+import { BUDGET_ITEMS, CURRENCIES, buildTrip, buildTripRequest, convertVnd, displayDate, fetchRates, formatVndInput, money, sumBudget, validateBudgetVnd } from './planner.js';
 
 const esc = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const formatVnd = (amount) => money(amount, 'VND');
@@ -9,6 +9,7 @@ let currentTrip = null;
 let mounted;
 let rateLoading = false;
 let rateAttempted = false;
+let tripCreating = false;
 
 function route() { return decodeURIComponent(location.hash.replace(/^#/, '') || '/travel'); }
 function link(path, label, active = '') { return `<a class="travel-tab${active === path ? ' is-active' : ''}" href="#${path}">${label}</a>`; }
@@ -29,7 +30,7 @@ function tripCard(trip) {
 }
 
 function plannerForm() {
-  return shell('Lập kế hoạch chuyến đi', 'Tạo bản nháp có ngân sách VND gốc không đổi và lịch trình dễ chỉnh sửa.', '/travel/planner', `<form class="travel-form" data-trip-create><div class="travel-form-intro"><span class="travel-step">01</span><div><h2>Thông tin chuyến đi</h2><p>Chỉ cần điền ba trường bắt buộc để bắt đầu.</p></div></div><div class="travel-form-grid"><label class="travel-field travel-field--wide">Điểm đến <span>*</span><input name="destination" required maxlength="100" placeholder="Ví dụ: Seoul, Hàn Quốc" autocomplete="country-name"></label><label class="travel-field">Thời lượng (ngày) <span>*</span><input name="days" type="number" min="1" max="90" step="1" value="5" required></label><label class="travel-field">Tổng ngân sách (VND) <span>*</span><input name="budgetVnd" inputmode="numeric" type="number" min="1" step="1000" placeholder="20.000.000" required></label><label class="travel-field">Thành phố khởi hành<input name="departureCity" placeholder="Ví dụ: TP. Hồ Chí Minh"></label><label class="travel-field">Ngày khởi hành (tuỳ chọn)<input name="startDate" type="date"></label><label class="travel-field">Số hành khách<input name="travelers" type="number" min="1" max="30" value="1"></label><label class="travel-field">Mục đích chuyến đi<select name="purpose"><option value="Du lịch">Du lịch</option><option value="Thăm thân">Thăm thân</option><option value="Công tác">Công tác</option><option value="Khác">Khác</option></select></label><label class="travel-field">Tiền tệ địa phương<select name="currency"><option value="">Tự nhận diện từ điểm đến</option>${Object.entries(CURRENCIES).map(([code, name]) => `<option value="${code}">${code} · ${name}</option>`).join('')}</select></label><label class="travel-field travel-field--wide">Địa điểm muốn ghé thăm (tuỳ chọn)<input name="places" placeholder="Nhập các địa điểm bạn đã xác minh"></label></div><label class="travel-check"><input type="checkbox" name="visaMode"> Tạo lịch trình hỗ trợ hồ sơ visa (bản đề xuất, không phải xác nhận đặt chỗ)</label><p class="travel-form-error" data-form-error role="alert"></p><button class="travel-button" type="submit">Tạo bản kế hoạch <span aria-hidden="true">→</span></button></form><aside class="travel-note"><strong>Ước tính, không phải báo giá</strong><span>Ngân sách được chia thành các nhóm tham khảo. Bạn có thể sửa từng nhóm sau khi tạo; vé và khách sạn không được đánh dấu là đã đặt.</span></aside>`);
+  return shell('Lập kế hoạch chuyến đi', 'Tạo bản nháp có ngân sách VND gốc không đổi và lịch trình dễ chỉnh sửa.', '/travel/planner', `<form class="travel-form" data-trip-create novalidate><div class="travel-form-intro"><span class="travel-step">01</span><div><h2>Thông tin chuyến đi</h2><p>Chỉ cần điền ba trường bắt buộc để bắt đầu.</p></div></div><div class="travel-form-grid"><label class="travel-field travel-field--wide">Điểm đến <span>*</span><input name="destination" required maxlength="100" placeholder="Ví dụ: Seoul, Hàn Quốc" autocomplete="country-name" aria-describedby="destination-error"><small class="travel-field-error" data-field-error="destination" id="destination-error"></small></label><label class="travel-field">Thời lượng (ngày) <span>*</span><input name="days" type="number" min="1" max="90" step="1" value="5" required aria-describedby="days-error"><small class="travel-field-error" data-field-error="days" id="days-error"></small></label><label class="travel-field">Tổng ngân sách (VND) <span>*</span><input name="budgetVnd" inputmode="numeric" type="text" autocomplete="off" placeholder="20.000.000 ₫" required aria-describedby="budget-error"><small class="travel-field-error" data-field-error="budgetVnd" id="budget-error"></small></label><label class="travel-field">Thành phố khởi hành<input name="departureCity" placeholder="Ví dụ: TP. Hồ Chí Minh"></label><label class="travel-field">Ngày khởi hành (tuỳ chọn)<input name="startDate" type="date" lang="vi" aria-describedby="startDate-error"><small class="travel-field-error" data-field-error="startDate" id="startDate-error"></small></label><label class="travel-field">Số hành khách<input name="travelers" type="number" min="1" max="30" value="1"></label><label class="travel-field">Mục đích chuyến đi<select name="purpose"><option value="Du lịch">Du lịch</option><option value="Thăm thân">Thăm thân</option><option value="Công tác">Công tác</option><option value="Khác">Khác</option></select></label><label class="travel-field">Tiền tệ địa phương<select name="currency"><option value="">Tự nhận diện từ điểm đến</option>${Object.entries(CURRENCIES).map(([code, name]) => `<option value="${code}">${code} · ${name}</option>`).join('')}</select></label><label class="travel-field travel-field--wide">Địa điểm muốn ghé thăm (tuỳ chọn)<input name="places" placeholder="Nhập các địa điểm bạn đã xác minh"></label></div><label class="travel-check"><input type="checkbox" name="visaMode"> Tạo lịch trình hỗ trợ hồ sơ visa (bản đề xuất, không phải xác nhận đặt chỗ)</label><p class="travel-form-error" data-form-error role="alert" aria-live="polite"></p><button class="travel-button" type="submit" data-create-button>Tạo kế hoạch du lịch <span aria-hidden="true">→</span></button></form><aside class="travel-note"><strong>Ước tính, không phải báo giá</strong><span>Ngân sách được chia thành các nhóm tham khảo. Bạn có thể sửa từng nhóm sau khi tạo; vé và khách sạn không được đánh dấu là đã đặt.</span></aside>`);
 }
 
 function rateMarkup(trip, conversions) {
@@ -170,21 +171,65 @@ function downloadJson(filename, data) {
 }
 
 function bind(root) {
-  root.addEventListener('submit', (event) => {
+  root.addEventListener('submit', async (event) => {
     const form = event.target;
     if (form.matches('[data-trip-create]')) {
       event.preventDefault();
+      if (tripCreating) return;
       const values = Object.fromEntries(new FormData(form));
+      const errors = { destination: !String(values.destination || '').trim() ? 'Vui lòng nhập điểm đến.' : '', days: !/^\d+$/.test(String(values.days || '')) || Number(values.days) < 1 || Number(values.days) > 90 ? 'Thời lượng phải từ 1 đến 90 ngày.' : '', budgetVnd: validateBudgetVnd(values.budgetVnd).error, startDate: '' };
+      if (values.startDate && !validIsoDate(values.startDate)) errors.startDate = 'Vui lòng chọn ngày khởi hành hợp lệ.';
+      Object.entries(errors).forEach(([name, message]) => {
+        const field = form.elements.namedItem(name);
+        const output = form.querySelector(`[data-field-error="${name}"]`);
+        if (output) output.textContent = message;
+        field?.setAttribute('aria-invalid', String(Boolean(message)));
+      });
+      const firstInvalid = Object.keys(errors).find((name) => errors[name]);
+      if (firstInvalid) { form.elements.namedItem(firstInvalid)?.focus(); return; }
       try {
-        const trip = buildTrip({ ...values, visaMode: form.elements.visaMode.checked });
+        tripCreating = true;
+        const button = form.querySelector('[data-create-button]');
+        const errorOutput = form.querySelector('[data-form-error]');
+        if (button) { button.disabled = true; button.textContent = 'Đang lập kế hoạch...'; }
+        if (errorOutput) errorOutput.textContent = '';
+        const request = buildTripRequest(values);
+        await new Promise((resolve) => window.setTimeout(resolve, 60));
+        const trip = buildTrip({ ...request, visaMode: form.elements.visaMode.checked });
         if (rates) trip.exchange = rates;
         currentTrip = saveTrip(trip);
         location.hash = `#/travel/trips/${encodeURIComponent(trip.id)}`;
-      } catch (error) { root.querySelector('[data-form-error]').textContent = error.message; }
+      } catch (error) {
+        console.error('Travel plan generation failed:', error);
+        const output = form.querySelector('[data-form-error]');
+        if (output) output.textContent = error?.message || 'Không thể tạo kế hoạch. Vui lòng thử lại.';
+        const button = form.querySelector('[data-create-button]');
+        if (button) { button.disabled = false; button.textContent = 'Thử lại tạo kế hoạch'; }
+      } finally {
+        tripCreating = false;
+        const button = form.querySelector('[data-create-button]');
+        if (button && location.hash.includes('/planner') && !button.disabled) button.textContent = 'Tạo kế hoạch du lịch';
+      }
     }
     if (form.matches('[data-manual-rate]')) { event.preventDefault(); setManualRates(form); }
   });
   root.addEventListener('input', (event) => { if (event.target.matches('[data-budget-index], [data-budget-confirmed]')) updateBudgetTotal(root); });
+  root.addEventListener('input', (event) => {
+    const name = event.target.name;
+    if (!['destination', 'days', 'budgetVnd', 'startDate'].includes(name)) return;
+    const output = root.querySelector(`[data-field-error="${name}"]`);
+    const blank = !String(event.target.value || '').trim();
+    const valid = name === 'destination' ? !blank
+      : name === 'days' ? /^\d+$/.test(event.target.value) && Number(event.target.value) >= 1 && Number(event.target.value) <= 90
+        : name === 'budgetVnd' ? validateBudgetVnd(event.target.value).valid
+          : blank || validIsoDate(event.target.value);
+    if (valid) { event.target.setAttribute('aria-invalid', 'false'); if (output) output.textContent = ''; }
+  });
+  root.addEventListener('focusout', (event) => {
+    if (!event.target.matches('[name="budgetVnd"]')) return;
+    const result = validateBudgetVnd(event.target.value);
+    if (result.valid) event.target.value = formatVndInput(result.amount);
+  });
   root.addEventListener('change', async (event) => {
     if (event.target.matches('[data-import-trips]') && event.target.files?.[0]) {
       try { const text = await event.target.files[0].text(); importTrips(text); render(root); }
@@ -216,6 +261,12 @@ function bind(root) {
     if (event.target.closest('[data-export-all]')) { downloadJson('blogco-travel-backup.json', exportTrips()); return; }
   });
   window.addEventListener('afterprint', () => document.body.classList.remove('travel-printing'));
+}
+
+function validIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 function addDate(date, days) { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
