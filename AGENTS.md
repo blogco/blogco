@@ -12,7 +12,7 @@
 - **Runtime dependencies:** `fuse.js 7.5.0`, `highlight.js 11.12.0`, `marked 15.0.12`, `turndown 7.2.0`.
 - **Asset scripts:**
   - `npm run build:assets` — build Vite, tạo bundle/manifest cho Hugo.
-  - `npm test` — Node test runner cho các file `*.test.js` (giữ lại để tham khảo/CI nếu cần, không thuộc workflow local bắt buộc).
+  - `npm test` — Node test runner cho các file `*.test.js`.
   - `npm run hash` — tạo hash cho passcode CMS.
 - `ai/` là toolkit Node tùy chọn, tách khỏi static site. Không đưa API key của toolkit này vào bundle trình duyệt.
 - Không tự ý thêm framework, thư viện, API trả phí hoặc backend mới nếu chưa được approve.
@@ -188,17 +188,20 @@ State được lưu dưới dạng:
 
 ## 7. Git và CI/CD Workflow
 
-- **Quy trình:** Code → Commit → Push. Không chạy test local.
+- Mặc định triển khai theo yêu cầu trực tiếp của người dùng đến khi hoàn tất; không dừng ở đề xuất hoặc hỏi lại xác nhận cho các bước triển khai thông thường.
+- Khi người dùng yêu cầu hoàn tất và push, thực hiện kiểm tra phù hợp, rà soát diff, commit các file thuộc task và push branch hiện tại. Không stage thay đổi có sẵn hoặc không liên quan; không dùng `git add .`.
+- Nếu người dùng yêu cầu test/build/nghiệm thu, chạy đúng các kiểm tra liên quan và báo kết quả thực tế. Không tuyên bố đã kiểm tra nếu chưa chạy.
+
+- **Quy trình:** Code → kiểm tra theo task → Commit → Push khi task/người dùng yêu cầu.
 - Commit message theo Conventional Commits, ví dụ:
   - `feat: add medical management filter`
   - `fix: refresh records after deletion`
   - `docs: update agents rules`
 - Chỉ stage file liên quan; không dùng `git add .` cho thay đổi không được rà soát.
-- Không chạy `npm run lint`, `npm run build`, `npm run build:assets`, `npm run test` hoặc test local tương đương.
-- Chỉ cần rà soát lỗi cú pháp rõ ràng bằng việc đọc code và tuân thủ convention trong file này; không thực hiện bước test/build local.
+- Không tự ý chạy lint/build/test trong task thông thường nếu người dùng không yêu cầu.
+- Khi người dùng yêu cầu test/build, chạy các lệnh liên quan và báo chính xác những gì đã chạy, kết quả và giới hạn.
 - Việc kiểm tra cuối cùng sẽ được thực hiện trực tiếp trên GitHub Pages sau khi push.
-- AI Agent không được tự ý chạy `npm run lint` hoặc `npm run build` trừ khi người dùng yêu cầu rõ ràng.
-- Push branch/commit sau khi hoàn tất theo yêu cầu công việc. Nếu push bị reject, fetch/rebase an toàn rồi push lại; không dùng destructive reset.
+- Nếu người dùng yêu cầu triển khai và push, commit/push sau khi hoàn tất và kiểm tra. Nếu push bị reject, fetch/rebase an toàn rồi push lại; không dùng destructive reset.
 - Không có quy trình Pull Request riêng được định nghĩa trong repo. Nếu tạo PR, ghi rõ phạm vi thay đổi, kiểm tra đã chạy/chưa chạy và các giới hạn còn lại.
 
 ## 8. Quy tắc đặc thù bắt buộc

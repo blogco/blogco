@@ -23,10 +23,12 @@ import { seasonIcon } from './season.js';
 import { renderReceiptForm, renderItemRow, readReceiptForm } from './form.js';
 import { computeCoffeeStats, computeBudgetProgress } from './stats.js';
 import {
-  renderManualForm, renderManualRow, readManualRows, formatAmountInput, seasonOf, rowToItems,
+  renderManualForm, renderManualRow, renderSmartPreview, readManualRows, formatAmountInput, seasonOf, rowToItems,
 } from './manual.js';
 import { renderAiInsights } from './insights.js';
 import { renderDashboard } from './dashboard.js';
+import { analyzeSmartExpense } from './manual.js';
+import { getMerchantLearning, learnMerchantCategory, detectReceiptDuplicate } from './smart-entry.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 6;
@@ -631,6 +633,53 @@ function appendManualRow(root, form) {
   body.querySelector('[data-manual-row]:last-of-type [name="brand"]')?.focus();
 }
 
+function parseSmartInput(root) {
+  const form = root.querySelector('#coffee-manual-form');
+  const input = form?.querySelector('#coffee-smart-input');
+  const preview = form?.querySelector('[data-smart-preview]');
+  const status = form?.querySelector('#coffee-smart-status');
+  if (!input || !preview) return;
+  const parsed = analyzeSmartExpense(input.value, { learning: getMerchantLearning() });
+  if (!input.value.trim()) { status.textContent = 'Hãy nhập mô tả giao dịch.'; return; }
+  preview.innerHTML = renderSmartPreview(parsed);
+  preview.hidden = false;
+  status.textContent = parsed.needsCategory ? 'Gợi ý danh mục chưa chắc chắn; hãy chọn lại trước khi tiếp tục.' : 'Kiểm tra và chỉnh sửa các trường trước khi đưa vào bảng.';
+}
+
+function acceptSmartInput(root) {
+  const form = root.querySelector('#coffee-manual-form');
+  const preview = form?.querySelector('[data-smart-preview]');
+  if (!preview || preview.hidden) return;
+  const value = (name) => preview.querySelector(`[name="${name}"]`)?.value || '';
+  const amount = toNumber(value('smartAmount'));
+  const store = value('smartStore').trim();
+  if (!amount || !store) { showToast(root, 'Hãy nhập tên giao dịch và số tiền lớn hơn 0.', true); return; }
+  const detail = preview.querySelector('[name="smartCategoryDetail"] option:checked');
+  const row = { brand: store, subtotal: amount, date: value('smartDate'), expenseCategory: value('smartCategory'), categoryDetailId: value('smartCategoryDetail'), categoryGroupId: detail?.parentElement?.dataset.groupId || '' };
+  const empty = [...form.querySelectorAll('[data-manual-row]')].find((candidate) => !candidate.querySelector('[name="brand"]')?.value && !toNumber(candidate.querySelector('[name="subtotal"]')?.value));
+  if (empty) {
+    const index = [...form.querySelectorAll('[data-manual-row]')].indexOf(empty);
+    empty.outerHTML = renderManualRow(row, index);
+    const inserted = form.querySelectorAll('[data-manual-row]')[index];
+    refreshManualSeason(inserted);
+    refreshManualExpenseChip(inserted);
+    refreshManualRowTotal(inserted);
+  } else {
+    appendManualRow(root, form);
+    const inserted = form.querySelector('[data-manual-row]:last-of-type');
+    inserted.querySelector('[name="brand"]').value = row.brand;
+    inserted.querySelector('[name="subtotal"]').value = formatAmountInput(amount);
+    inserted.querySelector('[name="date"]').value = row.date;
+    inserted.querySelector('[name="category"]').value = row.expenseCategory;
+    inserted.dataset.categoryDetailId = row.categoryDetailId;
+    inserted.dataset.categoryGroupId = row.categoryGroupId;
+    refreshManualSeason(inserted); refreshManualExpenseChip(inserted); refreshManualRowTotal(inserted);
+  }
+  updateManualTotal(form);
+  preview.hidden = true;
+  form.querySelector('#coffee-smart-status').textContent = 'Đã đưa vào bảng nháp. Chưa lưu; bạn có thể tiếp tục chỉnh sửa.';
+}
+
 // ---------------------------------------------------------------------------
 // AI expense review (shown right after "Lưu giao dịch")
 // ---------------------------------------------------------------------------
@@ -807,6 +856,10 @@ export function mountCoffeeApp(root) {
   root.addEventListener('click', async (event) => {
     const target = event.target;
 
+    if (target.closest('[data-smart-parse]')) { parseSmartInput(root); return; }
+    if (target.closest('[data-smart-confirm]')) { acceptSmartInput(root); return; }
+    if (target.closest('[data-smart-dismiss]')) { const preview = root.querySelector('[data-smart-preview]'); if (preview) preview.hidden = true; return; }
+
     if (target.closest('[data-expense-review-close]')) {
       root.querySelector('[data-expense-review-overlay]')?.remove();
       return;
@@ -936,6 +989,8 @@ export function mountCoffeeApp(root) {
         if (problems.length) throw new Error(problems.join(' · '));
         const saved = [];
         rows.forEach((row) => {
+          const duplicate = detectReceiptDuplicate({ store: row.brand, total: row.total, date: row.date }, getCoffeeState().receipts);
+          if (duplicate && !window.confirm(`Có thể trùng giao dịch ${duplicate.id} (${duplicate.store}, ${formatVnd(duplicate.total)}). Vẫn lưu dòng ${row.brand}?`)) return;
           saved.push(saveReceipt({
             store: row.brand,
             date: row.date,
@@ -943,9 +998,13 @@ export function mountCoffeeApp(root) {
             discount: row.discount,
             total: row.total,
             expenseCategory: row.expenseCategory,
+            categoryId: row.categoryDetailId || '',
+            categoryGroupId: row.categoryGroupId || '',
             items: rowToItems(row.itemsText, row.subtotal, row.quantity),
           }));
+          if (row.expenseCategoryRaw) learnMerchantCategory(row.brand, row.expenseCategoryRaw, { alias: row.brand });
         });
+        if (!saved.length) { showToast(root, 'Không có giao dịch nào được lưu.'); return; }
         resetSearchState();
         showExpenseReview(root, saved);
       } catch (error) {

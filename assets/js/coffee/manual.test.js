@@ -66,6 +66,7 @@ test('readManualRows parses formatted amounts and drops blank rows', () => {
     brand: 'Highlands Coffee', itemsText: 'Matcha Latte, Bánh dừa', itemNames: ['Matcha Latte', 'Bánh dừa'],
     quantity: 2, subtotal: 100200, discount: 20000, total: 80200, date: '2026-05-10', season: 'summer',
     expenseCategory: 'coffee', expenseCategoryRaw: '',
+    categoryDetailId: '', categoryGroupId: '',
   });
   assert.equal(parsed[1].subtotal, 50000);
   assert.equal(parsed[1].total, 50000);

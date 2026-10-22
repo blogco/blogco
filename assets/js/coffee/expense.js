@@ -27,6 +27,41 @@ export const EXPENSE_CATEGORIES = [
   { key: 'other', label: 'Khác', emoji: '📦' },
 ];
 
+// Stable hierarchical catalog for the local expense manager. The legacy keys
+// above remain the report buckets; leaf IDs are additive metadata.
+export const EXPENSE_CATALOG = [
+  ['food', 'Ăn uống', '🍜', ['Ăn sáng', 'Ăn trưa', 'Ăn tối', 'Ăn khuya', 'Cà phê', 'Trà sữa', 'Nước uống', 'Đồ ăn vặt', 'Nhà hàng', 'Giao đồ ăn']],
+  ['grocery', 'Thực phẩm', '🛒', ['Siêu thị', 'Chợ', 'Thực phẩm tươi sống', 'Thực phẩm đông lạnh', 'Gia vị', 'Nước uống gia đình']],
+  ['bills', 'Nhà ở', '🏠', ['Thuê nhà', 'Điện', 'Nước', 'Internet', 'Phí quản lý', 'Sửa chữa', 'Nội thất', 'Đồ gia dụng']],
+  ['transport', 'Di chuyển', '🚕', ['Xăng xe', 'Gửi xe', 'Taxi', 'Grab', 'Be', 'Xe buýt', 'Tàu điện', 'Vé máy bay', 'Tàu hỏa', 'Bảo dưỡng xe']],
+  ['grocery', 'Mua sắm', '🛍️', ['Quần áo', 'Giày dép', 'Mỹ phẩm', 'Phụ kiện', 'Đồ điện tử', 'Mua sắm online']],
+  ['health', 'Sức khỏe', '🩺', ['Khám bệnh', 'Thuốc', 'Nha khoa', 'Xét nghiệm', 'Bảo hiểm sức khỏe', 'Thể thao', 'Phòng gym']],
+  ['bills', 'Công nghệ', '💻', ['Phần mềm', 'AI', 'ChatGPT', 'Cloud', 'Tên miền', 'Hosting', 'Ứng dụng', 'Thiết bị', 'Phụ kiện']],
+  ['entertainment', 'Giải trí', '🎬', ['Xem phim', 'Âm nhạc', 'Game', 'Sách', 'Sự kiện', 'Du lịch', 'Spa', 'Sở thích']],
+  ['education', 'Giáo dục', '📚', ['Học phí', 'Khóa học', 'Ngoại ngữ', 'Sách giáo trình', 'Chứng chỉ', 'Lệ phí thi']],
+  ['other', 'Gia đình', '👪', ['Chi tiêu cho cha mẹ', 'Con cái', 'Người thân', 'Chăm sóc gia đình']],
+  ['other', 'Cá nhân', '🧴', ['Cắt tóc', 'Chăm sóc cá nhân', 'Giặt ủi', 'Vật dụng cá nhân']],
+  ['other', 'Tài chính', '💳', ['Phí ngân hàng', 'Lãi vay', 'Thuế', 'Phí dịch vụ', 'Bảo hiểm', 'Trả nợ']],
+  ['other', 'Quà tặng', '🎁', ['Sinh nhật', 'Đám cưới', 'Hiếu hỷ', 'Từ thiện', 'Quà biếu']],
+  ['other', 'Công việc', '💼', ['Công tác', 'Văn phòng phẩm', 'Chi phí phục vụ công việc', 'Tiếp khách']],
+  ['other', 'Thú cưng', '🐾', ['Thức ăn', 'Chăm sóc', 'Thú y', 'Phụ kiện']],
+  ['other', 'Khác', '📦', ['Chi phí phát sinh', 'Chưa phân loại']],
+].map(([reportKey, label, icon, children], index) => ({
+  id: `builtin-${String(index + 1).padStart(2, '0')}`,
+  reportKey, label, icon,
+  children: children.map((name, childIndex) => ({ id: `builtin-${String(index + 1).padStart(2, '0')}-${String(childIndex + 1).padStart(2, '0')}`, name })),
+}));
+
+export function normalizeSearchText(value = '') {
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
+}
+
+export function searchExpenseCategories(query, catalog = EXPENSE_CATALOG) {
+  const needle = normalizeSearchText(query);
+  const entries = catalog.flatMap((group) => group.children.map((child) => ({ ...child, groupId: group.id, groupLabel: group.label, reportKey: group.reportKey })));
+  return needle ? entries.filter((entry) => normalizeSearchText(`${entry.name} ${entry.groupLabel}`).includes(needle)) : entries;
+}
+
 export const EXPENSE_CATEGORY_ORDER = EXPENSE_CATEGORIES.map((category) => category.key);
 export const EXPENSE_CATEGORY_LABELS = Object.fromEntries(EXPENSE_CATEGORIES.map((category) => [category.key, category.label]));
 export const EXPENSE_CATEGORY_EMOJI = Object.fromEntries(EXPENSE_CATEGORIES.map((category) => [category.key, category.emoji]));

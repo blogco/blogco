@@ -15,6 +15,8 @@ import {
 } from './expense.js';
 import { icon } from '../icons.js';
 import { seasonIcon } from './season.js';
+import { parseSmartExpense, getMerchantLearning } from './smart-entry.js';
+import { getExpenseCatalog } from './smart-entry.js';
 
 export const BRAND_SUGGESTIONS = [
   'Highlands Coffee', 'Starbucks', 'Phúc Long', 'The Coffee House',
@@ -127,7 +129,7 @@ export function renderManualRow(row = {}, index = 0) {
   const itemsText = row.itemsText ?? row.items ?? '';
   const pickedCategory = normalizeExpenseCategory(row.expenseCategory ?? row.category);
   const categoryMeta = expenseCategoryMeta(resolveRowExpenseCategory({ ...row, brand: row.brand ?? '', itemsText }));
-  return `<tr class="coffee-manual-row" data-manual-row>
+  return `<tr class="coffee-manual-row" data-manual-row data-category-detail-id="${escapeHtml(row.categoryDetailId || '')}" data-category-group-id="${escapeHtml(row.categoryGroupId || '')}">
     <td class="coffee-manual-cell--index"><span data-row-index>${index + 1}</span></td>
     <td>
       <input class="coffee-manual-input" name="brand" type="text" list="coffee-brand-suggest" maxlength="160" autocomplete="off" value="${escapeHtml(row.brand ?? '')}" placeholder="Highlands Coffee" aria-label="Brand (quán) dòng ${index + 1}">
@@ -197,6 +199,13 @@ export function renderManualTable(rows = [{}]) {
 
 export function renderManualForm() {
   return `<form id="coffee-manual-form" class="coffee-card coffee-manual" novalidate>
+    <section class="coffee-smart-entry" aria-labelledby="coffee-smart-title">
+      <div><p class="coffee-eyebrow">NHẬP NHANH · XỬ LÝ TRÊN THIẾT BỊ</p><h2 id="coffee-smart-title">Mô tả giao dịch bằng tiếng Việt</h2></div>
+      <label class="coffee-field" for="coffee-smart-input">Nhập mô tả giao dịch</label>
+      <div class="coffee-smart-entry__input"><input id="coffee-smart-input" type="text" autocomplete="off" placeholder="Grab đi làm 42k hôm qua" aria-describedby="coffee-smart-status"><button type="button" class="coffee-primary-button" data-smart-parse>Phân tích</button></div>
+      <div class="coffee-smart-preview" data-smart-preview hidden></div>
+      <p class="coffee-muted" id="coffee-smart-status" aria-live="polite">Phân tích theo quy tắc trên thiết bị. Chưa có dữ liệu nào được lưu.</p>
+    </section>
     <div class="coffee-manual-toolbar">
       <button type="button" class="coffee-secondary-button" data-manual-add>${icon('plus', { size: 16 })} Thêm dòng</button>
       <button type="button" class="coffee-ghost-button" data-manual-clear>Xoá tất cả</button>
@@ -210,13 +219,30 @@ export function renderManualForm() {
 
     ${renderManualTable([{}])}
 
-    <p class="coffee-manual-hint">Cột <strong>Danh mục chi phí</strong> mặc định <strong>✨ Tự động</strong> — AI sẽ đọc tên quán + món để phân loại (siêu thị, ăn uống, cà phê, du lịch, giải trí, di chuyển…). Bạn cũng có thể chọn tay hoặc dùng nút gán nhanh ở trên. Cột <strong>Mùa</strong> tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy. Cột <strong>Thanh toán</strong> tự động tính bằng <strong>Thành tiền − Giảm giá</strong>.</p>
+    <p class="coffee-manual-hint">Danh mục được gợi ý bằng quy tắc từ mô tả và lựa chọn đã xác nhận trước đó; không gửi dữ liệu tài chính ra ngoài. Cột <strong>Mùa</strong> tự động điền theo ngày giao dịch · Xuân (1–3) · Hạ (4–6) · Thu (7–9) · Đông (10–12). Cột <strong>Items</strong> cho phép nhập nhiều món, phân cách bằng dấu phẩy.</p>
 
     <div class="coffee-actions">
       <a class="coffee-secondary-button" href="#/coffee">❌ Huỷ</a>
       <button class="coffee-primary-button" type="submit">${icon('save', { size: 16 })} Lưu giao dịch</button>
     </div>
   </form>`;
+}
+
+export function renderSmartPreview(parsed) {
+  const date = parsed.date || todayKey();
+  const catalog = getExpenseCatalog();
+  return `<div class="coffee-smart-preview__grid">
+    <label class="coffee-field">Tên quán / mô tả<input name="smartStore" maxlength="160" value="${escapeHtml(parsed.store)}"></label>
+    <label class="coffee-field">Số tiền (đ)<input name="smartAmount" inputmode="numeric" value="${escapeHtml(formatAmountInput(parsed.amount || ''))}"></label>
+    <label class="coffee-field">Ngày<input name="smartDate" type="date" value="${escapeHtml(date)}"></label>
+    <label class="coffee-field">Danh mục<select name="smartCategory">${EXPENSE_CATEGORIES.map((category) => `<option value="${category.key}"${parsed.category === category.key ? ' selected' : ''}>${escapeHtml(category.label)}</option>`).join('')}</select></label>
+    <label class="coffee-field">Chi tiết danh mục<select name="smartCategoryDetail"><option value="">Chưa chọn chi tiết</option>${catalog.map((group) => `<optgroup label="${escapeHtml(group.icon || '')} ${escapeHtml(group.label)}" data-group-id="${escapeHtml(group.id)}">${group.children.map((child) => `<option value="${escapeHtml(child.id)}" data-report-key="${escapeHtml(group.reportKey)}">${escapeHtml(child.name)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+  </div><p class="coffee-smart-preview__reason">${escapeHtml(parsed.reasons.join(' '))}${parsed.recurrence ? ' Nhận diện chu kỳ hàng tháng (chưa tự tạo giao dịch định kỳ).' : ''}</p>
+  <div class="coffee-smart-preview__actions"><button type="button" class="coffee-primary-button" data-smart-confirm>Đưa vào bảng để kiểm tra</button><button type="button" class="coffee-secondary-button" data-smart-dismiss>Đóng</button></div>`;
+}
+
+export function analyzeSmartExpense(text, options = {}) {
+  return parseSmartExpense(text, { ...options, learning: options.learning || getMerchantLearning(options.storage) });
 }
 
 // Read the table back into an array of rows, skipping completely blank lines.
@@ -242,6 +268,8 @@ export function readManualRows(form) {
       season: seasonOf(date)?.key || '',
       expenseCategory: categoryRaw || classifyExpense(brand, itemsText),
       expenseCategoryRaw: categoryRaw,
+      categoryDetailId: row.dataset?.categoryDetailId || '',
+      categoryGroupId: row.dataset?.categoryGroupId || '',
     };
   }).filter((row) => row.brand || row.itemsText || row.subtotal || row.discount || row.date !== todayKey());
 }
