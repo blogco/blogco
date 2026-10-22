@@ -1,0 +1,24 @@
+.smart-post-footer { display: grid; gap: 1.1rem; margin: 2rem 0 1rem; color: var(--text); }
+.smart-post-footer__section { min-width: 0; padding: 1.1rem 1.2rem; border: 1px solid var(--border); border-radius: 14px; background: var(--entry); }
+.smart-post-footer__section > h2 { margin: 0 0 .8rem; color: var(--primary); font-size: 1.2rem; }
+.smart-post-footer__questions { display: grid; gap: .55rem; }
+.smart-post-footer__question { border: 1px solid var(--border); border-radius: 10px; background: var(--theme); }
+.smart-post-footer__question summary { padding: .75rem .9rem; color: var(--primary); font-weight: 650; cursor: pointer; }
+.smart-post-footer__question summary:focus-visible,.smart-post-footer a:focus-visible { outline: 3px solid rgba(16,185,129,.35); outline-offset: 2px; }
+.smart-post-footer__answer { padding: 0 .9rem .75rem; color: var(--secondary); line-height: 1.65; }
+.smart-post-footer__answer p,.smart-post-footer__rights,.smart-post-footer__license,.smart-post-footer__original { margin: 0; }
+.smart-post-footer__metadata { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: .55rem 1rem; margin: 0 0 .75rem; }
+.smart-post-footer__metadata div { min-width: 0; }
+.smart-post-footer__metadata dt,.smart-post-footer__related-link small { color: var(--secondary); font-size: .78rem; }
+.smart-post-footer__metadata dd { margin: .08rem 0 0; overflow-wrap: anywhere; }
+.smart-post-footer__rights,.smart-post-footer__license,.smart-post-footer__original { margin-top: .4rem; color: var(--secondary); font-size: .85rem; }
+.smart-post-footer__sources { margin-top: .8rem; }
+.smart-post-footer__sources h3 { margin: 0 0 .3rem; font-size: .95rem; }
+.smart-post-footer__sources ul { margin: 0; padding-left: 1.2rem; }
+.smart-post-footer__sources li { margin: .25rem 0; overflow-wrap: anywhere; }
+.smart-post-footer__related-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,15rem),1fr)); gap: .65rem; margin: 0; padding: 0; list-style: none; }
+.smart-post-footer__related-link { display: flex; min-height: 100%; flex-direction: column; gap: .35rem; padding: .8rem; border: 1px solid var(--border); border-radius: 10px; color: var(--primary); text-decoration: none; }
+.smart-post-footer__related-link:hover { border-color: var(--tertiary); }
+.smart-post-footer__related-link span { color: var(--secondary); font-size: .85rem; line-height: 1.5; }
+.smart-post-footer__related-link small { margin-top: auto; }
+@media (max-width: 600px) { .smart-post-footer__section { padding: .9rem; } .smart-post-footer__metadata { grid-template-columns: 1fr 1fr; } }

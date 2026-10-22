@@ -3,6 +3,7 @@
 /resources/_cache/
 /node_modules/
 /static/assets/build/
+/data/smart_post_footer/index.json
 /ai/node_modules/
 /ai/.env
 /.env

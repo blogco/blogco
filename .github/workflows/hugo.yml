@@ -18,6 +18,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.js'
+      - 'scripts/smart_post_footer/**'
   workflow_dispatch:
 
 permissions:
@@ -65,6 +66,25 @@ jobs:
             /tmp/hugo_cache
           key: hugo-${{ runner.os }}-${{ hashFiles('hugo.toml', '.gitmodules') }}
           restore-keys: hugo-${{ runner.os }}-
+
+      - name: Cache Python content-analysis packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: smart-footer-pip-${{ runner.os }}-${{ hashFiles('scripts/smart_post_footer/requirements.txt') }}
+
+      - name: Install Smart Post Footer analyzer dependency
+        run: python3 -m pip install --disable-pip-version-check -r scripts/smart_post_footer/requirements.txt
+
+      - name: Restore Smart Post Footer corpus cache
+        uses: actions/cache@v5
+        with:
+          path: data/smart_post_footer/index.json
+          key: smart-footer-${{ runner.os }}-${{ hashFiles('content/posts/**/*.md', 'scripts/smart_post_footer/**') }}
+          restore-keys: smart-footer-${{ runner.os }}-
+
+      - name: Analyze published articles for Smart Post Footer
+        run: python3 scripts/smart_post_footer/build_index.py
 
       - name: Install site dependencies
         run: npm ci

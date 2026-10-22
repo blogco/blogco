@@ -1,0 +1,106 @@
+{{- $page := . -}}
+{{- if and $page.IsPage (eq $page.Section "posts") (not $page.Draft) -}}
+  {{- $settings := $page.Param "smartFooter" | default dict -}}
+  {{- $enabled := true -}}
+  {{- if and (reflect.IsMap $settings) (isset $settings "enabled") -}}
+    {{- $enabled = index $settings "enabled" -}}
+  {{- end -}}
+  {{- if $enabled -}}
+    {{- $articleID := $page.File.Path -}}
+    {{- with index $settings "id" }}{{ $articleID = . }}{{ end -}}
+    {{- $all := hugo.Data.smart_post_footer.index.articles -}}
+    {{- $meta := index $all $articleID | default dict -}}
+    {{- $showQA := not (and (reflect.IsMap $settings) (isset $settings "qa") (not (index $settings "qa"))) -}}
+    {{- $showCopyright := not (and (reflect.IsMap $settings) (isset $settings "copyright") (not (index $settings "copyright"))) -}}
+    {{- $showSources := not (and (reflect.IsMap $settings) (isset $settings "sources") (not (index $settings "sources"))) -}}
+    {{- $showRelated := not (and (reflect.IsMap $settings) (isset $settings "internalLinks") (not (index $settings "internalLinks"))) -}}
+    {{- $language := $meta.language | default $page.Language.Lang -}}
+    {{- $faqTitle := "Câu hỏi thường gặp" -}}
+    {{- $copyrightTitle := "Bản quyền & Nguồn tham khảo" -}}
+    {{- $relatedTitle := "Bài viết liên quan" -}}
+    {{- if hasPrefix $language "en" -}}
+      {{- $faqTitle = "Frequently Asked Questions" -}}
+      {{- $copyrightTitle = "Copyright & Sources" -}}
+      {{- $relatedTitle = "Related Articles" -}}
+    {{- else if hasPrefix $language "ko" -}}
+      {{- $faqTitle = "자주 묻는 질문" -}}
+      {{- $copyrightTitle = "저작권 및 출처" -}}
+      {{- $relatedTitle = "관련 글" -}}
+    {{- end -}}
+    {{- $relatedPages := slice -}}
+    {{- if $showRelated -}}
+      {{- range $meta.relatedArticles -}}
+        {{- $target := site.GetPage (printf "/%s" .path) -}}
+        {{- if and $target $target.IsPage (not $target.Draft) (ne $target.RelPermalink $page.RelPermalink) -}}
+          {{- $relatedPages = $relatedPages | append (dict "page" $target "score" .score) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    <div class="smart-post-footer" data-smart-post-footer>
+      {{- if and $showQA $meta.qa -}}
+      <section class="smart-post-footer__section smart-post-footer__faq" aria-labelledby="smart-faq-title">
+        <h2 id="smart-faq-title">{{ $faqTitle }}</h2>
+        <div class="smart-post-footer__questions">
+          {{- range $meta.qa }}
+          <details class="smart-post-footer__question">
+            <summary>{{ .question }}</summary>
+            <div class="smart-post-footer__answer"><p>{{ .answer }}</p></div>
+          </details>
+          {{- end }}
+        </div>
+      </section>
+      {{- end }}
+
+      {{- if $showCopyright -}}
+      <section class="smart-post-footer__section smart-post-footer__copyright" aria-labelledby="smart-copyright-title">
+        <h2 id="smart-copyright-title">{{ $copyrightTitle }}</h2>
+        <dl class="smart-post-footer__metadata">
+          <div><dt>{{ if hasPrefix $language "en" }}Article{{ else if hasPrefix $language "ko" }}글{{ else }}Bài viết{{ end }}</dt><dd>{{ $page.Title }}</dd></div>
+          {{- with ($page.Param "author") | default site.Params.author }}
+          <div><dt>{{ if hasPrefix $language "en" }}Author{{ else if hasPrefix $language "ko" }}작성자{{ else }}Tác giả{{ end }}</dt><dd>{{ if reflect.IsSlice . }}{{ delimit . ", " }}{{ else }}{{ . }}{{ end }}</dd></div>
+          {{- end }}
+          <div><dt>{{ if hasPrefix $language "en" }}Publisher{{ else if hasPrefix $language "ko" }}게시자{{ else }}Đăng trên{{ end }}</dt><dd><a href="{{ site.Home.Permalink }}">{{ site.Title }}</a></dd></div>
+          {{- with $page.Date }}
+          <div><dt>{{ if hasPrefix $language "en" }}Published{{ else if hasPrefix $language "ko" }}게시일{{ else }}Ngày đăng{{ end }}</dt><dd><time datetime="{{ .Format "2006-01-02" }}">{{ .Format "02/01/2006" }}</time></dd></div>
+          {{- end }}
+          {{- with $page.Lastmod }}
+          <div><dt>{{ if hasPrefix $language "en" }}Updated{{ else if hasPrefix $language "ko" }}수정일{{ else }}Cập nhật{{ end }}</dt><dd><time datetime="{{ .Format "2006-01-02" }}">{{ .Format "02/01/2006" }}</time></dd></div>
+          {{- end }}
+          {{- with ($page.Param "originalTitle") | default ($page.Param "translatedFrom") | default ($page.Param "adaptedFrom") }}
+          <div><dt>{{ if hasPrefix $language "en" }}Attribution{{ else if hasPrefix $language "ko" }}출처{{ else }}Ghi nhận{{ end }}</dt><dd>{{ . }}</dd></div>
+          {{- end }}
+        </dl>
+        {{- with site.Copyright }}<p class="smart-post-footer__rights">{{ . | markdownify }}</p>{{- else }}
+        <p class="smart-post-footer__rights">{{ if hasPrefix $language "en" }}Rights to third-party material, if any, remain with their respective owners.{{ else if hasPrefix $language "ko" }}포함된 제3자 자료의 권리는 해당 권리자에게 있습니다.{{ else }}Quyền đối với tài liệu của bên thứ ba (nếu có) thuộc về chủ sở hữu tương ứng.{{ end }}</p>
+        {{- end }}
+        {{- with ($page.Param "license") }}<p class="smart-post-footer__license">{{ if hasPrefix $language "en" }}License: {{ else if hasPrefix $language "ko" }}라이선스: {{ else }}Giấy phép: {{ end }}{{ . }}</p>{{- end }}
+        {{- with ($page.Param "canonicalURL") | default ($page.Param "originalUrl") }}
+        <p class="smart-post-footer__original">{{ if hasPrefix $language "en" }}Original publication: {{ else if hasPrefix $language "ko" }}원문: {{ else }}Bản gốc: {{ end }}<a href="{{ . | safeURL }}" rel="noopener noreferrer">{{ . }}</a></p>
+        {{- end }}
+        {{- if and $showSources $meta.sources }}
+        <div class="smart-post-footer__sources">
+          <h3>{{ if hasPrefix $language "en" }}Declared references{{ else if hasPrefix $language "ko" }}참고 자료{{ else }}Nguồn được khai báo{{ end }}</h3>
+          <ul>
+            {{- range $meta.sources }}
+            <li><a href="{{ .url | safeURL }}" target="_blank" rel="noopener noreferrer">{{ .title | default .publisher | default .url }}</a>{{ with .author }} · {{ . }}{{ end }}{{ with .publisher }} · {{ . }}{{ end }}{{ with .publicationDate }} · {{ . }}{{ end }}</li>
+            {{- end }}
+          </ul>
+        </div>
+        {{- end }}
+      </section>
+      {{- end }}
+
+      {{- if and $showRelated (gt (len $relatedPages) 0) -}}
+      <section class="smart-post-footer__section smart-post-footer__related" aria-labelledby="smart-related-title">
+        <h2 id="smart-related-title">{{ $relatedTitle }}</h2>
+        <ul class="smart-post-footer__related-list">
+          {{- range $relatedPages }}
+          {{- $relatedPage := .page -}}
+          <li><a class="smart-post-footer__related-link" href="{{ $relatedPage.RelPermalink }}"><strong>{{ $relatedPage.Title }}</strong>{{ with ($relatedPage.Description | default $relatedPage.Summary) }}<span>{{ . | plainify | htmlUnescape | truncate 150 }}</span>{{ end }}<small>{{ with $relatedPage.Params.categories }}{{ if reflect.IsSlice . }}{{ delimit . ", " }}{{ else }}{{ . }}{{ end }} · {{ end }}{{ $relatedPage.ReadingTime }} {{ if hasPrefix $language "en" }}min read{{ else if hasPrefix $language "ko" }}분 읽기{{ else }}phút đọc{{ end }}</small></a></li>
+          {{- end }}
+        </ul>
+      </section>
+      {{- end }}
+    </div>
+  {{- end -}}
+{{- end -}}
