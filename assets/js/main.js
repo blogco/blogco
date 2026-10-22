@@ -13,6 +13,7 @@ let coffeeAppPromise;
 let thuocAppPromise;
 let brandAppPromise;
 let blogAppPromise;
+let travelAppPromise;
 
 function syncWaterRoute() {
   const root = document.querySelector('[data-water-app]');
@@ -97,18 +98,31 @@ function syncBlogRoute() {
   void blogAppPromise.then(({ mountBlogApp }) => mountBlogApp(root));
 }
 
+function syncTravelRoute() {
+  const root = document.querySelector('[data-travel-app]');
+  if (!root) return;
+  const active = location.hash.startsWith('#/travel') || Boolean(root.dataset.initialRoute);
+  root.hidden = !active;
+  document.body.classList.toggle('travel-route', active);
+  if (!active || !requireAuth()) return;
+  travelAppPromise ??= import('./travel/main.js');
+  void travelAppPromise.then(({ mountTravelApp }) => mountTravelApp(root));
+}
+
 window.addEventListener('hashchange', syncWaterRoute);
 window.addEventListener('hashchange', syncHealthRoute);
 window.addEventListener('hashchange', syncCoffeeRoute);
 window.addEventListener('hashchange', syncThuocRoute);
 window.addEventListener('hashchange', syncBrandRoute);
 window.addEventListener('hashchange', syncBlogRoute);
+window.addEventListener('hashchange', syncTravelRoute);
 syncWaterRoute();
 syncHealthRoute();
 syncCoffeeRoute();
 syncThuocRoute();
 syncBrandRoute();
 syncBlogRoute();
+syncTravelRoute();
 
 // Unlock/lock → re-evaluate the sensitive apps; leave the home/brand pages
 // without a lingering lock overlay when no personal route is active.
@@ -117,9 +131,10 @@ window.addEventListener('blogco:auth-changed', () => {
   syncHealthRoute();
   syncCoffeeRoute();
   syncThuocRoute();
+  syncTravelRoute();
 });
 window.addEventListener('hashchange', () => {
-  const dedicated = '[data-water-app][data-initial-route]:not([hidden]), [data-health-app][data-initial-route]:not([hidden]), [data-coffee-app][data-initial-route]:not([hidden]), [data-thuoc-app][data-initial-route]:not([hidden])';
+  const dedicated = '[data-water-app][data-initial-route]:not([hidden]), [data-health-app][data-initial-route]:not([hidden]), [data-coffee-app][data-initial-route]:not([hidden]), [data-thuoc-app][data-initial-route]:not([hidden]), [data-travel-app][data-initial-route]:not([hidden])';
   if (!isSensitiveRoute(location.hash) && !document.querySelector(dedicated)) hideAuthLock();
 });
 mountAuthControl();

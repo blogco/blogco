@@ -7,6 +7,9 @@
 - label: Y Học
   href: /#/health/medical/search
   icon: pill
+- label: Travel Studio
+  href: /#/travel
+  icon: plane
 - label: Về chúng tôi
   href: /about/
   icon: info
