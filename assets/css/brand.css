@@ -843,6 +843,8 @@ body {
   padding-top: var(--nav-height);
 }
 
+html { scroll-padding-top: calc(var(--nav-height, 72px) + 12px); }
+
 body .blogco-header,
 body.article-body .blogco-header {
   position: fixed;

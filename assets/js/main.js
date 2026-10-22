@@ -4,6 +4,7 @@ const featureLoaders = {
 };
 
 import './navigation.js';
+import './navigation-scroll.js';
 import './github-actions.js';
 import { requireAuth, hideAuthLock, isSensitiveRoute, mountAuthControl } from './auth.js';
 
