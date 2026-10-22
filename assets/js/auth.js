@@ -74,6 +74,10 @@ export function currentPasscodeHash() {
   return metaContent('blogco-lock-hash');
 }
 
+function siteHomeUrl() {
+  return metaContent('blogco-site-url') || '/';
+}
+
 // Verify an entered code: prefer the SHA-256 digest, fall back to plaintext.
 export async function verify(input) {
   const hash = currentPasscodeHash();
@@ -176,9 +180,12 @@ function buildLock() {
       <p class="auth-lock__error" id="auth-lock-error" data-auth-error role="alert"></p>
       <label class="auth-lock__remember"><input type="checkbox" checked disabled> Ghi nhớ thiết bị này</label>
       <button type="submit" class="auth-lock__button">🔓 Mở khoá</button>
-      <a class="auth-lock__home" href="/" data-auth-home>← Về trang chủ</a>
+      <a class="auth-lock__home" data-auth-home>← Về trang chủ</a>
     </form>`;
   document.body.appendChild(el);
+
+  const homeLink = el.querySelector('[data-auth-home]');
+  if (homeLink) homeLink.href = siteHomeUrl();
 
   el.querySelector('[data-auth-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -200,7 +207,7 @@ function buildLock() {
     event.preventDefault();
     hideAuthLock();
     const logo = document.querySelector('.navbar__logo') || document.querySelector('a.logo');
-    window.location.href = logo?.getAttribute('href') || '/';
+    window.location.href = logo?.getAttribute('href') || siteHomeUrl();
   });
   return el;
 }

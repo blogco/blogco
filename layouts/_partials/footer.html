@@ -15,8 +15,14 @@
         {{- $footerLinks := index site.Data "footer-links" }}
         <nav class="footer__nav" aria-label="Liên kết cuối trang">
             {{- range $index, $link := $footerLinks }}
+                {{- $href := $link.href }}
+                {{- if hasPrefix $href "/" }}
+                    {{- $href = printf "%s%s" site.Home.RelPermalink (strings.TrimPrefix "/" $href) }}
+                {{- else }}
+                    {{- $href = $href | absLangURL }}
+                {{- end }}
                 {{- if $index }}<span class="footer__divider" aria-hidden="true">|</span>{{ end }}
-                <a href="{{ $link.href | absLangURL }}">
+                <a href="{{ $href }}">
                     {{- with $link.icon }}<span class="footer__link-icon" aria-hidden="true">
                       {{- if eq . "home" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-6h6v6"/></svg>
                       {{- else if eq . "stethoscope" }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M6 3v5a4 4 0 0 0 8 0V3M4 3h4M12 3h4M6 12v1a6 6 0 0 0 12 0v-1"/><circle cx="18" cy="8" r="3"/></svg>
