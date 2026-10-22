@@ -40,6 +40,7 @@ CSS/JS được nạp qua `layouts/partials/extend_head.html` từ Vite manifest
 - Layout gốc là `layouts/baseof.html`; thứ tự chung là Header → `main` → Footer.
 - Navbar là Hugo partial `layouts/_partials/header.html`, không phải React component.
 - Footer là Hugo partial `layouts/_partials/footer.html`; các link lấy từ `data/footer-links.yaml`. Thêm link mới bằng một object YAML, không hardcode lại trong markup nếu không cần.
+- Từ nay, mỗi tính năng mới có đường truy cập dành cho người dùng phải được gắn link trong Footer qua `data/footer-links.yaml` ngay khi triển khai tính năng; không để tính năng mới chỉ có route mà thiếu link footer. Link phải dùng đúng route/đích của tính năng và tuân thủ bước xác minh link trước khi push ở mục Git và CI/CD.
 - Navbar/Footer dùng chung token `--blogco-*`; Navbar là floating surface bo tròn, nền trắng trong suốt nhẹ và `backdrop-filter`, Footer là surface trắng có shadow mềm.
 - Health mega menu hiện tại:
   - Rộng tối đa khoảng `480px`, grid 2 cột desktop.
@@ -209,6 +210,7 @@ State được lưu dưới dạng:
 - Khi người dùng yêu cầu test/build, chạy các lệnh liên quan và báo chính xác những gì đã chạy, kết quả và giới hạn.
 - Việc kiểm tra cuối cùng sẽ được thực hiện trực tiếp trên GitHub Pages sau khi push.
 - Với mọi task có thay đổi code, tự động commit và push sau khi hoàn tất; đây là quy trình mặc định, không cần người dùng nhắc lại. Nếu push bị reject, fetch/rebase an toàn rồi push lại; không dùng destructive reset.
+- Trước mọi commit/push có thêm, sửa hoặc di chuyển link Footer, phải kiểm tra toàn bộ link được cấu hình trong `data/footer-links.yaml`: link ngoài phải truy cập được (ưu tiên `HEAD`, fallback `GET` nếu server không hỗ trợ) và xác nhận URL cuối sau redirect vẫn đúng trang/đích dự kiến; link nội bộ phải khớp đường dẫn/route đang tồn tại; anchor phải trỏ tới ID có thật. Không push nếu link sai, lỗi hoặc chưa xác minh được. Sửa link lỗi hoặc báo rõ link nào cần thông tin/đích thay thế; không coi chỉ có cú pháp URL hợp lệ là đã kiểm tra.
 - Không có quy trình Pull Request riêng được định nghĩa trong repo. Nếu tạo PR, ghi rõ phạm vi thay đổi, kiểm tra đã chạy/chưa chạy và các giới hạn còn lại.
 
 ## 8. Quy tắc đặc thù bắt buộc
