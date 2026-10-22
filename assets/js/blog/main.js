@@ -33,6 +33,7 @@ import { rowsToMarkdown } from './table.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 const DEFAULT_ALIGN = 'center';
+const activeTableByRoot = new WeakMap();
 
 let turndown;
 function markdownFromHtml(html = '') {
@@ -187,7 +188,7 @@ function renderEditor(root, state) {
             <button type="button" data-blog-table-action="add-column-right">Thêm cột phải</button>
             <button type="button" data-blog-table-action="delete-row">Xóa hàng</button>
             <button type="button" data-blog-table-action="delete-column">Xóa cột</button>
-            <button type="button" data-blog-table-action="delete-table">Xóa bảng</button>
+            <button type="button" class="blog-table-tools__delete" data-blog-table-action="delete-table" title="Xóa bảng" aria-label="Xóa bảng"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m2 0-.8 14H6.8L6 6m4 4v6m4-6v6"/></svg><span>Xóa bảng</span></button>
           </div>
         </div>
 
@@ -565,8 +566,15 @@ function insertVisualTable(root) {
 function updateTableToolbar(root, table = null) {
   const toolbar = root.querySelector('[data-blog-table-tools]');
   if (!toolbar) return;
-  const selectedTable = table || window.getSelection()?.anchorNode?.parentElement?.closest('table');
-  toolbar.hidden = !selectedTable || !richEl(root)?.contains(selectedTable);
+  const selectionNode = window.getSelection()?.anchorNode;
+  const selectionElement = selectionNode?.nodeType === Node.ELEMENT_NODE ? selectionNode : selectionNode?.parentElement;
+  const selectedTable = table || selectionElement?.closest('table');
+  const rich = richEl(root);
+  if (selectedTable && rich?.contains(selectedTable)) activeTableByRoot.set(root, selectedTable);
+  else if (!toolbar.contains(document.activeElement)) activeTableByRoot.delete(root);
+  const activeTable = activeTableByRoot.get(root);
+  if (activeTable && (!activeTable.isConnected || !rich?.contains(activeTable))) activeTableByRoot.delete(root);
+  toolbar.hidden = !activeTableByRoot.has(root);
   toolbar.dataset.tableActive = toolbar.hidden ? '' : 'true';
 }
 
@@ -587,15 +595,44 @@ function replaceTable(root, table, mutate, focusCell = [0, 0]) {
 }
 
 function runTableAction(root, action) {
-  const cell = window.getSelection()?.anchorNode?.parentElement?.closest('td, th');
-  const table = cell?.closest('table');
-  if (!table) return;
-  const rowIndex = cell.parentElement.rowIndex;
-  const columnIndex = cell.cellIndex;
+  const rich = richEl(root);
+  const selectionNode = window.getSelection()?.anchorNode;
+  const selectionElement = selectionNode?.nodeType === Node.ELEMENT_NODE ? selectionNode : selectionNode?.parentElement;
+  const cell = selectionElement?.closest('td, th');
+  const activeTable = activeTableByRoot.get(root);
+  const table = activeTable?.isConnected && rich?.contains(activeTable) ? activeTable : cell?.closest('table');
+  if (!table || !rich?.contains(table)) { updateTableToolbar(root); return; }
+  activeTableByRoot.set(root, table);
+  const activeCell = cell?.closest('table') === table ? cell : table.querySelector('th, td');
+  if (!activeCell) return;
+  const rowIndex = activeCell.parentElement.rowIndex;
+  const columnIndex = activeCell.cellIndex;
   if (action === 'delete-table') {
+    const parent = table.parentNode;
+    const nextSibling = table.nextSibling;
+    rich.focus({ preventScroll: true });
     const range = document.createRange(); range.selectNode(table);
     const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
-    document.execCommand('delete'); updateTableToolbar(root); updateWordCount(root); persistDraft(root); return;
+    document.execCommand('delete');
+    if (table.isConnected) {
+      selection.removeAllRanges();
+      activeTableByRoot.set(root, table);
+      updateTableToolbar(root, table);
+      setStatus(root, 'Trình duyệt chưa xóa được bảng. Hãy thử lại khi con trỏ đang trong bảng.', 'error');
+      return;
+    }
+    activeTableByRoot.delete(root);
+    if (parent?.isConnected) {
+      const caret = document.createRange();
+      if (nextSibling?.parentNode === parent) caret.setStartBefore(nextSibling);
+      else caret.setStart(parent, parent.childNodes.length);
+      caret.collapse(true);
+      selection.removeAllRanges(); selection.addRange(caret);
+      rich.focus({ preventScroll: true });
+    }
+    updateTableToolbar(root); syncEmptyState(root); updateWordCount(root); persistDraft(root);
+    setStatus(root, 'Đã xóa bảng. Bạn có thể hoàn tác bằng Ctrl+Z hoặc Cmd+Z.', 'ok');
+    return;
   }
   if (action === 'add-row-above' || action === 'add-row-below') replaceTable(root, table, (copy) => {
     const insertAt = rowIndex + (action === 'add-row-below' ? 1 : 0);
@@ -1330,7 +1367,8 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         if (figure) selectFigure(root, state, figure);
         return;
       }
-      if (event.target.closest('[data-blog-body] table')) updateTableToolbar(root);
+      const clickedTable = event.target.closest('[data-blog-body] table');
+      if (clickedTable) updateTableToolbar(root, clickedTable);
       if (event.target.closest('[data-blog-body]') && !event.target.closest('.blog-figure')) {
         clearFigureSelection(root, state);
       }
@@ -1339,6 +1377,22 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
     // Keep the text selection alive when clicking the floating format bubble.
     root.addEventListener('mousedown', (event) => {
       if (event.target.closest('[data-blog-bubble], [data-blog-table-tools], [data-blog-tool="table"]')) event.preventDefault();
+    });
+
+    root.addEventListener('pointerdown', (event) => {
+      const table = event.target.closest?.('[data-blog-body] table');
+      if (table) {
+        activeTableByRoot.set(root, table);
+        updateTableToolbar(root, table);
+      } else if (event.target.closest?.('[data-blog-body]')) {
+        activeTableByRoot.delete(root);
+        updateTableToolbar(root);
+      }
+    });
+
+    root.addEventListener('focusin', (event) => {
+      const table = event.target.closest?.('[data-blog-body] td, [data-blog-body] th')?.closest('table');
+      if (table) updateTableToolbar(root, table);
     });
 
     root.addEventListener('mouseover', (event) => {
@@ -1360,7 +1414,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       window.setTimeout(() => updateBubble(root), 0);
     });
 
-    root.addEventListener('selectionchange', () => updateTableToolbar(root));
+    document.addEventListener('selectionchange', () => updateTableToolbar(root));
 
     root.addEventListener('input', (event) => {
       if (event.target.matches?.('input[name="blog-image-mode"]')) return;

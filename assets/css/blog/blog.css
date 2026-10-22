@@ -579,9 +579,11 @@ body.blog-route .main { width: min(1400px, calc(100% - 48px)); max-width: 1400px
 .blog-table-tools[hidden] { display: none; }
 .blog-table-tools button { min-height: 36px; padding: .4rem .65rem; border: 1px solid transparent; border-radius: 8px; color: #111827; background: #F3F4F6; font: inherit; font-size: .8rem; cursor: pointer; }
 .blog-table-tools button:hover, .blog-table-tools button:focus-visible { border-color: var(--blog-sky); outline: none; }
+.blog-table-tools__delete { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; color: #b42318 !important; }
+.blog-table-tools__delete:hover, .blog-table-tools__delete:focus-visible { border-color: #fda29b !important; background: #fff1f0 !important; }
 @media (max-width: 640px) {
   .blog-rich table, .blog-preview-drawer__content table, .post-content table { min-width: 520px; }
   .blog-table-tools { position: sticky; bottom: .25rem; justify-content: center; }
-  .blog-table-tools button { flex: 1 1 auto; }
+  .blog-table-tools button { min-height: 44px; flex: 1 1 auto; }
 }
 .blog-tool.is-loading { opacity: .7; cursor: progress; }
