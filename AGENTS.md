@@ -200,6 +200,7 @@ State được lưu dưới dạng:
 - Sau khi hoàn thành thay đổi code, **không chạy test, lint hoặc build local** trừ khi người dùng yêu cầu rõ ràng trong task hiện tại. Rà soát diff và cú pháp hiển nhiên, rồi tự động stage đúng file của task, commit và push branch hiện tại lên GitHub ngay khi xong; không đợi người dùng nhắc hoặc xin xác nhận lần nữa.
 - Nếu người dùng yêu cầu test/build/nghiệm thu rõ ràng, chỉ chạy các bước họ yêu cầu và báo kết quả thực tế. Không tuyên bố đã kiểm tra nếu chưa chạy.
 - Không stage thay đổi có sẵn hoặc không liên quan; tuyệt đối không dùng `git add .`.
+- Mỗi tính năng hoàn chỉnh phải có commit riêng trong hàng đợi push; không gộp nhiều tính năng vào cùng một commit. Chỉ push các commit theo thứ tự hàng đợi để mỗi lần deploy có phạm vi nhỏ, rõ ràng và dễ theo dõi.
 
 - **Quy trình mặc định:** Code → rà soát diff → Commit → Push tự động. Test/build local chỉ chạy theo yêu cầu rõ ràng.
 - Commit message theo Conventional Commits, ví dụ:
