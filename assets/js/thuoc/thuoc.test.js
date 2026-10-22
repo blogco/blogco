@@ -6,6 +6,7 @@ import {
 } from './store.js';
 import { computeThuocStats } from './stats.js';
 import { filterEntries } from './main.js';
+import { extractMedicineFields, findMedicineDuplicates, normalizeMedicineSearch } from './medicine-db.js';
 
 // Minimal localStorage stub so the store CRUD layer can run in Node.
 globalThis.localStorage = (() => {
@@ -90,4 +91,21 @@ test('filterEntries searches by name/usage/facility and month', () => {
   assert.equal(filterEntries(entries, { month: '2026-09' }).length, 1);
   assert.equal(filterEntries(entries, { category: 'pain' }).length, 1);
   assert.equal(filterEntries(entries).length, 2);
+});
+
+test('medicine database normalizes Vietnamese search and extracts only visible label fields', () => {
+  assert.equal(normalizeMedicineSearch('Thuốc Đau Đầu'), 'thuoc dau dau');
+  const fields = extractMedicineFields('PANADOL EXTRA\nParacetamol 500 mg\nThành phần: Paracetamol 500mg, Caffeine 65mg\nSĐK: VD-12345\nNhà sản xuất: Công ty ABC');
+  assert.equal(fields.brandName, 'PANADOL EXTRA');
+  assert.match(fields.genericName, /Paracetamol/);
+  assert.equal(fields.strength, '500 mg');
+  assert.equal(fields.registrationNumber, 'VD-12345');
+  assert.equal(fields.manufacturer, 'Công ty ABC');
+  assert.match(fields.rawOcrText, /PANADOL EXTRA/);
+});
+
+test('medicine duplicate matching requires exact product fields', () => {
+  const products = [{ brandName: 'Panadol', genericName: 'Paracetamol', strength: '500 mg', dosageForm: 'tablet', manufacturer: 'ABC', registrationNumber: 'R1' }];
+  assert.equal(findMedicineDuplicates(products, products[0]).length, 1);
+  assert.equal(findMedicineDuplicates(products, { ...products[0], strength: '250 mg' }).length, 0);
 });

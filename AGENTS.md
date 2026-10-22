@@ -154,6 +154,8 @@ State được lưu dưới dạng:
 - Mọi thao tác ghi/xoá phải cập nhật cả storage và state/render hiện tại. Sau khi ghi phát event `health:data-changed`.
 - Dữ liệu hỏng hoặc JSON parse lỗi: reset state in-memory về `[]`, hiển thị toast lỗi, không để route treo.
 - Không dùng IndexedDB hoặc Context khi chưa có yêu cầu/triển khai cụ thể.
+- Kho sản phẩm DB Thuốc là một feature riêng, dùng IndexedDB `blogco.medicine-db` (versioned) để giữ ảnh Blob và hồ sơ sản phẩm; không sửa/xóa Local Storage `blogco.thuoc.entries.v1` vì đó là lịch sử dùng thuốc hiện hữu.
+- OCR bao bì có thể tái sử dụng `assets/js/health/ocr.js` chạy trên thiết bị. Dữ liệu tra cứu ngoài phải gắn nguồn và không được coi nhãn nước ngoài là xác minh sản phẩm Việt Nam; không tạo nội dung AI giả khi chưa có backend an toàn.
 
 ### Duplicate và Recommendation
 

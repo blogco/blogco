@@ -841,3 +841,34 @@ body.thuoc-route .category-bar { display: none; }
   .thuoc-meter { grid-template-columns: minmax(0, 1fr) auto; }
   .thuoc-meter .thuoc-budget-bar { grid-column: 1 / -1; }
 }
+
+/* --- Personal medicine database ----------------------------------------- */
+.medicine-db__tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; padding-bottom: .75rem; border-bottom: 1px solid var(--thuoc-border); }
+.medicine-db__tabs button { min-height: 42px; padding: .55rem .9rem; border: 1px solid var(--thuoc-border); border-radius: 999px; background: #fff; color: var(--thuoc-text); font: inherit; font-weight: 700; cursor: pointer; }
+.medicine-db__tabs button.is-active { border-color: var(--thuoc-primary); background: var(--thuoc-primary-soft); color: var(--thuoc-primary); }
+.medicine-db__grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 1rem; align-items: start; }
+.medicine-db__grid .thuoc-card, .medicine-db > .thuoc-card { display: grid; gap: .85rem; }
+.medicine-db__upload { display: grid; place-items: center; min-height: 160px; padding: 1rem; border: 1.5px dashed var(--thuoc-border); border-radius: 12px; background: var(--thuoc-primary-soft-2); text-align: center; font-weight: 700; cursor: pointer; }
+.medicine-db__upload input { display: block; max-width: 100%; margin-top: .6rem; }
+.medicine-db__raw { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: .8rem; border: 1px solid var(--thuoc-border); border-radius: 8px; background: #fafafa; color: var(--thuoc-text); font: .82rem/1.5 ui-monospace, monospace; }
+.medicine-db__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.medicine-db__form h2, .medicine-db__form > p, .medicine-db__form > button, .medicine-db__form label:last-of-type { grid-column: 1 / -1; }
+.medicine-db__form .thuoc-field { min-width: 0; }
+.medicine-db__search { display: flex; align-items: end; flex-wrap: wrap; gap: .7rem; margin: 1rem 0; }
+.medicine-db__search .thuoc-field { flex: 1 1 260px; }
+.medicine-db__notice { margin: .9rem 0 0 !important; padding: .75rem .9rem; border-left: 3px solid var(--thuoc-warning); background: var(--thuoc-warning-soft); color: var(--thuoc-text); font-size: .88rem; }
+.medicine-db__records { display: grid; gap: .65rem; margin-top: .8rem; }
+.medicine-db__record { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem; border: 1px solid var(--thuoc-border); border-radius: 10px; background: #fff; }
+.medicine-db__record h3 { margin: 0; }
+.medicine-db__record p { margin: .2rem 0; }
+.medicine-db__record small { color: var(--thuoc-muted); }
+.medicine-db__reference { display: grid; gap: .55rem; margin-top: 1rem; padding: 1rem; border: 1px solid var(--thuoc-border); border-radius: 12px; }
+.medicine-db__reference h3 { margin: 0; }
+.medicine-db__reference details { padding: .55rem 0; border-top: 1px solid var(--thuoc-border); }
+.medicine-db__reference summary { cursor: pointer; font-weight: 700; }
+.medicine-db__reference details p { margin: .55rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }
+@media (max-width: 767px) {
+  .medicine-db__grid, .medicine-db__form { grid-template-columns: 1fr; }
+  .medicine-db__form h2, .medicine-db__form > p, .medicine-db__form > button, .medicine-db__form label:last-of-type { grid-column: auto; }
+  .medicine-db__record { align-items: flex-start; }
+}

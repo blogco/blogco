@@ -18,6 +18,8 @@ import { computeThuocStats } from './stats.js';
 import { renderThuocInsights } from './insights.js';
 import { renderThuocDashboard } from './dashboard.js';
 import { icon } from '../icons.js';
+import { renderMedicineDatabase } from './MedicineDatabase.js';
+import { deleteMedicineProduct, extractMedicineFields, getMedicineProducts, findMedicineDuplicates, saveMedicineProduct, scanMedicineImage, searchOpenFda } from './medicine-db.js';
 
 const mountedRoots = new WeakSet();
 const PAGE_SIZE = 8;
@@ -213,6 +215,7 @@ function renderList(root) {
 
     <div class="thuoc-toolbar">
       <a class="thuoc-primary-button" href="#/thuoc/add">${icon('plus', { size: 16 })} Thêm thuốc</a>
+      <a class="thuoc-secondary-button" href="#/thuoc/db-thuoc">DB Thuốc</a>
       <a class="thuoc-secondary-button" href="#/thuoc/stats">${icon('barChart', { size: 16 })} Thống kê</a>
       <button type="button" class="thuoc-secondary-button" data-export>${icon('arrowDown', { size: 16 })} Export JSON</button>
       <button type="button" class="thuoc-secondary-button" data-import-trigger>${icon('upload', { size: 16 })} Import</button>
@@ -356,14 +359,15 @@ function renderStats(root) {
 function routeName(root) {
   if (location.hash.startsWith('#/thuoc')) return location.hash.slice(1).replace(/\/$/, '') || '/thuoc';
   const initial = root.dataset.initialRoute;
-  const map = { list: '/thuoc', add: '/thuoc/add', stats: '/thuoc/stats', detail: '/thuoc', edit: '/thuoc' };
+  const map = { list: '/thuoc', add: '/thuoc/add', stats: '/thuoc/stats', detail: '/thuoc', edit: '/thuoc', 'db-thuoc': '/thuoc/db-thuoc' };
   return map[initial] || '/thuoc';
 }
 
 function showRoute(root) {
   const route = routeName(root);
   const [, , action = '', param = ''] = route.split('/');
-  if (action === 'add') renderFormPage(root, '');
+  if (action === 'db-thuoc') { void renderMedicineDatabase(root, param || 'scan'); }
+  else if (action === 'add') renderFormPage(root, '');
   else if (action === 'edit') renderFormPage(root, param);
   else if (action === 'detail') renderDetail(root, param);
   else if (action === 'stats') renderStats(root);
@@ -386,6 +390,89 @@ export function mountThuocApp(root) {
   if (!root) return;
   if (mountedRoots.has(root)) { showRoute(root); return; }
   mountedRoots.add(root);
+  let pendingMedicineImages = [];
+
+  root.addEventListener('change', async (event) => {
+    const input = event.target;
+    if (!input.matches('[data-medicine-images]')) return;
+    const files = [...(input.files || [])].filter((file) => file.type.startsWith('image/'));
+    pendingMedicineImages = files;
+    const status = root.querySelector('[data-scan-status]');
+    const form = root.querySelector('[data-medicine-form]');
+    if (!files.length || !status || !form) return;
+    status.textContent = 'Đang đọc hình ảnh…';
+    try {
+      const texts = [];
+      for (const [index, file] of files.entries()) {
+        status.textContent = `Đang nhận diện ảnh ${index + 1}/${files.length}…`;
+        texts.push(await scanMedicineImage(file, (progress) => {
+          if (progress.status === 'recognizing text') status.textContent = `Đang nhận diện chữ: ${Math.round((progress.progress || 0) * 100)}%`;
+        }));
+      }
+      const raw = texts.filter(Boolean).join('\n\n--- Ảnh tiếp theo ---\n\n');
+      const fields = extractMedicineFields(raw);
+      Object.entries(fields).forEach(([key, value]) => {
+        const field = form.elements.namedItem(key);
+        if (field && value) field.value = value;
+      });
+      const rawBox = root.querySelector('[data-ocr-raw]');
+      if (rawBox) { rawBox.textContent = raw || 'Không nhận diện được nội dung. Bạn có thể nhập thông tin thủ công.'; rawBox.hidden = false; }
+      status.textContent = raw ? 'Đã hoàn tất OCR. Kiểm tra và sửa các trường trước khi lưu.' : 'OCR không đọc được chữ rõ ràng; vui lòng nhập thủ công.';
+    } catch (error) { status.textContent = `${error.message || 'OCR không khả dụng.'} Bạn vẫn có thể nhập thông tin thủ công.`; }
+  });
+
+  root.addEventListener('input', (event) => {
+    if (event.target.matches('[data-library-query]')) {
+      const query = event.target.value.trim();
+      void getMedicineProducts().then((products) => {
+        const needle = query.toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        const filtered = products.filter((item) => [item.brandName,item.genericName,item.strength,item.manufacturer].join(' ').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').includes(needle));
+        const host = root.querySelector('[data-library-results]');
+        if (host) host.innerHTML = filtered.map((item) => `<article class="medicine-db__record"><div><h3>${escapeHtml(item.brandName || 'Chưa có tên')}</h3><p>${escapeHtml([item.genericName,item.strength,item.dosageForm].filter(Boolean).join(' · '))}</p><small>${escapeHtml(item.manufacturer || '')}</small></div><button type="button" class="thuoc-ghost-button thuoc-ghost-button--danger" data-delete-product="${escapeHtml(item.id)}">Xóa</button></article>`).join('') || '<p class="thuoc-empty">Không tìm thấy thuốc.</p>';
+      }).catch(() => {});
+    }
+  });
+
+  root.addEventListener('click', async (event) => {
+    const tab = event.target.closest('[data-db-tab]');
+    if (tab) { location.hash = `#/thuoc/db-thuoc/${tab.dataset.dbTab}`; return; }
+    const deleteProduct = event.target.closest('[data-delete-product]');
+    if (deleteProduct) {
+      if (!window.confirm('Xóa hồ sơ thuốc này khỏi kho cá nhân trên thiết bị?')) return;
+      try { await deleteMedicineProduct(deleteProduct.dataset.deleteProduct); await renderMedicineDatabase(root, 'library'); }
+      catch (error) { showToast(root, error.message || 'Không xóa được hồ sơ.', true); }
+    }
+  });
+
+  root.addEventListener('submit', async (event) => {
+    const form = event.target;
+    if (form.matches('[data-medicine-form]')) {
+      event.preventDefault();
+      const fields = Object.fromEntries(new FormData(form).entries());
+      if (!fields.brandName.trim() && !fields.genericName.trim()) { showToast(root, 'Nhập tên thuốc hoặc hoạt chất trước khi lưu.', true); return; }
+      try {
+        const old = await getMedicineProducts();
+        const duplicates = findMedicineDuplicates(old, fields);
+        if (duplicates.length && !window.confirm(`Có ${duplicates.length} hồ sơ tương tự. Vẫn lưu thành hồ sơ riêng?`)) return;
+        await saveMedicineProduct({ ...fields, rawOcrText: root.querySelector('[data-ocr-raw]')?.textContent || '', dataOrigin: 'user-confirmed-package' }, pendingMedicineImages.map((file) => ({ name: file.name, type: file.type, blob: file })));
+        pendingMedicineImages = [];
+        showToast(root, 'Đã lưu thuốc vào kho trên thiết bị này.');
+        await renderMedicineDatabase(root, 'library');
+      } catch (error) { showToast(root, error.message || 'Không lưu được kho thuốc.', true); }
+      return;
+    }
+    if (form.matches('[data-reference-search]')) {
+      event.preventDefault();
+      const host = root.querySelector('[data-reference-results]');
+      const query = form.querySelector('[data-reference-query]')?.value || '';
+      if (!host) return;
+      host.textContent = 'Đang tra cứu nhãn openFDA…';
+      try {
+        const records = await searchOpenFda(query);
+        host.innerHTML = records.length ? records.map((record) => `<article class="medicine-db__reference"><h3>${escapeHtml(record.title)}</h3><p class="medicine-db__notice">${escapeHtml(record.source)}</p>${[['Hoạt chất',record.ingredients.join(', ')],['Thông tin nhận diện', [record.genericName,record.manufacturer].filter(Boolean).join(' · ')],['Chỉ định trên nhãn',record.indications],['Dược lý lâm sàng',record.clinicalPharmacology],['Cơ chế tác dụng',record.mechanism],['Dược động học',record.pharmacokinetics],['Tác dụng không mong muốn',record.adverseReactions],['Chống chỉ định',record.contraindications]].filter(([,value])=>value).map(([label,value])=>`<details><summary>${label}</summary><p>${escapeHtml(value)}</p></details>`).join('')}<a href="${escapeHtml(record.url)}" target="_blank" rel="noopener noreferrer">Nguồn: openFDA Drug Labeling API</a></article>`).join('') : '<p class="thuoc-empty">Không tìm thấy nhãn phù hợp. Thử tên hoạt chất khác.</p>';
+      } catch (error) { host.textContent = error.message || 'Không thể truy cập openFDA. Hãy thử lại khi có mạng.'; }
+    }
+  });
 
   root.addEventListener('input', (event) => {
     if (event.target.matches('[data-search-input]')) {
