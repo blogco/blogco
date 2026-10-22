@@ -192,19 +192,20 @@ State được lưu dưới dạng:
 ## 7. Git và CI/CD Workflow
 
 - Mặc định triển khai theo yêu cầu trực tiếp của người dùng đến khi hoàn tất; không dừng ở đề xuất hoặc hỏi lại xác nhận cho các bước triển khai thông thường.
-- Khi người dùng yêu cầu hoàn tất và push, thực hiện kiểm tra phù hợp, rà soát diff, commit các file thuộc task và push branch hiện tại. Không stage thay đổi có sẵn hoặc không liên quan; không dùng `git add .`.
-- Nếu người dùng yêu cầu test/build/nghiệm thu, chạy đúng các kiểm tra liên quan và báo kết quả thực tế. Không tuyên bố đã kiểm tra nếu chưa chạy.
+- Sau khi hoàn thành thay đổi code, **không chạy test, lint hoặc build local** trừ khi người dùng yêu cầu rõ ràng trong task hiện tại. Rà soát diff và cú pháp hiển nhiên, rồi tự động stage đúng file của task, commit và push branch hiện tại lên GitHub ngay khi xong; không đợi người dùng nhắc hoặc xin xác nhận lần nữa.
+- Nếu người dùng yêu cầu test/build/nghiệm thu rõ ràng, chỉ chạy các bước họ yêu cầu và báo kết quả thực tế. Không tuyên bố đã kiểm tra nếu chưa chạy.
+- Không stage thay đổi có sẵn hoặc không liên quan; tuyệt đối không dùng `git add .`.
 
-- **Quy trình:** Code → kiểm tra theo task → Commit → Push khi task/người dùng yêu cầu.
+- **Quy trình mặc định:** Code → rà soát diff → Commit → Push tự động. Test/build local chỉ chạy theo yêu cầu rõ ràng.
 - Commit message theo Conventional Commits, ví dụ:
   - `feat: add medical management filter`
   - `fix: refresh records after deletion`
   - `docs: update agents rules`
 - Chỉ stage file liên quan; không dùng `git add .` cho thay đổi không được rà soát.
-- Không tự ý chạy lint/build/test trong task thông thường nếu người dùng không yêu cầu.
+- Không tự ý chạy lint/build/test local nếu người dùng không yêu cầu rõ ràng.
 - Khi người dùng yêu cầu test/build, chạy các lệnh liên quan và báo chính xác những gì đã chạy, kết quả và giới hạn.
 - Việc kiểm tra cuối cùng sẽ được thực hiện trực tiếp trên GitHub Pages sau khi push.
-- Nếu người dùng yêu cầu triển khai và push, commit/push sau khi hoàn tất và kiểm tra. Nếu push bị reject, fetch/rebase an toàn rồi push lại; không dùng destructive reset.
+- Với mọi task có thay đổi code, tự động commit và push sau khi hoàn tất; đây là quy trình mặc định, không cần người dùng nhắc lại. Nếu push bị reject, fetch/rebase an toàn rồi push lại; không dùng destructive reset.
 - Không có quy trình Pull Request riêng được định nghĩa trong repo. Nếu tạo PR, ghi rõ phạm vi thay đổi, kiểm tra đã chạy/chưa chạy và các giới hạn còn lại.
 
 ## 8. Quy tắc đặc thù bắt buộc
