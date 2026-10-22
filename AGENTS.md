@@ -196,6 +196,7 @@ State được lưu dưới dạng:
 ## 7. Git và CI/CD Workflow
 
 - Mặc định triển khai theo yêu cầu trực tiếp của người dùng đến khi hoàn tất; không dừng ở đề xuất hoặc hỏi lại xác nhận cho các bước triển khai thông thường.
+- Sau khi code xong, rà soát diff, commit và push theo quy trình bên dưới; phản hồi kết thúc chỉ cần xác nhận ngắn gọn, không liệt kê hay giải thích các thay đổi trừ khi người dùng yêu cầu.
 - Sau khi hoàn thành thay đổi code, **không chạy test, lint hoặc build local** trừ khi người dùng yêu cầu rõ ràng trong task hiện tại. Rà soát diff và cú pháp hiển nhiên, rồi tự động stage đúng file của task, commit và push branch hiện tại lên GitHub ngay khi xong; không đợi người dùng nhắc hoặc xin xác nhận lần nữa.
 - Nếu người dùng yêu cầu test/build/nghiệm thu rõ ràng, chỉ chạy các bước họ yêu cầu và báo kết quả thực tế. Không tuyên bố đã kiểm tra nếu chưa chạy.
 - Không stage thay đổi có sẵn hoặc không liên quan; tuyệt đối không dùng `git add .`.
