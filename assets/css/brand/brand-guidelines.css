@@ -552,92 +552,6 @@ body label { color: var(--blogco-text-body); font-weight: 500; }
   vertical-align: -.18em;
 }
 
-body .blogco-header,
-body.article-body .blogco-header {
-  top: 12px;
-  left: 50%;
-  right: auto;
-  width: min(calc(100% - 32px), 1240px);
-  min-height: 64px;
-  transform: translateX(-50%);
-  border: 1px solid rgb(17 24 39 / 9%);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 84%);
-  box-shadow: var(--blogco-shadow-soft);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  transition: box-shadow var(--blogco-motion), border-color var(--blogco-motion), background var(--blogco-motion);
-}
-
-body .blogco-header:hover { border-color: rgb(16 185 129 / 24%); box-shadow: var(--blogco-shadow-hover); }
-body .blogco-header .header-nav { min-height: 64px; padding: 8px 20px; }
-.blogco-header .navbar__logo,
-.blogco-header .navbar__link { gap: 7px; transition: color var(--blogco-motion), background var(--blogco-motion), transform var(--blogco-motion); }
-.blogco-header .navbar__link { border-radius: 999px; }
-.blogco-header .navbar__link:hover,
-.blogco-header .navbar__link:focus-visible { background: var(--blogco-accent-soft); transform: translateY(-1px); }
-.blogco-header .navbar__mega {
-  border: 1px solid var(--blogco-border);
-  border-radius: 20px;
-  background: rgb(255 255 255 / 92%);
-  box-shadow: var(--blogco-shadow-hover);
-  backdrop-filter: blur(18px) saturate(140%);
-}
-.blogco-header .navbar__mega-item { border-radius: 12px; transition: transform var(--blogco-motion), background var(--blogco-motion), box-shadow var(--blogco-motion); }
-.blogco-header .navbar__mega-item:hover,
-.blogco-header .navbar__mega-item:focus-visible { transform: translateY(-2px); box-shadow: 0 8px 18px rgb(17 24 39 / 7%); }
-.blogco-header .navbar__mega-icon { color: var(--blogco-accent-sky); font-size: 1rem; }
-
-/* Keep the homepage brand and primary navigation in separate layout regions. */
-body .blogco-header .header-nav {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  gap: clamp(2rem, 3vw, 3rem);
-}
-.blogco-header .navbar__brand-region {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  min-width: max-content;
-}
-.blogco-header .navbar__navigation-region {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  align-items: center;
-  justify-content: flex-end;
-}
-.blogco-header .navbar__menu {
-  flex: 0 0 auto;
-  margin-left: 0;
-}
-.blogco-header .navbar__logo {
-  white-space: nowrap;
-}
-
-@media (min-width: 1025px) and (max-width: 1439px) {
-  body .blogco-header .header-nav { gap: 2rem; padding-inline: 1.5rem; }
-  .blogco-header .navbar__menu { gap: 2px; }
-  .blogco-header .navbar__link { padding-inline: 8px; font-size: 12px; letter-spacing: .025em; }
-}
-
-@media (min-width: 1025px) and (max-width: 1199px) {
-  .blogco-header .navbar__menu { display: none; }
-  .blogco-header .navbar__toggle { display: inline-flex; }
-}
-
-@media (min-width: 1200px) {
-  .blogco-header .navbar__toggle { display: none; }
-}
-
-@media (max-width: 1024px) {
-  body .blogco-header .header-nav { gap: 1rem; }
-  .blogco-header .navbar__brand-region { min-width: 0; }
-  .blogco-header .navbar__navigation-region { flex: 0 0 auto; }
-  .blogco-header .navbar__menu { flex: 0 1 auto; }
-}
-
 .hero.first-entry.home-info,
 .brand-hero,
 .health-page-heading,
@@ -768,14 +682,10 @@ a:focus-visible { outline: none; border-color: var(--blogco-accent-sky); box-sha
 .post-card__media > .ui-icon { color: var(--blogco-accent-sky); }
 
 @media (max-width: 1024px) {
-  body .blogco-header { width: calc(100% - 20px); }
-  body .blogco-header .header-nav { padding-inline: 14px; }
-  body .blogco-header .navbar__menu { border: 1px solid var(--blogco-border); border-radius: 20px; background: rgb(255 255 255 / 96%); box-shadow: var(--blogco-shadow-hover); }
   .home-posts__grid > .post-card:first-child { grid-column: auto; grid-row: auto; }
 }
 
 @media (max-width: 767px) {
-  body .blogco-header { top: 8px; }
   .hero.first-entry.home-info,
   .brand-hero { padding: 2rem 1.25rem; }
   .home-posts__grid { grid-template-columns: 1fr; }

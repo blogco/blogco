@@ -19,7 +19,6 @@
   --content: var(--blogco-text-body);
 }
 
-html { scroll-padding-top: 6rem; }
 body { background: var(--blogco-bg); color: var(--blogco-text-body); }
 body .main { padding-block: clamp(2rem, 4vw, 3.5rem) var(--space-section); }
 body .main p,
@@ -33,32 +32,6 @@ body .main h1 { font-size: clamp(2.25rem, 4.4vw, 3.5rem); line-height: 1.2 !impo
 body .main h2 { font-size: clamp(1.75rem, 3.2vw, 2.125rem) !important; line-height: 1.3 !important; }
 body .main h3 { font-size: clamp(1.35rem, 2.4vw, 1.55rem) !important; line-height: 1.4 !important; }
 body :focus-visible { outline: 3px solid var(--blogco-interactive); outline-offset: 3px; }
-
-/* Header keeps the existing PaperMod and vanilla menu behavior. */
-.blogco-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  border: 0;
-  background: rgb(250 250 247 / 92%);
-  box-shadow: 0 1px 0 rgb(23 38 56 / 8%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-.blogco-header .header-nav { min-height: 76px; }
-.blogco-header .blogco-brand { font-size: 1.45rem; letter-spacing: -.04em; }
-.blogco-header .navbar__logo-mark { color: var(--blogco-accent-sky); }
-.blogco-header .navbar__logo-accent { color: var(--blogco-accent-sky); }
-.blogco-header .navbar__menu > li > a,
-.blogco-header .navbar__menu > li > button { font-size: 15px; font-weight: 650 !important; }
-.blogco-header .navbar__link.is-active,
-.blogco-header [data-nav-dropdown].is-active > .navbar__link { color: var(--blogco-accent-sky); }
-.blogco-header .navbar__link:hover,
-.blogco-header .navbar__link.is-active,
-.blogco-header .navbar__link[aria-current="page"] { color: var(--blogco-accent-sky) !important; }
-.blogco-header .navbar__mega { border-radius: 16px; box-shadow: var(--blogco-shadow-hover); }
-.blogco-header .navbar__mega-item { border-radius: 12px; }
-.navbar__toggle { min-width: 44px; min-height: 44px; }
 
 /* Homepage editorial composition */
 .hero.first-entry.home-info {
@@ -159,7 +132,6 @@ img { max-width: 100%; }
   .article-lead { font-size: 1.125rem; line-height: 1.75; }
   .post-single .post-content,
   .blogco-article .article-content { padding-inline: 16px; }
-  .blogco-header .header-nav { min-height: 68px; }
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {

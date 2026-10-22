@@ -41,13 +41,61 @@ function syncActiveNavigation() {
 }
 
 if (header && menu && toggle) {
-  const desktopNav = window.matchMedia('(min-width: 1025px)');
+  const headerNav = header.querySelector('.header-nav');
+  const navigationRegion = header.querySelector('.navbar__navigation-region');
+  let resizeFrame = 0;
+  let escapedFocusItem = null;
 
-  const closeDropdowns = () => {
+  const isCompact = () => header.classList.contains('is-compact');
+
+  const closeDropdown = (item) => {
+    item.classList.remove('is-open');
+    item.querySelector('.navbar__link--dropdown')?.setAttribute('aria-expanded', 'false');
+  };
+
+  const closeDropdowns = (except = null) => {
     header.querySelectorAll('[data-nav-dropdown].is-open').forEach((item) => {
-      item.classList.remove('is-open');
-      item.querySelector('.navbar__link--dropdown')?.setAttribute('aria-expanded', 'false');
+      if (item !== except) closeDropdown(item);
     });
+  };
+
+  const openDropdown = (item) => {
+    closeDropdowns(item);
+    item.classList.add('is-open');
+    item.querySelector('.navbar__link--dropdown')?.setAttribute('aria-expanded', 'true');
+  };
+
+  const updateCompactLayout = () => {
+    resizeFrame = 0;
+    if (!headerNav || !navigationRegion) return;
+
+    const wasCompact = isCompact();
+    if (wasCompact) header.classList.remove('is-compact');
+
+    const menuStyle = window.getComputedStyle(menu);
+    const visibleItems = [...menu.children].filter((item) => window.getComputedStyle(item).display !== 'none');
+    const menuGap = Number.parseFloat(menuStyle.columnGap || menuStyle.gap) || 0;
+    const requiredMenuWidth = visibleItems.reduce((width, item) => {
+      const itemStyle = window.getComputedStyle(item);
+      return width + item.getBoundingClientRect().width
+        + (Number.parseFloat(itemStyle.marginInlineStart) || 0)
+        + (Number.parseFloat(itemStyle.marginInlineEnd) || 0);
+    }, 0) + Math.max(0, visibleItems.length - 1) * menuGap
+      + (Number.parseFloat(menuStyle.paddingInlineStart) || 0)
+      + (Number.parseFloat(menuStyle.paddingInlineEnd) || 0);
+    const availableMenuWidth = navigationRegion.clientWidth;
+    const shouldCompact = requiredMenuWidth > availableMenuWidth + 1;
+    header.classList.toggle('is-compact', shouldCompact);
+
+    if (wasCompact !== shouldCompact) {
+      setMenuOpen(false);
+      closeDropdowns();
+    }
+  };
+
+  const scheduleCompactLayout = () => {
+    if (resizeFrame) window.cancelAnimationFrame(resizeFrame);
+    resizeFrame = window.requestAnimationFrame(updateCompactLayout);
   };
 
   toggle.addEventListener('click', () => setMenuOpen(toggle.getAttribute('aria-expanded') !== 'true'));
@@ -55,63 +103,106 @@ if (header && menu && toggle) {
     const dropdownToggle = event.target.closest('.navbar__link--dropdown');
     if (dropdownToggle) {
       event.preventDefault();
-      // Desktop: mở/đóng bằng hover (CSS), không giữ trạng thái .is-open.
-      if (desktopNav.matches) return;
-      // Mobile: bấm để mở/đóng accordion, chỉ 1 cái mở tại một thời điểm.
       const item = dropdownToggle.closest('[data-nav-dropdown]');
+      if (!item) return;
+
+      if (!isCompact()) {
+        openDropdown(item);
+        return;
+      }
+
       const willOpen = !item.classList.contains('is-open');
       closeDropdowns();
-      if (willOpen) {
-        item.classList.add('is-open');
-        dropdownToggle.setAttribute('aria-expanded', 'true');
-      }
+      if (willOpen) openDropdown(item);
       return;
     }
     if (event.target.closest('a')) {
-      setMenuOpen(false);
+      const compact = isCompact();
+      const activeDropdown = event.target.closest('[data-nav-dropdown]');
+      setMenuOpen(false, compact);
       closeDropdowns();
+      if (!compact && activeDropdown?.querySelector('.navbar__mega')?.contains(document.activeElement)) {
+        document.activeElement.blur();
+      }
     }
   });
 
-  // Desktop: giữ aria-expanded đồng bộ khi hover/focus (mở/đóng do CSS quyết định).
+  // Hover and keyboard focus share the same explicit open state.
   header.querySelectorAll('[data-nav-dropdown]').forEach((item) => {
     const btn = item.querySelector('.navbar__link--dropdown');
     if (!btn) return;
-    const setExpanded = (value) => btn.setAttribute('aria-expanded', String(value));
     item.addEventListener('mouseenter', () => {
-      if (!desktopNav.matches) return;
-      // Đảm bảo chỉ 1 dropdown mở: bỏ focus của các dropdown khác (nếu có).
-      header.querySelectorAll('[data-nav-dropdown]').forEach((other) => {
-        if (other !== item) other.querySelector('.navbar__link--dropdown')?.blur();
-      });
-      setExpanded(true);
+      if (!isCompact()) openDropdown(item);
     });
     item.addEventListener('mouseleave', () => {
-      if (!desktopNav.matches) return;
-      setExpanded(false);
-      if (document.activeElement === btn) btn.blur();
+      if (!isCompact() && !item.contains(document.activeElement)) closeDropdown(item);
     });
-    item.addEventListener('focusin', () => { if (desktopNav.matches) setExpanded(true); });
+    item.addEventListener('focusin', (event) => {
+      if (!isCompact() && !(event.target === btn && escapedFocusItem === item)) openDropdown(item);
+    });
     item.addEventListener('focusout', () => {
-      if (desktopNav.matches && !item.contains(document.activeElement)) setExpanded(false);
+      window.requestAnimationFrame(() => {
+        if (!item.contains(document.activeElement) && !item.matches(':hover')) closeDropdown(item);
+      });
     });
   });
+
+  menu.addEventListener('keydown', (event) => {
+    const item = event.target.closest('[data-nav-dropdown]');
+    if (!item || !item.classList.contains('is-open')) return;
+
+    const links = [...item.querySelectorAll('.navbar__mega a[href], .navbar__mega button:not([disabled])')];
+    if (!links.length) return;
+
+    const currentIndex = links.indexOf(document.activeElement);
+    let nextIndex;
+    if (event.key === 'ArrowDown') nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % links.length;
+    else if (event.key === 'ArrowUp') nextIndex = currentIndex < 0 ? links.length - 1 : (currentIndex - 1 + links.length) % links.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = links.length - 1;
+    else return;
+
+    event.preventDefault();
+    links[nextIndex].focus();
+  });
+
   document.addEventListener('pointerdown', (event) => {
     if (!header.contains(event.target)) {
+      if (menu.contains(document.activeElement)) document.activeElement.blur();
       setMenuOpen(false);
       closeDropdowns();
     }
   });
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && header.classList.contains('is-menu-open')) setMenuOpen(false, true);
-    if (event.key === 'Escape') closeDropdowns();
-  });
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 1024) {
-      setMenuOpen(false);
+    if (event.key !== 'Escape') return;
+    const openItem = header.querySelector('[data-nav-dropdown].is-open');
+    if (openItem) {
+      const button = openItem.querySelector('.navbar__link--dropdown');
       closeDropdowns();
+      if (isCompact()) button?.focus();
+      else {
+        escapedFocusItem = openItem;
+        button?.focus();
+        escapedFocusItem = null;
+      }
+      return;
     }
+    if (header.classList.contains('is-menu-open')) setMenuOpen(false, true);
   });
+
+  window.addEventListener('resize', scheduleCompactLayout);
+  window.visualViewport?.addEventListener('resize', scheduleCompactLayout);
+  if (window.ResizeObserver && headerNav) {
+    const resizeObserver = new ResizeObserver(scheduleCompactLayout);
+    resizeObserver.observe(headerNav);
+  }
+  if (window.MutationObserver) {
+    const menuObserver = new MutationObserver(scheduleCompactLayout);
+    menuObserver.observe(menu, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  }
+  document.fonts?.ready.then(scheduleCompactLayout);
+
+  updateCompactLayout();
   window.addEventListener('hashchange', syncActiveNavigation);
   window.addEventListener('popstate', syncActiveNavigation);
   syncActiveNavigation();
