@@ -119,6 +119,8 @@ function normalizeReceipt(input = {}, existing = {}) {
     expenseCategory,
     categoryGroupId: text(input.categoryGroupId ?? existing.categoryGroupId, 120),
     categoryId: text(input.categoryId ?? existing.categoryId, 160),
+    transactionType: ['expense', 'income', 'transfer', 'refund'].includes(input.transactionType ?? existing.transactionType) ? (input.transactionType ?? existing.transactionType) : 'expense',
+    refundOf: text(input.refundOf ?? existing.refundOf, 80),
     currency: text(input.currency ?? existing.currency ?? 'VND', 8),
     source: text(input.source ?? existing.source ?? 'manual', 30),
     items,

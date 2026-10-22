@@ -26,7 +26,7 @@ import {
   renderManualForm, renderManualRow, renderSmartPreview, readManualRows, formatAmountInput, seasonOf, rowToItems,
 } from './manual.js';
 import { renderAiInsights } from './insights.js';
-import { renderDashboard } from './dashboard.js';
+import { renderFinancialDashboard } from './financial-dashboard.js';
 import { analyzeSmartExpense } from './manual.js';
 import { getMerchantLearning, learnMerchantCategory, detectReceiptDuplicate } from './smart-entry.js';
 
@@ -468,30 +468,16 @@ function renderDetail(root, id) {
 // Stats view
 // ---------------------------------------------------------------------------
 
+let financialFilters = { period: 'month', from: '', to: '', category: '' };
+
 function renderStats(root) {
   const state = getCoffeeState();
-  const stats = computeCoffeeStats(state.receipts, { budget: state.profile.monthlyBudget });
-  const budgetProgress = computeBudgetProgress(state.receipts, state.profile);
-
   root.innerHTML = `<section class="coffee-screen" aria-labelledby="coffee-title">
-    ${pageHeader('Thống kê & phân tích chi phí', 'Báo cáo tổng hợp theo mùa, thương hiệu và nhóm đồ uống, kèm phân tích thói quen tiêu dùng bằng AI.', '/coffee', true)}
-    ${stats.count === 0 ? '<p class="coffee-empty">Chưa có dữ liệu để thống kê. Hãy nhập chi phí thủ công để bắt đầu.</p>' : `
-    <div class="coffee-summary-grid coffee-summary-grid--stats">
-      <div class="coffee-summary-card"><span>Tổng chi phí</span><strong>${escapeHtml(formatVnd(stats.totalSpend))}</strong></div>
-      <div class="coffee-summary-card"><span>Số hoá đơn</span><strong>${stats.count}</strong></div>
-      <div class="coffee-summary-card"><span>Lượt món</span><strong>${stats.itemCount}</strong></div>
-      <div class="coffee-summary-card"><span>Trung bình / lần</span><strong>${escapeHtml(formatVnd(stats.averageSpend))}</strong></div>
-      <div class="coffee-summary-card"><span>TB / tháng (có dữ liệu)</span><strong>${escapeHtml(formatVnd(stats.monthlyAverage))}</strong></div>
-      <div class="coffee-summary-card"><span>Lần tốn nhất</span><strong>${escapeHtml(formatVnd(stats.maxSpend))}</strong></div>
-    </div>
-
-    ${budgetOverviewMarkup(budgetProgress)}
-
-    ${renderDashboard(state.receipts)}
-    ${renderAiInsights(state.receipts)}`}
+    ${pageHeader('Báo cáo tài chính', 'Phân tích thu nhập, chi tiêu và xu hướng tài chính cá nhân.', '/coffee', true)}
+    ${renderFinancialDashboard(state.receipts, financialFilters)}
 
     <div class="coffee-actions"><a class="coffee-secondary-button" href="#/coffee">${icon('arrowLeft', { size: 16 })} Danh sách</a>
-      <button type="button" class="coffee-secondary-button coffee-clear-all" data-clear-all>${icon('trash', { size: 16 })} Xóa toàn bộ dữ liệu / Reset</button></div>
+      <a class="coffee-primary-button" href="#/coffee/manual-add">${icon('plus', { size: 16 })} Thêm giao dịch</a></div>
   </section>${toastMarkup()}`;
 }
 
@@ -833,6 +819,21 @@ export function mountCoffeeApp(root) {
     if (manualForm && target.name === 'category') {
       refreshManualExpenseChip(target.closest('[data-manual-row]'));
     }
+    if (target.matches('[data-fin-filter]')) {
+      financialFilters = { ...financialFilters, [target.dataset.finFilter]: target.value };
+      const dashboard = root.querySelector('[data-fin-dashboard]');
+      if (dashboard) dashboard.outerHTML = renderFinancialDashboard(getCoffeeState().receipts, financialFilters);
+    }
+    if (target.matches('[data-essential-category]')) {
+      try {
+        const key = 'blogco.coffee.category-essential.v1';
+        const config = JSON.parse(localStorage.getItem(key) || '{}');
+        config[target.dataset.essentialCategory] = target.value;
+        localStorage.setItem(key, JSON.stringify(config));
+        const dashboard = root.querySelector('[data-fin-dashboard]');
+        if (dashboard) dashboard.outerHTML = renderFinancialDashboard(getCoffeeState().receipts, financialFilters);
+      } catch { showToast(root, 'Không thể lưu phân loại nhu cầu trên thiết bị.', true); }
+    }
     if (target.matches('[data-filter-month]')) { searchState.month = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-filter-store]')) { searchState.store = target.value; searchState.page = 1; refreshHistoryResults(root); }
     if (target.matches('[data-filter-category]')) { searchState.category = target.value; searchState.page = 1; refreshHistoryResults(root); }
@@ -855,6 +856,27 @@ export function mountCoffeeApp(root) {
 
   root.addEventListener('click', async (event) => {
     const target = event.target;
+
+    if (target.closest('[data-fin-mode]')) {
+      financialFilters = { ...financialFilters, mode: target.closest('[data-fin-mode]').dataset.finMode };
+      const dashboard = root.querySelector('[data-fin-dashboard]');
+      if (dashboard) dashboard.outerHTML = renderFinancialDashboard(getCoffeeState().receipts, financialFilters);
+      return;
+    }
+
+    if (target.closest('[data-fin-reset]')) {
+      financialFilters = { period: 'month', from: '', to: '', category: '' };
+      const dashboard = root.querySelector('[data-fin-dashboard]');
+      if (dashboard) dashboard.outerHTML = renderFinancialDashboard(getCoffeeState().receipts, financialFilters);
+      return;
+    }
+    const financialCategory = target.closest('[data-fin-category]');
+    if (financialCategory) {
+      financialFilters = { ...financialFilters, category: financialCategory.dataset.finCategory };
+      const dashboard = root.querySelector('[data-fin-dashboard]');
+      if (dashboard) dashboard.outerHTML = renderFinancialDashboard(getCoffeeState().receipts, financialFilters);
+      return;
+    }
 
     if (target.closest('[data-smart-parse]')) { parseSmartInput(root); return; }
     if (target.closest('[data-smart-confirm]')) { acceptSmartInput(root); return; }

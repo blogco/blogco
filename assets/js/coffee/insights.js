@@ -305,7 +305,7 @@ export function renderAiInsights(receipts = [], options = {}) {
   const head = `<div class="coffee-ai-insights__head">
       <div>
         <p class="coffee-eyebrow">BLOGCO · AI</p>
-        <h2 id="ai-insights-title">${icon('sparkles', { size: 20 })} Smart Analytics Dashboard</h2>
+        <h2 id="ai-insights-title">${icon('sparkles', { size: 20 })} AI Insights · Smart Analytics Dashboard</h2>
         <p class="coffee-muted">Phân tích chuyên sâu thời gian thực về tài chính và thói quen tiêu dùng.</p>
       </div>
       <button type="button" class="coffee-secondary-button" data-ai-refresh>🔄 Làm mới Insights</button>
