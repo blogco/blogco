@@ -1,4 +1,4 @@
-// Router + view layer cho trang "BlogCo Corporate Identity & Brand Guidelines".
+// Router + view layer cho trang "BlogCo Editorial 2026".
 //
 // Route (hash based, mount trên trang chủ):
 //   #/brand-guidelines → bảng màu, typography, UI components, CSS tokens
@@ -12,39 +12,39 @@ const mountedRoots = new WeakSet();
 
 const COLOR_TOKENS = [
   {
-    name: 'Primary — Ink',
+    name: 'Ink Navy',
     token: '--blogco-primary',
-    hex: '#111827',
+    hex: '#172638',
     usage: 'Tiêu đề, nội dung chính, logo và các điểm cần độ tương phản cao.',
   },
   {
-    name: 'Primary Hover — Slate',
+    name: 'Deep Navy',
     token: '--blogco-primary-hover',
-    hex: '#1F2937',
+    hex: '#102032',
     usage: 'Trạng thái hover, pressed và nội dung phụ có độ tương phản cao.',
   },
   {
-    name: 'Accent — Mint',
+    name: 'Primary Teal',
     token: '--blogco-accent-sky',
-    hex: '#10B981',
+    hex: '#087F8C',
     usage: 'Active state, số liệu, viền nhấn, link hover và thanh tiến trình.',
   },
   {
-    name: 'Accent Background — Mist',
+    name: 'Soft Neutral',
     token: '--blogco-accent-bg',
-    hex: '#F8F9FA',
+    hex: '#F3F6F4',
     usage: 'Nền card, section xen kẽ, badge nhẹ và trạng thái hover của bảng.',
   },
   {
     name: 'Accent Soft — Mint Mist',
     token: '--blogco-accent-soft',
-    hex: '#ECFDF5',
+    hex: '#DDF5EC',
     usage: 'Nền tag, badge và active state nhẹ cần giữ sắc mint.',
   },
   {
-    name: 'Background — Pure White',
+    name: 'Warm Background',
     token: '--blogco-bg',
-    hex: '#FAFAFA',
+    hex: '#FAFAF7',
     usage: 'Nền trang giao diện sáng (Light Mode), ưu tiên khoảng trắng rộng rãi.',
   },
   {
@@ -56,7 +56,7 @@ const COLOR_TOKENS = [
   {
     name: 'Text — Title / High Contrast',
     token: '--blogco-text-main',
-    hex: '#111827',
+    hex: '#172638',
     usage: 'Tiêu đề H1, H2, H3 và các nhãn quan trọng.',
   },
   {
@@ -80,19 +80,21 @@ const COLOR_TOKENS = [
 ];
 
 const CSS_TOKENS = `:root {
-  --blogco-primary: #111827;
-  --blogco-primary-hover: #1F2937;
-  --blogco-accent-sky: #10B981;
-  --blogco-accent-bg: #F8F9FA;
-  --blogco-accent-soft: #ECFDF5;
-  --blogco-bg: #FAFAFA;
+  --blogco-primary: #172638;
+  --blogco-primary-hover: #102032;
+  --blogco-accent-sky: #087F8C;
+  --blogco-accent-bg: #F3F6F4;
+  --blogco-accent-soft: #DDF5EC;
+  --blogco-bg: #FAFAF7;
   --blogco-card-bg: #FFFFFF;
-  --blogco-text-main: #111827;
+  --blogco-text-main: #172638;
   --blogco-text-body: #374151;
   --blogco-text-muted: #4B5563;
   --blogco-border: #E5E7EB;
-  --blogco-font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  --blogco-font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-interactive: #2463EB;
+  --blogco-coral: #EF8C79;
+  --blogco-font-family: 'Be Vietnam Pro', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-font-display: 'Be Vietnam Pro', 'Noto Sans KR', 'Apple SD Gothic Neo', Arial, sans-serif;
 }`;
 
 // ---------------------------------------------------------------------------
@@ -121,7 +123,7 @@ function hexToRgb(hex) {
 function renderHeader() {
   return `<header class="brand-hero">
     <p class="brand-eyebrow">BLOGCO · DESIGN SYSTEM</p>
-    <h1 class="brand-hero__title" tabindex="-1">BlogCo Corporate Identity &amp; Brand Guidelines</h1>
+    <h1 class="brand-hero__title" tabindex="-1">Blogco Editorial 2026</h1>
     <p class="brand-lead">Hệ thống nhận diện BlogCo theo ngôn ngữ corporate tối giản, hiện đại và tin cậy, lấy cảm hứng từ các annual-report systems nhưng không sao chép nhận diện bên ngoài. Đây là nguồn tham chiếu cho màu sắc, typography và các UI component dùng trên toàn bộ BlogCo.</p>
     <div class="brand-lockups" aria-label="Mẫu logo BlogCo">
       <div class="brand-lockup brand-lockup--light">
@@ -156,7 +158,7 @@ function renderColors() {
   return `<section class="brand-section" aria-labelledby="brand-colors">
     <p class="brand-section__index">01 · Color Palette</p>
     <h2 id="brand-colors">Bảng màu thương hiệu</h2>
-    <p class="brand-section__intro">Bảng màu corporate BlogCo (đen/xám đậm · trắng · mint). Mỗi màu đi kèm mã HEX, RGB và phạm vi áp dụng.</p>
+    <p class="brand-section__intro">Bảng màu Blogco Editorial 2026 cân bằng Ink Navy, teal, mint và nền ấm. Mỗi màu đi kèm mã HEX, RGB và phạm vi áp dụng.</p>
     <div class="brand-swatches">${COLOR_TOKENS.map(renderColorCard).join('')}</div>
   </section>`;
 }
@@ -175,18 +177,18 @@ function renderTypography() {
   return `<section class="brand-section" aria-labelledby="brand-type">
     <p class="brand-section__index">02 · Typography</p>
     <h2 id="brand-type">Quy chuẩn Typography</h2>
-    <p class="brand-section__intro">Font chính: <code>Inter</code> cho body và tiêu đề cùng hệ font dự phòng. Thang kích thước &amp; line-height thống nhất cho toàn site.</p>
+    <p class="brand-section__intro">Blogco Editorial 2026 dùng Be Vietnam Pro cho tiếng Việt và Noto Sans KR cho tiếng Hàn, với thang chữ thoáng và dễ đọc.</p>
     <div class="brand-font-note">
       <strong>Primary font-family</strong>
-      <code>'Inter', 'Helvetica Neue', Arial, sans-serif</code>
+      <code>'Be Vietnam Pro', 'Noto Sans KR', 'Apple SD Gothic Neo', Arial, sans-serif</code>
     </div>
     <div class="brand-type-list">
       ${typeRow('H1', '2.25rem (36px) · 700 · lh 1.2 · #111827', '<h1 class="brand-demo-h1">Điều hướng bằng dữ liệu</h1>')}
       ${typeRow('H2', '1.75rem (28px) · 700 · lh 1.3 · #111827', '<h2 class="brand-demo-h2">Kết nối con người, vận hành thông minh</h2>')}
       ${typeRow('H3', '1.25rem (20px) · 700 · lh 1.4 · #1F2937', '<h3 class="brand-demo-h3">Kết nối người dùng với mọi dịch vụ</h3>')}
       ${typeRow('Body', '1.0rem (16px) · 500 · lh 1.6 · #374151', '<p class="brand-demo-p">BlogCo xây dựng nội dung rõ ràng, mạch lạc và dễ đọc. Mọi đoạn văn giữ nhịp thở thoáng với line-height 1.6, đảm bảo trải nghiệm đọc thoải mái trên mọi thiết bị.</p>')}
-      ${typeRow('Link', 'Inherit body · #374151 · accent #10B981', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
-      ${typeRow('Blockquote', 'Body · viền trái 4px #10B981 · nền #ECFDF5', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
+      ${typeRow('Link', 'Inherit body · #374151 · interactive #2463EB', '<p class="brand-demo-p">Xem thêm trong <a href="#/brand-guidelines">tài liệu thương hiệu BlogCo</a> để biết chi tiết.</p>')}
+      ${typeRow('Blockquote', 'Body · viền trái 4px #087F8C · nền #DDF5EC', '<blockquote class="brand-demo-quote">Thiết kế tốt là thiết kế ít đi — mỗi thành phần đều phải phục vụ người đọc.</blockquote>')}
       ${typeRow('Small', '0.875rem (14px) · 500 · #4B5563', '<p class="brand-demo-small">Cập nhật lần cuối · 15/10/2026 · BlogCo Design Team</p>')}
     </div>
   </section>`;

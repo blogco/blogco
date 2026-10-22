@@ -1,4 +1,4 @@
-{{- /* Home grid: recent posts, 5 columns × 3 rows on large screens. */ -}}
+{{- /* Editorial home feed uses published content only. */ -}}
 {{- $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
 <section class="home-posts" aria-labelledby="home-posts-title">
   <div class="home-posts__head">
@@ -21,9 +21,10 @@
           {{- end }}
         </span>
         <span class="post-card__body">
+          {{- with .Params.categories }}<span class="posts-index__category">{{ if reflect.IsSlice . }}{{ index . 0 }}{{ else }}{{ . }}{{ end }}</span>{{- else with .Params.tags }}<span class="posts-index__category">{{ if reflect.IsSlice . }}{{ index . 0 }}{{ else }}{{ . }}{{ end }}</span>{{- end }}
           <span class="post-card__title">{{ $title }}</span>
-          <span class="post-card__sum">{{ .Summary | plainify | htmlUnescape | truncate 120 }}</span>
-          <span class="post-card__meta">{{ .Date.Format "02/01/2006" }}</span>
+          <span class="post-card__sum">{{ .Description | default .Summary | plainify | htmlUnescape | truncate 180 }}</span>
+          <span class="post-card__meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "02/01/2006" }}</time> · {{ .ReadingTime }} phút đọc</span>
         </span>
       </a>
     </li>

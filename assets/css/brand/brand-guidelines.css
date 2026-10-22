@@ -16,17 +16,19 @@
      #/brand-guidelines — phải luôn khớp với assets/js/brand/main.js.
      ──────────────────────────────────────────────────────────────────────── */
 
-  /* Corporate palette: high-contrast ink, neutral surfaces, deep mint accent. */
-  --blogco-primary: #111827;
-  --blogco-primary-hover: #1F2937;
-  --blogco-accent-sky: #10B981;
-  --blogco-accent-bg: #F8F9FA;
-  --blogco-accent-soft: #ECFDF5;
+  /* Blogco Editorial 2026: restrained teal, blue and warm editorial surfaces. */
+  --blogco-primary: #172638;
+  --blogco-primary-hover: #102032;
+  --blogco-accent-sky: #087F8C;
+  --blogco-accent-bg: #F3F6F4;
+  --blogco-accent-soft: #DDF5EC;
+  --blogco-interactive: #2463EB;
+  --blogco-coral: #EF8C79;
   /* Nền trang chính */
-  --blogco-bg: #FAFAFA;
+  --blogco-bg: #FAFAF7;
   /* Nền card, nền bảng biểu dữ liệu */
   --blogco-card-bg: #FFFFFF;
-  --blogco-text-main: #111827;
+  --blogco-text-main: #172638;
   --blogco-text-body: #374151;
   --blogco-text-muted: #4B5563;
   --blogco-border: #E5E7EB;
@@ -36,8 +38,10 @@
   --blogco-radius-card: 16px;
   --blogco-radius-control: 12px;
   --blogco-dark-neutral: #111827;
-  --blogco-font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  --blogco-font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-font-family: 'Be Vietnam Pro', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-font-display: 'Be Vietnam Pro', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Helvetica Neue', Arial, sans-serif;
+  --blogco-space-section: clamp(3.5rem, 7vw, 6rem);
+  --blogco-reading-width: 72ch;
 
   /* ── Aliases nội bộ (--samsung-* + hình khối/shadow) ────────────────────── */
   --samsung-primary: var(--blogco-primary);
