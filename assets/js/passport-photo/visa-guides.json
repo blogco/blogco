@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "guides": {
+    "US": {
+      "verificationStatus": "verified",
+      "destinationCountry": "US",
+      "passportNationality": "VN",
+      "residenceCountry": "VN",
+      "visaCategory": "B-1/B-2 visitor visa (tourism)",
+      "eligibilityConditions": ["Vietnamese ordinary passport applicants generally need a visitor visa; eligibility and adjudication are individual.", "A qualifying valid visa or residence permit may affect eligibility for travel under some programs; verify with the official government checker for your exact profile."],
+      "exemptionRules": ["Visa Waiver Program is limited to nationals of participating countries and qualifying conditions; a Vietnamese passport alone does not qualify."],
+      "applicationChannels": ["Complete DS-160, pay the government application fee, and schedule through the U.S. Embassy/Consulate instructions for place of residence."],
+      "requiredDocuments": [
+        {"label":"Hộ chiếu còn hiệu lực","status":"mandatory","detail":"Hộ chiếu đi Hoa Kỳ; kiểm tra quy tắc hiệu lực và ngoại lệ quốc gia."},
+        {"label":"Xác nhận DS-160","status":"mandatory","detail":"Hoàn tất trực tuyến và giữ trang xác nhận."},
+        {"label":"Biên nhận phí","status":"mandatory","detail":"Theo hướng dẫn thanh toán tại nơi nộp."},
+        {"label":"Ảnh visa","status":"conditional","detail":"Tải ảnh vào DS-160; mang ảnh in nếu tải lên không thành công hoặc cơ quan lãnh sự yêu cầu."},
+        {"label":"Chứng cứ mục đích chuyến đi và khả năng quay về","status":"conditional","detail":"Viên chức có thể yêu cầu thông tin bổ sung; không có một danh sách chứng từ hỗ trợ bắt buộc chung cho mọi hồ sơ."}
+      ],
+      "applicationSteps": ["Xác định loại visa và xem hướng dẫn lãnh sự theo nơi cư trú.", "Điền DS-160 riêng cho từng đương đơn.", "Thanh toán phí không hoàn lại và đặt lịch theo hướng dẫn địa phương.", "Dự phỏng vấn nếu được yêu cầu, nộp sinh trắc học/ảnh theo hướng dẫn.", "Theo dõi hộ chiếu và kết quả qua kênh chính thức."],
+      "appointmentBiometrics": "Phỏng vấn thường áp dụng; yêu cầu và lịch do cơ quan lãnh sự nơi nộp quyết định. Xem hướng dẫn địa phương.",
+      "fees": {"official": "$185 USD (phí xử lý visa không định cư B); có thể có phí cấp visa theo bảng reciprocity nếu áp dụng.", "service": "Không xác định một phí trung tâm thống nhất; xem chỉ dẫn chính thức của nơi nộp.", "processing": "Thời gian lịch phỏng vấn thay đổi theo địa điểm và thời điểm; không có ngày bảo đảm."},
+      "photoRequirements": {"dimensions":"51 × 51 mm; ảnh số DS-160 phải theo bộ kiểm tra kỹ thuật của biểu mẫu", "background":"Trắng hoặc trắng ngà, trơn", "head":"Đầu cao 22–35 mm hoặc 50–69% chiều cao ảnh", "format":"Ảnh màu; yêu cầu số phụ thuộc biểu mẫu", "recency":"Trong 6 tháng", "verified":true, "preset":"US:tourist-visa"},
+      "mistakes": ["Dùng ảnh hộ chiếu Mỹ thay vì kiểm tra bộ tiêu chí visa và DS-160.", "Cho rằng phí bảo đảm được cấp visa hoặc đặt lịch nhanh.", "Bỏ qua chỉ dẫn riêng của Đại sứ quán/Lãnh sự quán nơi nộp."],
+      "sources": [
+        {"title":"Visitor Visa","url":"https://travel.state.gov/content/travel/en/us-visas/tourism-visit/visitor.html","authority":"U.S. Department of State","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"B-1/B-2; applicants for temporary tourism"},
+        {"title":"Fees for Visa Services","url":"https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/fees/fees-visa-services.html","authority":"U.S. Department of State","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Non-petition-based nonimmigrant visa processing fee"},
+        {"title":"Photo Requirements","url":"https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html","authority":"U.S. Department of State","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Visa photographs; category and post-specific conditions apply"}
+      ]
+    },
+    "GB": {
+      "verificationStatus": "verified",
+      "destinationCountry": "GB", "passportNationality": "VN", "residenceCountry": "VN", "visaCategory": "Standard Visitor visa (tourism)",
+      "eligibilityConditions": ["Vietnamese citizens are on the UK visa-national list and ordinarily need entry clearance before travel as a visitor.", "A Standard Visitor application requires the applicant to qualify as a genuine visitor, undertake permitted activities, leave at the end of the visit, and afford the trip."],
+      "exemptionRules": ["Some exceptional travel-document, immigration-status or route-specific rules may apply; use the official checker for the exact person and document."],
+      "applicationChannels": ["Apply online through GOV.UK. The application then directs the applicant to prove identity through a visa application centre or an available digital route."],
+      "requiredDocuments": [
+        {"label":"Hộ chiếu hoặc giấy tờ đi lại hợp lệ","status":"mandatory","detail":"Nộp cùng đơn và dùng khi đi lại."},
+        {"label":"Đơn trực tuyến và thông tin chuyến đi","status":"mandatory","detail":"Ngày đi, nơi lưu trú, chi phí dự kiến và thông tin cá nhân."},
+        {"label":"Chứng cứ hỗ trợ khả năng chi trả, mục đích và rời UK đúng hạn","status":"conditional","detail":"Chọn chứng từ phù hợp hoàn cảnh; hướng dẫn Home Office nêu ví dụ chứ không yêu cầu mọi hồ sơ có cùng bộ giấy tờ."},
+        {"label":"Bản dịch chứng thực","status":"conditional","detail":"Tài liệu không bằng tiếng Anh hoặc tiếng Wales cần bản dịch đáp ứng yêu cầu Home Office."},
+        {"label":"Ảnh giấy tờ","status":"conditional","detail":"Ảnh khuôn mặt được chụp khi lấy sinh trắc tại VAC; không mặc định phải tự nộp ảnh in."}
+      ],
+      "applicationSteps": ["Kiểm tra nhu cầu visa và thời hạn: nộp sớm nhất 3 tháng trước chuyến đi.", "Điền đơn Standard Visitor trên GOV.UK và kê khai thông tin chính xác.", "Thanh toán phí chính phủ trực tuyến.", "Đặt lịch theo chỉ dẫn; nộp tài liệu trực tuyến hoặc tại trung tâm theo quy trình địa phương.", "Đến VAC để chụp ảnh và lấy dấu vân tay, trừ khi được hướng dẫn dùng ứng dụng ID Check.", "Theo dõi xử lý và nhận quyết định qua tài khoản/kênh đã đăng ký."],
+      "appointmentBiometrics": "Thông thường đến visa application centre để lấy dấu vân tay và ảnh; một số hồ sơ có thể dùng UK Immigration: ID Check app nếu hệ thống chỉ định. Dịch vụ hẹn trả phí là riêng và không tăng khả năng được cấp visa.",
+      "fees": {"official":"£135 cho Standard Visitor tối đa 6 tháng (phí GOV.UK hiện tại).", "service":"Có thể có phí hẹn/dịch vụ tuỳ trung tâm; GOV.UK nêu một số nơi thu £76.50 cho hẹn tiêu chuẩn. Đây không phải phí visa chính phủ.", "processing":"Dùng công cụ GOV.UK theo loại visa và ngày xác minh danh tính; không cam kết lịch xử lý cố định."},
+      "photoRequirements": {"dimensions":"Không có ảnh in tự chuẩn bị chung: ảnh số khuôn mặt được chụp tại VAC; quy trình ID Check có chỉ dẫn riêng.", "background":"Theo cách chụp của cơ quan tiếp nhận", "head":"Theo quy trình sinh trắc tại VAC/app", "format":"Theo quy trình tiếp nhận; không suy ra từ preset hộ chiếu", "recency":"Chụp trong quy trình nộp", "verified":true, "preset":null},
+      "mistakes": ["Nhầm phí dịch vụ trung tâm với phí visa của UKVI.", "Nộp giấy tờ hỗ trợ như thể tất cả đều bắt buộc; chọn tài liệu giải thích đúng hoàn cảnh.", "Đặt vé không hoàn huỷ trước khi có quyết định."],
+      "sources": [
+        {"title":"Apply for a Standard Visitor visa","url":"https://www.gov.uk/standard-visitor/apply-standard-visitor-visa","authority":"UK Home Office / GOV.UK","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Standard Visitor applications; check individual eligibility"},
+        {"title":"Visa national list","url":"https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-visitor-visa-national-list","authority":"UK Home Office / GOV.UK","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Nationality and visitor entry clearance"},
+        {"title":"Paying fees and proving your identity","url":"https://www.gov.uk/apply-to-come-to-the-uk/paying-fees-and-proving-your-identity","authority":"UK Home Office / GOV.UK","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Biometrics, appointment and service costs"},
+        {"title":"Visiting the UK: guide to supporting documents","url":"https://www.gov.uk/government/publications/visitor-visa-guide-to-supporting-documents/guide-to-supporting-documents-visiting-the-uk","authority":"UK Home Office / GOV.UK","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Evidence for Standard Visitor applications"}
+      ]
+    },
+    "SCH": {
+      "verificationStatus": "verified",
+      "destinationCountry":"SCH", "passportNationality":"VN", "residenceCountry":"VN", "visaCategory":"Schengen short-stay visa (Type C)",
+      "eligibilityConditions":["Vietnamese ordinary passport holders generally need a short-stay visa for tourism in the Schengen area.","Apply to the consulate of the main destination; if stays are equal, apply to the first country visited. Territorial jurisdiction generally follows legal residence."],
+      "exemptionRules":["A valid residence permit or long-stay visa from a Schengen state, certain family/free-movement situations, or special travel document may alter the requirement; assess individually with the competent consulate."],
+      "applicationChannels":["Apply through the embassy/consulate of the main destination, or its authorized external service provider where designated. A provider is not the decision maker."],
+      "requiredDocuments":[
+        {"label":"Hộ chiếu hợp lệ","status":"mandatory","detail":"Còn hạn ít nhất 3 tháng sau ngày dự định rời Schengen và đáp ứng điều kiện cấp/blank pages."},
+        {"label":"Đơn xin thị thực và ảnh ICAO","status":"mandatory","detail":"Mẫu và cách nộp theo cơ quan lãnh sự/nhà cung cấp được uỷ quyền."},
+        {"label":"Bảo hiểm y tế du lịch","status":"mandatory","detail":"Bao phủ toàn bộ chuyến đi theo quy định Schengen; ngoại lệ cụ thể được quy định riêng."},
+        {"label":"Chứng cứ mục đích, nơi ở, tài chính và ý định rời đi","status":"conditional","detail":"Hồ sơ hỗ trợ theo danh sách của lãnh sự quán nơi nộp; yêu cầu chi tiết khác nhau theo nơi cư trú."},
+        {"label":"Sinh trắc học","status":"conditional","detail":"Lấy dấu vân tay/ảnh khi nộp, trừ nhóm được miễn theo quy tắc."}
+      ],
+      "applicationSteps":["Xác định nước chịu trách nhiệm theo lịch trình và nơi cư trú hợp pháp.","Kiểm tra checklist của đúng lãnh sự quán và đặt lịch nếu cần.","Chuẩn bị hộ chiếu, đơn, ảnh, bảo hiểm và chứng cứ theo trường hợp.","Nộp đơn trực tiếp hoặc qua trung tâm được uỷ quyền; lấy sinh trắc nếu thuộc diện.","Thanh toán phí visa và phí dịch vụ tách biệt.","Theo dõi hồ sơ và nhận lại hộ chiếu; quyết định nhập cảnh cuối cùng vẫn do cơ quan biên giới."],
+      "appointmentBiometrics":"Có thể cần đặt lịch; dấu vân tay được lấy khi nộp trừ các trường hợp miễn cụ thể. Quy trình của trung tâm được uỷ quyền thay đổi theo quốc gia thành viên và nơi cư trú.",
+      "fees":{"official":"€90 người lớn; €45 trẻ 6–12 tuổi theo quy tắc chung, có trường hợp miễn/biểu phí đặc biệt.","service":"Trung tâm nhận hồ sơ có thể thu thêm phí dịch vụ; kiểm tra cơ quan thành viên được uỷ quyền tại nơi nộp.","processing":"Thông thường 15 ngày lịch; có thể kéo dài tối đa 45 ngày khi cần xem xét thêm/tài liệu bổ sung."},
+      "photoRequirements":{"dimensions":"Ảnh theo tiêu chuẩn ICAO; thông số nhận và kích thước ảnh cần đối chiếu checklist của lãnh sự quán/đơn vị tiếp nhận.","background":"Theo tiêu chuẩn ICAO và hướng dẫn nơi tiếp nhận", "head":"Theo hướng dẫn ảnh ICAO/nơi tiếp nhận", "format":"Theo kênh nộp và cơ quan tiếp nhận", "recency":"Xác nhận theo checklist của nơi nộp", "verified":true, "preset":null},
+      "mistakes":["Nộp sai lãnh sự quán khi lịch trình có nhiều nước.","Coi phí trung tâm là phí visa chính phủ hoặc tin trung gian không được uỷ quyền.","Dùng preset ảnh hộ chiếu mà không đối chiếu yêu cầu của trung tâm nhận hồ sơ."],
+      "sources":[
+        {"title":"Applying for a Schengen visa","url":"https://home-affairs.ec.europa.eu/policies/schengen/visa-policy/applying-schengen-visa_en","authority":"European Commission, Directorate-General for Migration and Home Affairs","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Short stay applications; country-specific checklist still applies"},
+        {"title":"EU visa list regulation (2018/1806)","url":"https://eur-lex.europa.eu/eli/reg/2018/1806/oj/eng","authority":"European Union","checkedAt":"2026-10-22","effectiveDate":"2018-12-18, as amended","applicability":"Nationality visa requirement lists and exemptions"},
+        {"title":"Travel & Study: Visa","url":"https://www.eeas.europa.eu/vietnam/travel-study_en","authority":"European External Action Service, Delegation to Vietnam","checkedAt":"2026-10-22","effectiveDate":null,"applicability":"Vietnamese passport and local application context"}
+      ]
+    }
+  }
+}

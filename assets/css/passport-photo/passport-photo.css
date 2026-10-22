@@ -110,6 +110,9 @@ body.passport-photo-route #main > .post-single { display: none !important; }
   .pp-check-item { grid-template-columns: 24px minmax(0,1fr); }
   .pp-check-item > span:last-child { grid-column: 2; text-align: left; }
   .pp-page-version { text-align: left; }
+  .pp-visa-wrap > summary { align-items: flex-start; flex-direction: column; padding: 18px; }
+  .pp-visa-body { padding: 17px; }
+  .pp-visa-fields,.pp-visa-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .pp-dropzone { transition: none; } }
 @media print {
@@ -122,4 +125,43 @@ body.passport-photo-route #main > .post-single { display: none !important; }
   body.pp-printing .pp-print-grid { gap: 5mm; }
   body.pp-printing .pp-print-photo { break-inside: avoid; }
   body.pp-printing .pp-print-note { color: #444; }
+}
+
+.pp-visa-guide { margin-top: 34px; }
+.pp-visa-guide > [data-visa-content] > h2 { color: var(--blogco-text-primary,#111827); font-size: 1.5rem; }
+.pp-visa-wrap { overflow: hidden; border: 1px solid var(--pp-border); border-radius: 16px; background: #fff; box-shadow: var(--blogco-shadow-soft,0 8px 24px rgba(17,24,39,.06)); }
+.pp-visa-wrap > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px; cursor: pointer; list-style: none; }
+.pp-visa-wrap > summary::-webkit-details-marker,.pp-visa-item > summary::-webkit-details-marker { display: none; }
+.pp-visa-wrap > summary h2 { margin: 0; color: var(--pp-ink); font-size: clamp(1.15rem,2vw,1.55rem); }
+.pp-visa-wrap > summary .pp-eyebrow { margin-bottom: 5px; }
+.pp-visa-wrap[open] > summary { border-bottom: 1px solid var(--pp-border); }
+.pp-visa-body { padding: 22px 24px 24px; }
+.pp-visa-lead,.pp-visa-overview { color: var(--pp-ink); line-height: 1.65; }
+.pp-visa-overview { padding: 13px 15px; border-left: 3px solid var(--pp-green); border-radius: 0 10px 10px 0; background: #f5fbf8; }
+.pp-visa-fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0 14px; }
+.pp-visa-fields .pp-field { min-width: 0; }
+.pp-visa-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 20px; }
+.pp-visa-item { align-self: start; border: 1px solid var(--pp-border); border-radius: 12px; background: #fff; }
+.pp-visa-item > summary { position: relative; padding: 15px 42px 15px 16px; color: var(--pp-ink); font-size: .88rem; font-weight: 750; cursor: pointer; list-style: none; }
+.pp-visa-item > summary::after { position: absolute; top: 13px; right: 17px; color: var(--pp-green); content: '+'; font-size: 1.2rem; }
+.pp-visa-item[open] > summary::after { content: '−'; }
+.pp-visa-item[open] > summary { border-bottom: 1px solid var(--pp-border); }
+.pp-visa-item > div { padding: 13px 16px 16px; color: #374151; font-size: .83rem; line-height: 1.6; }
+.pp-visa-item p { margin: 7px 0; }
+.pp-visa-item ul { margin: 5px 0; padding-left: 20px; }
+.pp-visa-checklist { display: grid; gap: 5px; }
+.pp-visa-check { display: grid; grid-template-columns: 20px 1fr; gap: 9px; padding: 10px 0; border-bottom: 1px solid #eef2f0; cursor: pointer; }
+.pp-visa-check input { margin-top: 4px; accent-color: var(--pp-green); }
+.pp-visa-check strong,.pp-visa-check small,.pp-visa-sources small { display: block; }
+.pp-visa-check strong { color: var(--pp-ink); font-size: .8rem; }
+.pp-visa-check small,.pp-visa-sources small { margin-top: 3px; color: var(--pp-muted); font-size: .74rem; line-height: 1.5; }
+.pp-visa-sources { display: grid; gap: 10px; padding-left: 18px !important; }
+.pp-visa-sources a,.pp-visa-guide a { color: var(--pp-green); font-weight: 700; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.pp-visa-note { margin: 18px 0 0; padding: 13px 15px; border-left: 3px solid #b6d9c6; border-radius: 0 10px 10px 0; background: #f6faf8; color: var(--pp-muted); font-size: .78rem; line-height: 1.55; }
+.pp-visa-warning { padding: 12px; border-radius: 10px; background: #fff8e8; color: #704b00; }
+.pp-visa-guide :focus-visible { outline: 3px solid rgba(8,126,91,.3); outline-offset: 2px; }
+@media (max-width: 680px) {
+  .pp-visa-wrap > summary { align-items: flex-start; flex-direction: column; padding: 18px; }
+  .pp-visa-body { padding: 17px; }
+  .pp-visa-fields,.pp-visa-grid { grid-template-columns: 1fr; }
 }
