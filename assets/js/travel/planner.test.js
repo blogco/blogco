@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { formatVndDigits, readVndAmount } from './VndAmountInput.js';
 import { addDays, buildTrip, buildTripRequest, convertVnd, currencyForDestination, formatVndInput, parseVnd, sumBudget, validateBudgetVnd } from './planner.js';
 
 test('parses and formats common Vietnamese VND input styles', () => {
   for (const value of ['20000000', '20.000.000', '20,000,000', '20000000 VND', '20 triệu']) assert.equal(parseVnd(value), 20_000_000);
   assert.equal(formatVndInput('20 triệu'), '20.000.000 ₫');
   assert.equal(parseVnd('20.00.000'), NaN);
+});
+
+test('formats VND digits immediately and exposes a safe numeric value', () => {
+  for (const [digits, display] of [['1000', '1.000'], ['10000', '10.000'], ['100000', '100.000'], ['1000000', '1.000.000'], ['19000000', '19.000.000'], ['20000000', '20.000.000'], ['123456789', '123.456.789']]) assert.equal(formatVndDigits(digits), display);
+  assert.equal(readVndAmount({ value: '20.000.000' }), 20_000_000);
+  assert.equal(readVndAmount({ value: '' }), null);
+  assert.ok(Number.isNaN(readVndAmount({ value: '9.007.199.254.740.992' })));
 });
 
 test('validates positive safe budgets against application limits without increments', () => {
@@ -20,6 +28,7 @@ test('constructs normalized trip requests and validates dates and duration', () 
   assert.deepEqual(buildTripRequest({ destination: ' Mỹ ', days: '5', budgetVnd: '20 triệu', startDate: '2026-10-23' }), {
     destination: 'Mỹ', days: 5, budgetVnd: 20_000_000, startDate: '2026-10-23',
   });
+  assert.equal(buildTripRequest({ destination: 'Seoul', days: '5', budgetVnd: '20.000.000' }).budgetVnd, 20_000_000);
   assert.throws(() => buildTripRequest({ destination: 'Mỹ', days: '', budgetVnd: '20 triệu' }), /số ngày/);
   assert.throws(() => buildTripRequest({ destination: 'Mỹ', days: '5', budgetVnd: '20 triệu', startDate: '2026-02-30' }), /ngày khởi hành/);
 });

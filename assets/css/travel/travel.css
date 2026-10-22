@@ -48,8 +48,12 @@
 .travel-step { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: var(--travel-mint); color: var(--travel-green); font-size: .8rem; font-weight: 800; }
 .travel-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
 .travel-field { display: flex; min-width: 0; flex-direction: column; gap: 7px; margin: 0 0 15px; color: var(--travel-ink); font-size: .88rem; font-weight: 700; }
-.travel-field > span { color: #c35d4a; }
+.travel-field > span:not(.travel-currency-input) { color: #c35d4a; }
 .travel-field input,.travel-field select,.travel-manual-rate input { width: 100%; min-height: 45px; padding: 10px 12px; border: 1px solid #d6e0dc; border-radius: 10px; background: #fff; color: #1b2823; font: inherit; font-weight: 500; }
+.travel-currency-input { display: flex; align-items: center; min-height: 45px; padding-right: 12px; border: 1px solid #d6e0dc; border-radius: 10px; background: #fff; color: #4b5563; }
+.travel-currency-input input { min-width: 0; border: 0; background: transparent; }
+.travel-currency-input input:focus { outline: 0; }
+.travel-currency-input:focus-within { outline: 3px solid rgba(8,126,91,.16); border-color: #5aae8b; }
 .travel-field input:focus,.travel-field select:focus,.travel-manual-rate input:focus { outline: 3px solid rgba(8,126,91,.16); border-color: #5aae8b; }
 .travel-field--wide { grid-column: 1/-1; }
 .travel-check { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0 20px; color: var(--travel-muted); font-size: .9rem; }
