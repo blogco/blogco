@@ -29,7 +29,7 @@ import {
   figureShortcode, expandFigureShortcodes, FIGURE_ALIGNMENTS,
 } from './rich.js';
 import { scoreArticle } from './score.js';
-import { looksLikeMarkdownTable, parseMarkdownTable, rowsToMarkdown } from './table.js';
+import { rowsToMarkdown } from './table.js';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // GitHub contents API friendly ceiling.
 const DEFAULT_ALIGN = 'center';
@@ -68,7 +68,7 @@ function markdownFromHtml(html = '') {
       filter: (node) => node.nodeName === 'TABLE',
       replacement: (_content, node) => {
         const rows = [...node.querySelectorAll('tr')].map((tr) =>
-          [...tr.children].map((cell) => (cell.textContent || '').replace(/\s+/g, ' ').trim()));
+          [...tr.children].map((cell) => turndown.turndown(cell.innerHTML || '').replace(/\s+/g, ' ').trim()));
         const markdown = rowsToMarkdown(rows);
         return markdown ? `\n\n${markdown}\n\n` : '';
       },
@@ -100,7 +100,7 @@ const TOOLBAR = [
   { action: 'link', label: '🔗', title: 'Chèn liên kết', link: true },
   { action: 'image', label: '🖼️', title: 'Chèn ảnh vào bài (chọn nhiều ảnh)', image: true },
   { action: 'wipe', label: '🧹 Xoá trắng', title: 'Xoá trắng khung soạn thảo (làm mới bài viết)', wipe: true },
-  { action: 'table', label: '📊 Bảng Markdown', title: 'Mở trình tạo bảng Markdown', table: true },
+  { action: 'table', label: '▦ Chèn bảng', title: 'Chèn bảng 3 cột × 4 hàng', table: true },
 ];
 
 const BUBBLE = ['bold', 'italic', 'h2', 'quote', 'link'];
@@ -180,24 +180,16 @@ function renderEditor(root, state) {
           </label>
           <div class="blog-bubble" data-blog-bubble hidden role="toolbar" aria-label="Định dạng nhanh">${bubbleHtml()}</div>
           <div class="blog-figurebar" data-blog-figurebar hidden role="toolbar" aria-label="Tuỳ chỉnh ảnh">${figurebarHtml()}</div>
+          <div class="blog-table-tools" data-blog-table-tools hidden role="toolbar" aria-label="Công cụ chỉnh sửa bảng">
+            <button type="button" data-blog-table-action="add-row-above">Thêm hàng trên</button>
+            <button type="button" data-blog-table-action="add-row-below">Thêm hàng dưới</button>
+            <button type="button" data-blog-table-action="add-column-left">Thêm cột trái</button>
+            <button type="button" data-blog-table-action="add-column-right">Thêm cột phải</button>
+            <button type="button" data-blog-table-action="delete-row">Xóa hàng</button>
+            <button type="button" data-blog-table-action="delete-column">Xóa cột</button>
+            <button type="button" data-blog-table-action="delete-table">Xóa bảng</button>
+          </div>
         </div>
-
-        <section class="blog-table-builder" aria-labelledby="blog-table-builder-title">
-          <div class="blog-table-builder__head">
-            <div>
-              <p class="blog-eyebrow">GFM TABLE</p>
-              <h2 id="blog-table-builder-title">Tạo bảng bằng Markdown</h2>
-            </div>
-            <span class="blog-table-builder__badge">Offline · Không cần API</span>
-          </div>
-          <label class="blog-field" for="blog-table-markdown">Cú pháp Markdown</label>
-          <textarea id="blog-table-markdown" class="blog-table-builder__input" data-blog-table-markdown rows="7" spellcheck="false" placeholder="| Cột 1 | Cột 2 |\n| --- | --- |\n| Dữ liệu 1 | Dữ liệu 2 |">${escapeHtml(draft.tableMarkdown || '')}</textarea>
-          <div class="blog-table-preview" data-blog-table-preview aria-live="polite"><p class="blog-table-preview__empty">Nhập Markdown chuẩn để xem bảng ngay tại đây.</p></div>
-          <div class="blog-actions blog-table-builder__actions">
-            <button type="button" class="blog-primary" data-blog-table-insert>Chèn bảng vào bài viết</button>
-            <button type="button" class="blog-ghost" data-blog-table-clear>Xoá nội dung bảng</button>
-          </div>
-        </section>
 
         <div class="blog-actions">
           <button type="button" class="blog-primary" data-blog-save>Lưu &amp; đồng bộ GitHub</button>
@@ -296,7 +288,6 @@ function renderEditor(root, state) {
   syncImageMode(root, state);
   syncEmptyState(root);
   updateWordCount(root);
-  void renderTableMarkdownPreview(root);
   root.querySelector('#blog-title')?.focus({ preventScroll: true });
 }
 
@@ -366,7 +357,6 @@ function readForm(root) {
   return {
     title: root.querySelector('[data-blog-title]')?.value?.trim() || '',
     html: richEl(root)?.innerHTML || '',
-    tableMarkdown: root.querySelector('[data-blog-table-markdown]')?.value || '',
     tags: root.querySelector('[data-blog-tags]')?.value || '',
     token: root.querySelector('[data-blog-token]')?.value?.trim() || '',
     repo: root.querySelector('[data-blog-repo]')?.value?.trim() || '',
@@ -378,7 +368,7 @@ function readForm(root) {
 
 function persistDraft(root) {
   const form = readForm(root);
-  saveDraft({ title: form.title, body: form.html, tableMarkdown: form.tableMarkdown, tags: form.tags });
+  saveDraft({ title: form.title, body: form.html, tags: form.tags });
 }
 
 // Wipe the whole working surface: title, body, staged inline images, the cover
@@ -393,8 +383,6 @@ function resetEditor(root, state, { tags = false } = {}) {
   }
   const rich = richEl(root);
   if (rich) rich.innerHTML = '';
-  const tableMarkdown = root.querySelector('[data-blog-table-markdown]');
-  if (tableMarkdown) tableMarkdown.value = '';
   clearDraft();
 
   if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
@@ -415,7 +403,6 @@ function resetEditor(root, state, { tags = false } = {}) {
   syncImageMode(root, state);
   syncEmptyState(root);
   updateWordCount(root);
-  void renderTableMarkdownPreview(root);
 }
 
 // Toolbar "Xoá trắng": wipe everything after a quick confirmation.
@@ -521,106 +508,103 @@ function applyTool(root, action) {
 }
 
 // ---------------------------------------------------------------------------
-// Markdown table builder: parse locally, render a live preview, then insert a
-// safe table node into the rich editor. No remote model or API key is involved.
+// Visual table editing. GFM tables remain the persisted/published format so
+// Goldmark can render them with unsafe HTML disabled.
 // ---------------------------------------------------------------------------
 
-function buildTableNode(markdown) {
-  const rows = parseMarkdownTable(markdown);
-  if (rows.length < 2) return null;
+function createTableNode() {
   const table = document.createElement('table');
   table.className = 'blog-table';
-  const thead = document.createElement('thead');
-  const headRow = document.createElement('tr');
-  rows[0].forEach((cell) => {
-    const th = document.createElement('th');
-    th.textContent = cell;
-    headRow.appendChild(th);
-  });
-  thead.appendChild(headRow);
-  const tbody = document.createElement('tbody');
-  rows.slice(1).forEach((cells) => {
-    const tr = document.createElement('tr');
-    cells.forEach((cell) => {
-      const td = document.createElement('td');
-      td.textContent = cell;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  table.append(thead, tbody);
+  const head = table.createTHead().insertRow();
+  for (let column = 0; column < 3; column += 1) {
+    const cell = document.createElement('th');
+    cell.scope = 'col'; cell.dataset.placeholder = `Cột ${column + 1}`; cell.contentEditable = 'true';
+    head.appendChild(cell);
+  }
+  const body = table.createTBody();
+  for (let row = 0; row < 3; row += 1) {
+    const tr = body.insertRow();
+    for (let column = 0; column < 3; column += 1) {
+      const cell = tr.insertCell(); cell.contentEditable = 'true'; cell.dataset.placeholder = 'Nhập nội dung';
+    }
+  }
   return table;
 }
 
-async function renderTableMarkdownPreview(root) {
-  const input = root.querySelector('[data-blog-table-markdown]');
-  const preview = root.querySelector('[data-blog-table-preview]');
-  if (!input || !preview) return;
-  const source = input.value.trim();
-  if (!source) {
-    preview.innerHTML = '<p class="blog-table-preview__empty">Nhập Markdown chuẩn để xem bảng ngay tại đây.</p>';
-    return;
-  }
-  if (!looksLikeMarkdownTable(source)) {
-    preview.innerHTML = '<p class="blog-table-preview__error">Chưa nhận diện được bảng. Hãy dùng dòng tiêu đề, dòng phân cách và ít nhất một dòng dữ liệu.</p>';
-    return;
-  }
-  try {
-    const marked = await loadMarked();
-    if (input.value.trim() !== source) return;
-    const render = typeof marked === 'function' ? marked : marked.parse;
-    preview.innerHTML = render(source, { gfm: true, breaks: false });
-    preview.querySelectorAll('table').forEach((table) => table.classList.add('blog-table'));
-  } catch (error) {
-    preview.innerHTML = `<p class="blog-table-preview__error">Không thể dựng bản xem trước: ${escapeHtml(error.message || 'Markdown không hợp lệ.')}</p>`;
-  }
-}
-
-function insertTableNodeAtCursor(root, node) {
+function insertVisualTable(root) {
   const rich = richEl(root);
   if (!rich) return;
   rich.focus({ preventScroll: true });
   const selection = window.getSelection();
   const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-  const hasCaret = range && rich.contains(range.commonAncestorContainer);
-  if (hasCaret) {
-    range.deleteContents();
-    range.insertNode(node);
-    const after = document.createRange();
-    after.setStartAfter(node);
-    after.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(after);
-  } else {
-    rich.appendChild(node);
+  const activeTable = range?.commonAncestorContainer?.parentElement?.closest?.('table');
+  if (activeTable && rich.contains(activeTable)) {
+    const afterTable = document.createRange(); afterTable.setStartAfter(activeTable); afterTable.collapse(true);
+    selection.removeAllRanges(); selection.addRange(afterTable);
+  } else if (!range || !rich.contains(range.commonAncestorContainer)) {
+    rich.append(document.createElement('p'));
+    const paragraph = rich.lastElementChild;
+    const caret = document.createRange(); caret.selectNodeContents(paragraph); caret.collapse(false);
+    selection?.removeAllRanges(); selection?.addRange(caret);
   }
-  syncEmptyState(root);
-  updateWordCount(root);
-  persistDraft(root);
+  const table = createTableNode();
+  document.execCommand('insertHTML', false, `${table.outerHTML}<p data-blog-table-cursor></p>`);
+  const marker = rich.querySelector('[data-blog-table-cursor]');
+  const target = marker?.previousElementSibling?.matches('table') ? marker.previousElementSibling : null;
+  marker?.remove();
+  const first = target?.querySelector('th');
+  if (first) {
+    const caret = document.createRange(); caret.selectNodeContents(first); caret.collapse(true);
+    selection?.removeAllRanges(); selection?.addRange(caret);
+    first.focus?.();
+  }
+  updateTableToolbar(root, target);
+  syncEmptyState(root); updateWordCount(root); persistDraft(root);
 }
 
-function focusTableBuilder(root) {
-  const input = root.querySelector('[data-blog-table-markdown]');
-  if (!input) return;
-  input.focus();
-  setStatus(root, 'Nhập cú pháp Markdown chuẩn để xem bảng trực tiếp bên dưới.');
+function updateTableToolbar(root, table = null) {
+  const toolbar = root.querySelector('[data-blog-table-tools]');
+  if (!toolbar) return;
+  const selectedTable = table || window.getSelection()?.anchorNode?.parentElement?.closest('table');
+  toolbar.hidden = !selectedTable || !richEl(root)?.contains(selectedTable);
+  toolbar.dataset.tableActive = toolbar.hidden ? '' : 'true';
 }
 
-function insertMarkdownTable(root) {
-  const input = root.querySelector('[data-blog-table-markdown]');
-  const source = input?.value?.trim() || '';
-  if (!looksLikeMarkdownTable(source)) {
-    setStatus(root, 'Hãy nhập bảng Markdown gồm tiêu đề, dòng phân cách và dữ liệu.', 'error');
-    input?.focus();
-    return;
+function replaceTable(root, table, mutate, focusCell = [0, 0]) {
+  const next = table.cloneNode(true);
+  mutate(next);
+  if (!next.rows.length || !next.rows[0]?.cells.length) { table.remove(); updateTableToolbar(root); return; }
+  const range = document.createRange(); range.selectNode(table);
+  const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+  document.execCommand('insertHTML', false, `${next.outerHTML}<p data-blog-table-cursor></p>`);
+  const marker = richEl(root).querySelector('[data-blog-table-cursor]');
+  const replacement = marker?.previousElementSibling?.matches('table') ? marker.previousElementSibling : null;
+  marker?.remove();
+  const row = replacement?.rows[Math.min(focusCell[0], replacement.rows.length - 1)];
+  const cell = row?.cells[Math.min(focusCell[1], row.cells.length - 1)];
+  if (cell) { cell.focus(); const caret = document.createRange(); caret.selectNodeContents(cell); caret.collapse(false); selection.removeAllRanges(); selection.addRange(caret); }
+  updateTableToolbar(root, replacement); updateWordCount(root); persistDraft(root);
+}
+
+function runTableAction(root, action) {
+  const cell = window.getSelection()?.anchorNode?.parentElement?.closest('td, th');
+  const table = cell?.closest('table');
+  if (!table) return;
+  const rowIndex = cell.parentElement.rowIndex;
+  const columnIndex = cell.cellIndex;
+  if (action === 'delete-table') {
+    const range = document.createRange(); range.selectNode(table);
+    const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+    document.execCommand('delete'); updateTableToolbar(root); updateWordCount(root); persistDraft(root); return;
   }
-  const node = buildTableNode(source);
-  if (!node) {
-    setStatus(root, 'Không nhận diện được cấu trúc bảng Markdown.', 'error');
-    return;
-  }
-  insertTableNodeAtCursor(root, node);
-  setStatus(root, 'Đã chèn bảng Markdown vào bài viết.', 'ok');
+  if (action === 'add-row-above' || action === 'add-row-below') replaceTable(root, table, (copy) => {
+    const insertAt = rowIndex + (action === 'add-row-below' ? 1 : 0);
+    const row = copy.insertRow(Math.min(insertAt, copy.rows.length));
+    for (let i = 0; i < copy.rows[0].cells.length; i += 1) { const td = row.insertCell(); td.contentEditable = 'true'; }
+  }, [rowIndex + (action === 'add-row-below' ? 1 : 0), columnIndex]);
+  if (action === 'delete-row') replaceTable(root, table, (copy) => { if (copy.rows.length > 1) copy.deleteRow(rowIndex); }, [Math.max(0, rowIndex - 1), columnIndex]);
+  if (action === 'add-column-left' || action === 'add-column-right') replaceTable(root, table, (copy) => [...copy.rows].forEach((row) => { const insertAt = columnIndex + (action === 'add-column-right' ? 1 : 0); const cell = row.insertCell(Math.min(insertAt, row.cells.length)); cell.contentEditable = 'true'; }), [rowIndex, columnIndex + (action === 'add-column-right' ? 1 : 0)]);
+  if (action === 'delete-column') replaceTable(root, table, (copy) => { if (copy.rows[0].cells.length > 1) [...copy.rows].forEach((row) => row.deleteCell(columnIndex)); }, [rowIndex, Math.max(0, columnIndex - 1)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -1291,17 +1275,13 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
       const tool = event.target.closest('[data-blog-tool]');
       if (tool) {
         if (tool.dataset.blogTool === 'wipe') { wipeEditor(root, state); return; }
-        if (tool.dataset.blogTool === 'table') { focusTableBuilder(root); return; }
+        if (tool.dataset.blogTool === 'table') { insertVisualTable(root); return; }
         applyTool(root, tool.dataset.blogTool); hideBubble(root); return;
       }
 
-      if (event.target.closest('[data-blog-table-insert]')) { insertMarkdownTable(root); return; }
-      if (event.target.closest('[data-blog-table-clear]')) {
-        const input = root.querySelector('[data-blog-table-markdown]');
-        if (input) input.value = '';
-        persistDraft(root);
-        void renderTableMarkdownPreview(root);
-        setStatus(root, 'Đã xoá nội dung bảng.');
+      const tableAction = event.target.closest('[data-blog-table-action]');
+      if (tableAction) {
+        runTableAction(root, tableAction.dataset.blogTableAction);
         return;
       }
 
@@ -1350,6 +1330,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
         if (figure) selectFigure(root, state, figure);
         return;
       }
+      if (event.target.closest('[data-blog-body] table')) updateTableToolbar(root);
       if (event.target.closest('[data-blog-body]') && !event.target.closest('.blog-figure')) {
         clearFigureSelection(root, state);
       }
@@ -1357,7 +1338,7 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
 
     // Keep the text selection alive when clicking the floating format bubble.
     root.addEventListener('mousedown', (event) => {
-      if (event.target.closest('[data-blog-bubble]')) event.preventDefault();
+      if (event.target.closest('[data-blog-bubble], [data-blog-table-tools], [data-blog-tool="table"]')) event.preventDefault();
     });
 
     root.addEventListener('mouseover', (event) => {
@@ -1369,19 +1350,22 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
     root.addEventListener('mouseleave', () => { if (state.activeFigure) scheduleHideFigurebar(root, state); });
 
     root.addEventListener('mouseup', (event) => {
+      updateTableToolbar(root);
       if (!event.target.closest?.('[data-blog-figurebar]')) window.setTimeout(() => updateBubble(root), 0);
     });
 
     root.addEventListener('keyup', (event) => {
       if (event.key === 'Shift' || event.key === 'Meta' || event.key === 'Control') return;
+      updateTableToolbar(root);
       window.setTimeout(() => updateBubble(root), 0);
     });
+
+    root.addEventListener('selectionchange', () => updateTableToolbar(root));
 
     root.addEventListener('input', (event) => {
       if (event.target.matches?.('input[name="blog-image-mode"]')) return;
       if (!richEl(root)) return; // manager view has no draft
       if (event.target.closest?.('[data-blog-body]')) syncEmptyState(root);
-      if (event.target.matches?.('[data-blog-table-markdown]')) void renderTableMarkdownPreview(root);
       updateWordCount(root);
       persistDraft(root);
     });
@@ -1403,6 +1387,21 @@ export function mountBlogApp(root = document.querySelector('[data-blog-app]')) {
     });
 
     root.addEventListener('keydown', (event) => {
+      const cell = event.target.closest?.('[data-blog-body] td, [data-blog-body] th');
+      if (cell && event.key === 'Tab') {
+        const table = cell.closest('table');
+        const cells = [...table.querySelectorAll('th, td')];
+        const index = cells.indexOf(cell);
+        if (event.shiftKey && index > 0) {
+          event.preventDefault(); cells[index - 1].focus();
+        } else if (!event.shiftKey && index < cells.length - 1) {
+          event.preventDefault(); cells[index + 1].focus();
+        } else if (!event.shiftKey) {
+          event.preventDefault();
+          runTableAction(root, 'add-row-below');
+        }
+        return;
+      }
       const zone = event.target.closest?.('[data-blog-dropzone]');
       if (zone && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();

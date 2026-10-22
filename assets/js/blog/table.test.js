@@ -19,6 +19,14 @@ test('rowsToMarkdown escapes pipes and pads short rows', () => {
   assert.match(md, /\| a\\\|b \|\s*\|/);
 });
 
+test('rowsToMarkdown preserves Vietnamese and renders HTML-like text as inert table content', () => {
+  const md = rowsToMarkdown([['Tính năng', 'Ghi chú'], ['Độ trễ', '<script>alert(1)</script> | 5ms']]);
+  assert.match(md, /Độ trễ/);
+  assert.match(md, /&lt;script&gt;/);
+  assert.match(md, /\\\| 5ms/);
+  assert.equal(parseMarkdownTable(md)[1][1], '&lt;script&gt;alert(1)&lt;/script&gt; | 5ms');
+});
+
 test('looksLikeMarkdownTable accepts a standard GFM table', () => {
   assert.equal(looksLikeMarkdownTable('| A | B |\n| --- | --- |\n| 1 | 2 |'), true);
 });

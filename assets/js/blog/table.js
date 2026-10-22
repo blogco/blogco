@@ -6,7 +6,7 @@
 // Pure functions only — no DOM, no network — so they are unit-testable.
 
 function escapeCell(value = '') {
-  return String(value).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+  return String(value).replace(/\|/g, '\\|').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\s+/g, ' ').trim();
 }
 
 function splitTableRow(line = '') {
