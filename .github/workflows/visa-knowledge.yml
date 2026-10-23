@@ -1,0 +1,24 @@
+name: Validate published Visa Guide knowledge
+on:
+  pull_request:
+    paths:
+      - 'assets/js/passport-photo/visa-knowledge.json'
+      - 'scripts/visa_knowledge/**'
+      - '.github/workflows/visa-knowledge.yml'
+permissions:
+  contents: read
+concurrency:
+  group: visa-knowledge-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate public dataset privacy and schema
+        run: |
+          python -m unittest discover -s scripts/visa_knowledge -p 'test_*.py' -v
+          python scripts/visa_knowledge/validate.py assets/js/passport-photo/visa-knowledge.json
